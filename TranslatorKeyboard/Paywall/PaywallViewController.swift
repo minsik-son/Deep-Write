@@ -45,11 +45,11 @@ class PaywallViewController: UIViewController {
 
     private let closeButton: UIButton = {
         let btn = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
         btn.setImage(UIImage(systemName: "xmark", withConfiguration: config), for: .normal)
         btn.tintColor = AppColors.textSub
-        btn.backgroundColor = AppColors.card
-        btn.layer.cornerRadius = 15
+        btn.backgroundColor = UIColor(red: 0.965, green: 0.965, blue: 0.976, alpha: 1) // #F6F6F9
+        btn.layer.cornerRadius = 16
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
@@ -76,7 +76,7 @@ class PaywallViewController: UIViewController {
         btn.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
         btn.setTitleColor(.white, for: .normal)
         btn.backgroundColor = AppColors.accent
-        btn.layer.cornerRadius = 14
+        btn.layer.cornerRadius = 16
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
@@ -89,14 +89,27 @@ class PaywallViewController: UIViewController {
         return spinner
     }()
 
+    // Cancel anytime label
+    private let cancelAnytimeLabel: UILabel = {
+        let label = UILabel()
+        label.text = L("paywall.cancel_anytime")
+        label.font = .systemFont(ofSize: 12)
+        label.textColor = AppColors.textMuted
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = AppColors.bg
+        view.backgroundColor = .white
         setupLayout()
-        buildFeatureTable()
+        buildHeroSection()
+        buildBenefitsList()
         buildPlanSelector()
+        buildPromoCodeLink()
         buildBottomSection()
         applyFallbackPrices()
         loadProducts()
@@ -109,14 +122,15 @@ class PaywallViewController: UIViewController {
         view.addSubview(closeButton)
         view.addSubview(scrollView)
         view.addSubview(ctaButton)
+        view.addSubview(cancelAnytimeLabel)
         scrollView.addSubview(contentStack)
         ctaButton.addSubview(ctaSpinner)
 
         NSLayoutConstraint.activate([
             closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
             closeButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            closeButton.widthAnchor.constraint(equalToConstant: 30),
-            closeButton.heightAnchor.constraint(equalToConstant: 30),
+            closeButton.widthAnchor.constraint(equalToConstant: 32),
+            closeButton.heightAnchor.constraint(equalToConstant: 32),
 
             scrollView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -132,7 +146,11 @@ class PaywallViewController: UIViewController {
             ctaButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             ctaButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             ctaButton.heightAnchor.constraint(equalToConstant: 54),
-            ctaButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            ctaButton.bottomAnchor.constraint(equalTo: cancelAnytimeLabel.topAnchor, constant: -8),
+
+            cancelAnytimeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            cancelAnytimeLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            cancelAnytimeLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
 
             ctaSpinner.centerXAnchor.constraint(equalTo: ctaButton.centerXAnchor),
             ctaSpinner.centerYAnchor.constraint(equalTo: ctaButton.centerYAnchor),
@@ -140,164 +158,121 @@ class PaywallViewController: UIViewController {
 
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         ctaButton.addTarget(self, action: #selector(ctaTapped), for: .touchUpInside)
+    }
+
+    // MARK: - Hero Section
+
+    private func buildHeroSection() {
+        let heroStack = UIStackView()
+        heroStack.axis = .vertical
+        heroStack.spacing = 12
+        heroStack.alignment = .center
+
+        // Bolt icon
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 48, weight: .medium)
+        let iconView = UIImageView(image: UIImage(systemName: "bolt.fill", withConfiguration: iconConfig))
+        iconView.tintColor = AppColors.accent
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            iconView.widthAnchor.constraint(equalToConstant: 56),
+            iconView.heightAnchor.constraint(equalToConstant: 56),
+        ])
+        heroStack.addArrangedSubview(iconView)
 
         // Title
         let titleLabel = UILabel()
-        titleLabel.text = L("paywall.title")
+        titleLabel.text = L("paywall.hero.title")
         titleLabel.font = .systemFont(ofSize: 24, weight: .bold)
         titleLabel.textColor = AppColors.text
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
-        contentStack.addArrangedSubview(titleLabel)
+        heroStack.addArrangedSubview(titleLabel)
+
+        // Subtitle
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = L("paywall.hero.subtitle")
+        subtitleLabel.font = .systemFont(ofSize: 15)
+        subtitleLabel.textColor = AppColors.textSub
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.numberOfLines = 0
+        heroStack.addArrangedSubview(subtitleLabel)
+
+        contentStack.addArrangedSubview(heroStack)
     }
 
-    // MARK: - Feature Comparison Table
+    // MARK: - Benefits List
 
-    private func buildFeatureTable() {
-        let tableCard = UIView()
-        tableCard.backgroundColor = AppColors.card
-        tableCard.layer.cornerRadius = 16
-        tableCard.layer.borderWidth = 1
-        tableCard.layer.borderColor = AppColors.border.cgColor
+    private func buildBenefitsList() {
+        let benefitsStack = UIStackView()
+        benefitsStack.axis = .vertical
+        benefitsStack.spacing = 16
 
-        let tableStack = UIStackView()
-        tableStack.axis = .vertical
-        tableStack.spacing = 0
-        tableStack.translatesAutoresizingMaskIntoConstraints = false
-        tableCard.addSubview(tableStack)
-
-        NSLayoutConstraint.activate([
-            tableStack.topAnchor.constraint(equalTo: tableCard.topAnchor, constant: 16),
-            tableStack.leadingAnchor.constraint(equalTo: tableCard.leadingAnchor, constant: 16),
-            tableStack.trailingAnchor.constraint(equalTo: tableCard.trailingAnchor, constant: -16),
-            tableStack.bottomAnchor.constraint(equalTo: tableCard.bottomAnchor, constant: -16),
-        ])
-
-        // Header row
-        let headerRow = makeTableRow(
-            feature: L("paywall.features_header"),
-            free: L("paywall.tier.free"),
-            pro: L("paywall.tier.pro"),
-            premium: L("paywall.tier.premium"),
-            isHeader: true
-        )
-        tableStack.addArrangedSubview(headerRow)
-        tableStack.addArrangedSubview(makeSeparator())
-
-        // Feature rows (5 rows — AI model removed per user request, Premium = unlimited)
-        let features: [(String, String, String, String)] = [
-            (L("paywall.feature.daily_usage"),
-             String(format: L("paywall.value.uses"), 10),
-             String(format: L("paywall.value.uses"), 100),
-             L("paywall.value.unlimited")),
-
-            (L("paywall.feature.tone"),
-             L("paywall.value.basic"),
-             L("paywall.value.all"),
-             L("paywall.value.all")),
-
-            (L("paywall.feature.themes"), "—", "✓", "✓"),
-
-            (L("paywall.feature.no_ads"), "—", "✓", "✓"),
-
-            (L("paywall.feature.phrases"),
-             String(format: L("paywall.value.max"), 5),
-             L("paywall.value.unlimited"),
-             L("paywall.value.unlimited")),
+        let benefits: [(icon: String, title: String, desc: String)] = [
+            ("infinity", L("paywall.benefit.usage"), L("paywall.benefit.usage_desc")),
+            ("arrow.right.arrow.left", L("paywall.benefit.tones"), L("paywall.benefit.tones_desc")),
+            ("paintpalette", L("paywall.benefit.themes"), L("paywall.benefit.themes_desc")),
+            ("slash.circle", L("paywall.benefit.no_ads"), L("paywall.benefit.no_ads_desc")),
         ]
 
-        for (i, f) in features.enumerated() {
-            let row = makeTableRow(feature: f.0, free: f.1, pro: f.2, premium: f.3, isHeader: false)
-            tableStack.addArrangedSubview(row)
-            if i < features.count - 1 {
-                tableStack.addArrangedSubview(makeSeparator())
-            }
+        for benefit in benefits {
+            let row = makeBenefitRow(icon: benefit.icon, title: benefit.title, desc: benefit.desc)
+            benefitsStack.addArrangedSubview(row)
         }
 
-        contentStack.addArrangedSubview(tableCard)
+        contentStack.addArrangedSubview(benefitsStack)
     }
 
-    private func makeTableRow(feature: String, free: String, pro: String, premium: String, isHeader: Bool) -> UIView {
+    private func makeBenefitRow(icon: String, title: String, desc: String) -> UIView {
         let row = UIStackView()
         row.axis = .horizontal
-        row.distribution = .fill
+        row.spacing = 14
         row.alignment = .center
-        row.spacing = 4
 
-        let featureLabel = UILabel()
-        featureLabel.text = feature
-        featureLabel.font = isHeader
-            ? .systemFont(ofSize: 12, weight: .bold)
-            : .systemFont(ofSize: 13, weight: .regular)
-        featureLabel.textColor = isHeader ? AppColors.textMuted : AppColors.text
-        featureLabel.numberOfLines = 1
-        featureLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        featureLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        let freeView = makeValueLabel(free, isHeader: isHeader, isCheckOrDash: free == "✓" || free == "—")
-        let proView = makeValueLabel(pro, isHeader: isHeader, isCheckOrDash: pro == "✓" || pro == "—")
-        let premiumView = makeValueLabel(premium, isHeader: isHeader, isCheckOrDash: premium == "✓" || premium == "—")
-
-        row.addArrangedSubview(featureLabel)
-        row.addArrangedSubview(freeView)
-        row.addArrangedSubview(proView)
-        row.addArrangedSubview(premiumView)
-
-        // Feature label takes remaining space, value columns are fixed width
-        let colWidth: CGFloat = 58
+        // Icon area
+        let iconBg = UIView()
+        iconBg.backgroundColor = AppColors.accentSoft
+        iconBg.layer.cornerRadius = 10
+        iconBg.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            freeView.widthAnchor.constraint(equalToConstant: colWidth),
-            proView.widthAnchor.constraint(equalToConstant: colWidth),
-            premiumView.widthAnchor.constraint(equalToConstant: colWidth),
+            iconBg.widthAnchor.constraint(equalToConstant: 36),
+            iconBg.heightAnchor.constraint(equalToConstant: 36),
         ])
 
-        let container = UIView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(row)
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+        let iconView = UIImageView(image: UIImage(systemName: icon, withConfiguration: iconConfig))
+        iconView.tintColor = AppColors.accent
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconBg.addSubview(iconView)
         NSLayoutConstraint.activate([
-            row.topAnchor.constraint(equalTo: container.topAnchor, constant: isHeader ? 0 : 10),
-            row.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            row.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            row.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: isHeader ? -8 : -10),
+            iconView.centerXAnchor.constraint(equalTo: iconBg.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconBg.centerYAnchor),
         ])
 
-        return container
-    }
+        // Text area
+        let textStack = UIStackView()
+        textStack.axis = .vertical
+        textStack.spacing = 2
 
-    private func makeValueLabel(_ text: String, isHeader: Bool, isCheckOrDash: Bool) -> UILabel {
-        let label = UILabel()
-        label.textAlignment = .center
-        label.numberOfLines = 1
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.7
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.textColor = AppColors.text
 
-        if isHeader {
-            label.text = text
-            label.font = .systemFont(ofSize: 11, weight: .bold)
-            label.textColor = AppColors.textMuted
-        } else if text == "✓" {
-            label.text = "✓"
-            label.font = .systemFont(ofSize: 16, weight: .bold)
-            label.textColor = AppColors.green
-        } else if text == "—" {
-            label.text = "—"
-            label.font = .systemFont(ofSize: 14, weight: .medium)
-            label.textColor = AppColors.textMuted
-        } else {
-            label.text = text
-            label.font = .systemFont(ofSize: 12, weight: .medium)
-            label.textColor = AppColors.textSub
-        }
+        let descLabel = UILabel()
+        descLabel.text = desc
+        descLabel.font = .systemFont(ofSize: 13)
+        descLabel.textColor = AppColors.textSub
+        descLabel.numberOfLines = 0
 
-        return label
-    }
+        textStack.addArrangedSubview(titleLabel)
+        textStack.addArrangedSubview(descLabel)
 
-    private func makeSeparator() -> UIView {
-        let sep = UIView()
-        sep.backgroundColor = AppColors.border
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
-        return sep
+        row.addArrangedSubview(iconBg)
+        row.addArrangedSubview(textStack)
+
+        return row
     }
 
     // MARK: - Plan Selector
@@ -324,7 +299,7 @@ class PaywallViewController: UIViewController {
             priceLabel: yearlyPriceLabel,
             subLabel: yearlyBilledLabel,
             badge: L("paywall.save_percent"),
-            badgeColor: AppColors.green,
+            badgeColor: AppColors.red,
             action: #selector(yearlyProTapped)
         )
         contentStack.addArrangedSubview(yearlyContent)
@@ -367,8 +342,8 @@ class PaywallViewController: UIViewController {
         action: Selector
     ) -> UIView {
         card.backgroundColor = AppColors.card
-        card.layer.cornerRadius = 14
-        card.layer.borderWidth = 1.5
+        card.layer.cornerRadius = 16
+        card.layer.borderWidth = 2
         card.layer.borderColor = AppColors.border.cgColor
         card.isUserInteractionEnabled = true
         card.addGestureRecognizer(UITapGestureRecognizer(target: self, action: action))
@@ -454,14 +429,29 @@ class PaywallViewController: UIViewController {
         return card
     }
 
+    // MARK: - Promo Code Link
+
+    private func buildPromoCodeLink() {
+        let promoButton = UIButton(type: .system)
+        promoButton.setTitle(L("paywall.promo_code"), for: .normal)
+        promoButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        promoButton.setTitleColor(AppColors.accent, for: .normal)
+        contentStack.addArrangedSubview(promoButton)
+    }
+
     // MARK: - Bottom Section
 
     private func buildBottomSection() {
         let restoreButton = UIButton(type: .system)
         restoreButton.setTitle(L("onboarding.subscription.restore"), for: .normal)
-        restoreButton.titleLabel?.font = .systemFont(ofSize: 14)
-        restoreButton.setTitleColor(AppColors.textSub, for: .normal)
+        restoreButton.titleLabel?.font = .systemFont(ofSize: 12)
+        restoreButton.setTitleColor(AppColors.textMuted, for: .normal)
         restoreButton.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
+
+        let dotLabel1 = UILabel()
+        dotLabel1.text = "\u{00B7}"
+        dotLabel1.font = .systemFont(ofSize: 12)
+        dotLabel1.textColor = AppColors.textMuted
 
         let termsButton = UIButton(type: .system)
         termsButton.setTitle(L("settings.terms"), for: .normal)
@@ -469,10 +459,10 @@ class PaywallViewController: UIViewController {
         termsButton.setTitleColor(AppColors.textMuted, for: .normal)
         termsButton.addTarget(self, action: #selector(termsTapped), for: .touchUpInside)
 
-        let dotLabel = UILabel()
-        dotLabel.text = "·"
-        dotLabel.font = .systemFont(ofSize: 12)
-        dotLabel.textColor = AppColors.textMuted
+        let dotLabel2 = UILabel()
+        dotLabel2.text = "\u{00B7}"
+        dotLabel2.font = .systemFont(ofSize: 12)
+        dotLabel2.textColor = AppColors.textMuted
 
         let privacyButton = UIButton(type: .system)
         privacyButton.setTitle(L("settings.privacy"), for: .normal)
@@ -480,12 +470,12 @@ class PaywallViewController: UIViewController {
         privacyButton.setTitleColor(AppColors.textMuted, for: .normal)
         privacyButton.addTarget(self, action: #selector(privacyTapped), for: .touchUpInside)
 
-        let linksStack = UIStackView(arrangedSubviews: [termsButton, dotLabel, privacyButton])
+        let linksStack = UIStackView(arrangedSubviews: [restoreButton, dotLabel1, termsButton, dotLabel2, privacyButton])
         linksStack.axis = .horizontal
         linksStack.spacing = 6
         linksStack.alignment = .center
 
-        let bottomStack = UIStackView(arrangedSubviews: [restoreButton, linksStack])
+        let bottomStack = UIStackView(arrangedSubviews: [linksStack])
         bottomStack.axis = .vertical
         bottomStack.spacing = 8
         bottomStack.alignment = .center
@@ -504,8 +494,9 @@ class PaywallViewController: UIViewController {
 
         for (card, radio, plan) in cards {
             let isSelected = plan == selectedPlan
-            card.layer.borderWidth = isSelected ? 2.5 : 1.5
+            card.layer.borderWidth = 2
             card.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+            card.backgroundColor = isSelected ? AppColors.accentSoft : AppColors.card
 
             // Radio fill
             radio.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.textMuted.cgColor
@@ -557,7 +548,7 @@ class PaywallViewController: UIViewController {
                 try await storeKitManager.loadProducts()
                 updatePriceLabels()
             } catch {
-                // StoreKit failed — fallback prices already displayed
+                // StoreKit failed -- fallback prices already displayed
             }
         }
     }

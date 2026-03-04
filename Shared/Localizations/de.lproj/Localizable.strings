@@ -182,6 +182,15 @@
 "home.stat.phrases" = "Phrasen";
 "home.quick_actions" = "Schnellaktionen";
 "home.watch_ad" = "Werbung ansehen zum Aufladen";
+"home.activity.title" = "Wöchentliche Aktivität";
+"home.ai_banner.title" = "KI-Nachrichtenschreiber";
+"home.ai_banner.desc" = "Lass Gemini die perfekte Nachricht schreiben";
+"home.daily.corrections" = "Korrekturen";
+"home.daily.translations" = "Übersetzungen";
+"home.reward_ad.cta" = "Werbung ansehen zum Aufladen";
+"home.reward_ad.cta_mode" = "Werbung ansehen zum %@ aufladen";
+"home.stat.this_week" = "Diese Woche";
+"home.stat.saved" = "Gespeichert";
 
 // === AI Writer ===
 "ai_writer.title" = "AI Nachrichtenverfasser";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "Kauf fehlgeschlagen. Bitte erneut versuchen";
 "paywall.error_restore" = "Wiederherstellung fehlgeschlagen";
 "paywall.error_no_subscription" = "Kein aktives Abonnement gefunden";
+
+// === New UI Keys ===
+"history.date.today" = "Heute";
+"history.date.yesterday" = "Gestern";
+"settings.plan.current" = "Aktueller Plan";
+"settings.plan.upgrade" = "Upgrade";
+"paywall.hero.title" = "Nutze ohne\nEinschränkungen";
+"paywall.hero.subtitle" = "Upgrade auf Pro und alle Funktionen freischalten";
+"paywall.benefit.usage" = "100 tägliche Nutzungen";
+"paywall.benefit.usage_desc" = "100 Korrekturen/Übersetzungen pro Tag";
+"paywall.benefit.tones" = "Alle Tonarten";
+"paywall.benefit.tones_desc" = "Zugriff auf alle Schreibstil-Optionen";
+"paywall.benefit.themes" = "Premium-Themen";
+"paywall.benefit.themes_desc" = "Premium-Tastatur-Themen freischalten";
+"paywall.benefit.no_ads" = "Keine Werbung";
+"paywall.benefit.no_ads_desc" = "Alle Werbung entfernen";
+"paywall.promo_code" = "Haben Sie einen Promo-Code?";
+"paywall.cancel_anytime" = "Jederzeit kündbar";

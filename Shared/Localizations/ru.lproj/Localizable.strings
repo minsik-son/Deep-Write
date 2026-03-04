@@ -182,6 +182,15 @@
 "home.stat.phrases" = "Фразы";
 "home.quick_actions" = "Быстрые действия";
 "home.watch_ad" = "Посмотреть рекламу для зарядки";
+"home.activity.title" = "Активность за неделю";
+"home.ai_banner.title" = "AI-автор сообщений";
+"home.ai_banner.desc" = "Позвольте Gemini создать идеальное сообщение";
+"home.daily.corrections" = "Исправления";
+"home.daily.translations" = "Переводы";
+"home.reward_ad.cta" = "Посмотреть рекламу для зарядки";
+"home.reward_ad.cta_mode" = "Посмотреть рекламу для зарядки %@";
+"home.stat.this_week" = "На этой неделе";
+"home.stat.saved" = "Сохранено";
 
 // === AI Writer ===
 "ai_writer.title" = "AI Редактор сообщений";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "Покупка не удалась. Попробуйте снова";
 "paywall.error_restore" = "Восстановление не удалось";
 "paywall.error_no_subscription" = "Активная подписка не найдена";
+
+// === New UI Keys ===
+"history.date.today" = "Сегодня";
+"history.date.yesterday" = "Вчера";
+"settings.plan.current" = "Текущий план";
+"settings.plan.upgrade" = "Обновить";
+"paywall.hero.title" = "Используйте без\nограничений";
+"paywall.hero.subtitle" = "Перейдите на Pro и разблокируйте все функции";
+"paywall.benefit.usage" = "100 использований в день";
+"paywall.benefit.usage_desc" = "100 корректировок/переводов в день";
+"paywall.benefit.tones" = "Все стили тона";
+"paywall.benefit.tones_desc" = "Доступ ко всем вариантам стиля";
+"paywall.benefit.themes" = "Премиум-темы";
+"paywall.benefit.themes_desc" = "Разблокировать премиум-темы клавиатуры";
+"paywall.benefit.no_ads" = "Без рекламы";
+"paywall.benefit.no_ads_desc" = "Удалить всю рекламу";
+"paywall.promo_code" = "Есть промо-код?";
+"paywall.cancel_anytime" = "Отмена в любое время";

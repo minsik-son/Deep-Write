@@ -182,6 +182,15 @@
 "home.stat.phrases" = "短语";
 "home.quick_actions" = "快捷操作";
 "home.watch_ad" = "看广告充电";
+"home.activity.title" = "本周活动";
+"home.ai_banner.title" = "AI消息撰写";
+"home.ai_banner.desc" = "让Gemini为您撰写完美的消息";
+"home.daily.corrections" = "校正";
+"home.daily.translations" = "翻译";
+"home.reward_ad.cta" = "看广告充电";
+"home.reward_ad.cta_mode" = "看广告充电%@";
+"home.stat.this_week" = "本周";
+"home.stat.saved" = "已保存";
 
 // === AI Writer ===
 "ai_writer.title" = "AI消息写作";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "购买失败，请重试";
 "paywall.error_restore" = "恢复失败";
 "paywall.error_no_subscription" = "未找到有效订阅";
+
+// === New UI Keys ===
+"history.date.today" = "今天";
+"history.date.yesterday" = "昨天";
+"settings.plan.current" = "当前套餐";
+"settings.plan.upgrade" = "升级";
+"paywall.hero.title" = "无限制\n自由使用";
+"paywall.hero.subtitle" = "升级到Pro，解锁所有功能";
+"paywall.benefit.usage" = "每日100次使用";
+"paywall.benefit.usage_desc" = "每天100次纠正/翻译";
+"paywall.benefit.tones" = "所有语气风格";
+"paywall.benefit.tones_desc" = "使用所有写作语气选项";
+"paywall.benefit.themes" = "高级主题";
+"paywall.benefit.themes_desc" = "解锁高级键盘主题";
+"paywall.benefit.no_ads" = "无广告";
+"paywall.benefit.no_ads_desc" = "移除所有广告";
+"paywall.promo_code" = "有促销码？";
+"paywall.cancel_anytime" = "随时可以取消";

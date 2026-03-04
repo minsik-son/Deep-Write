@@ -21,7 +21,7 @@ class TabBarController: UITabBarController {
         let homeNav = UINavigationController(rootViewController: homeVC)
         homeNav.tabBarItem = UITabBarItem(
             title: L("tab.home"),
-            image: UIImage(systemName: "house.fill"),
+            image: UIImage(systemName: "house"),
             tag: 0
         )
 
@@ -29,7 +29,7 @@ class TabBarController: UITabBarController {
         let aiWriterNav = UINavigationController(rootViewController: aiWriterVC)
         aiWriterNav.tabBarItem = UITabBarItem(
             title: L("tab.ai_writer"),
-            image: UIImage(systemName: "sparkles"),
+            image: UIImage(systemName: "star"),
             tag: 1
         )
 
@@ -37,7 +37,7 @@ class TabBarController: UITabBarController {
         let historyNav = UINavigationController(rootViewController: historyVC)
         historyNav.tabBarItem = UITabBarItem(
             title: L("tab.history"),
-            image: UIImage(systemName: "clock.arrow.circlepath"),
+            image: UIImage(systemName: "clock"),
             tag: 2
         )
 
@@ -45,7 +45,7 @@ class TabBarController: UITabBarController {
         let themeNav = UINavigationController(rootViewController: themeVC)
         themeNav.tabBarItem = UITabBarItem(
             title: L("tab.theme"),
-            image: UIImage(systemName: "paintpalette.fill"),
+            image: UIImage(systemName: "paintpalette"),
             tag: 3
         )
 
@@ -64,13 +64,13 @@ class TabBarController: UITabBarController {
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
         appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
-        appearance.backgroundColor = nil
+        appearance.backgroundColor = UIColor.white.withAlphaComponent(0.92)
 
-        let normalAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.tertiaryLabel]
+        let normalAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: AppColors.textMuted]
         let selectedAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: AppColors.accent]
 
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttrs
-        appearance.stackedLayoutAppearance.normal.iconColor = .tertiaryLabel
+        appearance.stackedLayoutAppearance.normal.iconColor = AppColors.textMuted
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttrs
         appearance.stackedLayoutAppearance.selected.iconColor = AppColors.accent
 

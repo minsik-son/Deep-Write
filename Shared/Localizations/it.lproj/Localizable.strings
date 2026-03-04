@@ -182,6 +182,15 @@
 "home.stat.phrases" = "Frasi";
 "home.quick_actions" = "Azioni rapide";
 "home.watch_ad" = "Guarda annuncio per ricaricare";
+"home.activity.title" = "Attività settimanale";
+"home.ai_banner.title" = "Scrittore messaggi AI";
+"home.ai_banner.desc" = "Lascia che Gemini scriva il messaggio perfetto";
+"home.daily.corrections" = "Correzioni";
+"home.daily.translations" = "Traduzioni";
+"home.reward_ad.cta" = "Guarda annuncio per ricaricare";
+"home.reward_ad.cta_mode" = "Guarda annuncio per ricaricare %@";
+"home.stat.this_week" = "Questa settimana";
+"home.stat.saved" = "Salvati";
 
 // === AI Writer ===
 "ai_writer.title" = "Scrittore AI";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "Acquisto fallito. Riprova";
 "paywall.error_restore" = "Ripristino fallito";
 "paywall.error_no_subscription" = "Nessun abbonamento attivo trovato";
+
+// === New UI Keys ===
+"history.date.today" = "Oggi";
+"history.date.yesterday" = "Ieri";
+"settings.plan.current" = "Piano attuale";
+"settings.plan.upgrade" = "Aggiorna";
+"paywall.hero.title" = "Usa senza\nlimiti";
+"paywall.hero.subtitle" = "Passa a Pro e sblocca tutte le funzionalità";
+"paywall.benefit.usage" = "100 usi giornalieri";
+"paywall.benefit.usage_desc" = "100 correzioni/traduzioni al giorno";
+"paywall.benefit.tones" = "Tutti gli stili di tono";
+"paywall.benefit.tones_desc" = "Accedi a tutte le opzioni di tono";
+"paywall.benefit.themes" = "Temi premium";
+"paywall.benefit.themes_desc" = "Sblocca i temi premium della tastiera";
+"paywall.benefit.no_ads" = "Nessuna pubblicità";
+"paywall.benefit.no_ads_desc" = "Rimuovi tutta la pubblicità";
+"paywall.promo_code" = "Hai un codice promozionale?";
+"paywall.cancel_anytime" = "Annulla in qualsiasi momento";

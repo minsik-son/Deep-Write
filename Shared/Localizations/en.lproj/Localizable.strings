@@ -182,6 +182,15 @@
 "home.stat.phrases" = "Phrases";
 "home.quick_actions" = "Quick Actions";
 "home.watch_ad" = "Watch Ad to Recharge";
+"home.activity.title" = "Weekly Activity";
+"home.ai_banner.title" = "AI Message Writer";
+"home.ai_banner.desc" = "Let Gemini craft the perfect message for any situation";
+"home.daily.corrections" = "Corrections";
+"home.daily.translations" = "Translations";
+"home.reward_ad.cta" = "Watch Ad to Recharge";
+"home.reward_ad.cta_mode" = "Watch Ad to Recharge %@";
+"home.stat.this_week" = "This week";
+"home.stat.saved" = "Saved";
 
 // === AI Writer ===
 "ai_writer.title" = "AI Message Writer";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "Purchase failed. Please try again";
 "paywall.error_restore" = "Restore failed";
 "paywall.error_no_subscription" = "No active subscription found";
+
+// === New UI Keys ===
+"history.date.today" = "Today";
+"history.date.yesterday" = "Yesterday";
+"settings.plan.current" = "Current Plan";
+"settings.plan.upgrade" = "Upgrade";
+"paywall.hero.title" = "Use without\nlimits";
+"paywall.hero.subtitle" = "Upgrade to Pro and unlock all features";
+"paywall.benefit.usage" = "100 daily uses";
+"paywall.benefit.usage_desc" = "100 corrections/translations per day";
+"paywall.benefit.tones" = "All tone styles";
+"paywall.benefit.tones_desc" = "Access all writing tone options";
+"paywall.benefit.themes" = "Premium themes";
+"paywall.benefit.themes_desc" = "Unlock premium keyboard themes";
+"paywall.benefit.no_ads" = "No ads";
+"paywall.benefit.no_ads_desc" = "Remove all advertisements";
+"paywall.promo_code" = "Have a promo code?";
+"paywall.cancel_anytime" = "Cancel anytime";

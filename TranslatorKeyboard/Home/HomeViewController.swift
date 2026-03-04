@@ -5,6 +5,40 @@ class HomeViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
 
+    // MARK: - Greeting
+
+    private let dateLabel = UILabel()
+    private let greetingLabel = UILabel()
+
+    // MARK: - Plan Card
+
+    private let planCard = UIView()
+    private let planBadgeLabel = UILabel()
+    private let proLinkButton = UIButton(type: .system)
+    private let corrProgressContainer = UIView()
+    private let corrCenterLabel = UILabel()
+    private let corrSubLabel = UILabel()
+    private var corrTrackLayer = CAShapeLayer()
+    private var corrProgressLayer = CAShapeLayer()
+    private let transProgressContainer = UIView()
+    private let transCenterLabel = UILabel()
+    private let transSubLabel = UILabel()
+    private var transTrackLayer = CAShapeLayer()
+    private var transProgressLayer = CAShapeLayer()
+    private let rewardCorrectionAdButton = UIButton(type: .system)
+    private let rewardTranslationAdButton = UIButton(type: .system)
+
+    // MARK: - AI Writer Banner
+
+    private let aiWriterBanner = UIView()
+
+    // MARK: - Weekly Activity
+
+    private let correctionCountLabel = UILabel()
+    private let translationCountLabel = UILabel()
+    private let clipboardCountLabel = UILabel()
+    private let phrasesCountLabel = UILabel()
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -65,147 +99,141 @@ class HomeViewController: UIViewController {
 
     // MARK: - Content
 
-    private let greetingLabel = UILabel()
-
-    // Plan card
-    private let planCard = UIView()
-    private let planNameLabel = UILabel()
-    private let planDescLabel = UILabel()
-    private let subscribeButton = UIButton(type: .system)
-    private let priceLabel = UILabel()
-    private let subscribedStack = UIStackView()
-
-    // Dual circular progress (correction + translation)
-    private let corrProgressContainer = UIView()
-    private let corrCenterLabel = UILabel()
-    private let corrSubLabel = UILabel()
-    private var corrTrackLayer = CAShapeLayer()
-    private var corrProgressLayer = CAShapeLayer()
-
-    private let transProgressContainer = UIView()
-    private let transCenterLabel = UILabel()
-    private let transSubLabel = UILabel()
-    private var transTrackLayer = CAShapeLayer()
-    private var transProgressLayer = CAShapeLayer()
-
-    private let correctionCountLabel = UILabel()
-    private let translationCountLabel = UILabel()
-    private let clipboardCountLabel = UILabel()
-    private let phrasesCountLabel = UILabel()
-
-    // 교정/번역 카드 참조 (소진 시 UI 변경용)
-    private var correctionCard: UIView?
-    private var translationCard: UIView?
-    private let correctionAdBadge = UILabel()
-    private let translationAdBadge = UILabel()
-
     private func buildContent() {
-        // Greeting
-        greetingLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        greetingLabel.textColor = AppColors.textSub
-        contentStack.addArrangedSubview(greetingLabel)
+        // 1. Greeting Section
+        buildGreetingSection()
 
-        contentStack.setCustomSpacing(16, after: greetingLabel)
-
-        // Plan Status + Daily Usage Card
+        // 2. Plan Card
         buildPlanCard()
         contentStack.addArrangedSubview(planCard)
         contentStack.setCustomSpacing(16, after: planCard)
 
-        // Stats Grid (2x2)
-        let statsGrid = buildStatsGrid()
-        contentStack.addArrangedSubview(statsGrid)
-        contentStack.setCustomSpacing(24, after: statsGrid)
+        // 3. AI Writer Banner
+        buildAIWriterBanner()
+        contentStack.addArrangedSubview(aiWriterBanner)
+        contentStack.setCustomSpacing(24, after: aiWriterBanner)
 
-        // Quick Actions
-        let quickLabel = UILabel()
-        quickLabel.text = L("home.quick_actions")
-        quickLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        quickLabel.textColor = AppColors.textMuted
-        quickLabel.text = quickLabel.text?.uppercased()
-        contentStack.addArrangedSubview(quickLabel)
+        // 4. Weekly Activity
+        let activityHeader = UILabel()
+        activityHeader.text = L("home.activity.title").uppercased()
+        activityHeader.font = .systemFont(ofSize: 13, weight: .semibold)
+        activityHeader.textColor = AppColors.textMuted
+        let attributedHeader = NSAttributedString(
+            string: L("home.activity.title").uppercased(),
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 13, weight: .semibold),
+                .foregroundColor: AppColors.textMuted,
+                .kern: 0.3,
+            ]
+        )
+        activityHeader.attributedText = attributedHeader
+        contentStack.addArrangedSubview(activityHeader)
 
-        let quickActions = buildQuickActions()
-        contentStack.addArrangedSubview(quickActions)
+        let activityCard = buildActivityCard()
+        contentStack.addArrangedSubview(activityCard)
     }
+
+    // MARK: - 1. Greeting Section
+
+    private func buildGreetingSection() {
+        let greetingContainer = UIStackView()
+        greetingContainer.axis = .vertical
+        greetingContainer.spacing = 6
+
+        dateLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        dateLabel.textColor = AppColors.textMuted
+        greetingContainer.addArrangedSubview(dateLabel)
+
+        greetingLabel.font = .systemFont(ofSize: 26, weight: .bold)
+        greetingLabel.textColor = AppColors.text
+        greetingLabel.numberOfLines = 0
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.3
+        greetingLabel.attributedText = NSAttributedString(
+            string: " ",
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 26, weight: .bold),
+                .paragraphStyle: paragraphStyle,
+            ]
+        )
+        greetingContainer.addArrangedSubview(greetingLabel)
+
+        contentStack.addArrangedSubview(greetingContainer)
+        contentStack.setCustomSpacing(24, after: greetingContainer)
+    }
+
+    // MARK: - 2. Plan Card
 
     private func buildPlanCard() {
         planCard.backgroundColor = AppColors.card
-        planCard.layer.cornerRadius = 14
-        planCard.layer.borderWidth = 1
-        planCard.layer.borderColor = AppColors.border.cgColor
+        planCard.layer.cornerRadius = AppRadius.md
+        planCard.layer.shadowColor = UIColor.black.cgColor
+        planCard.layer.shadowOpacity = 0.04
+        planCard.layer.shadowOffset = CGSize(width: 0, height: 1)
+        planCard.layer.shadowRadius = 3
 
-        // === Top section: plan info ===
-        let topStack = UIStackView()
-        topStack.axis = .vertical
-        topStack.spacing = 6
-        topStack.alignment = .leading
-
-        planNameLabel.font = .systemFont(ofSize: 22, weight: .bold)
-        planNameLabel.textColor = AppColors.text
-        topStack.addArrangedSubview(planNameLabel)
-
-        planDescLabel.font = .systemFont(ofSize: 13)
-        planDescLabel.textColor = AppColors.textSub
-        planDescLabel.numberOfLines = 0
-        topStack.addArrangedSubview(planDescLabel)
-        topStack.setCustomSpacing(14, after: planDescLabel)
-
-        // Subscribe button (Free only)
-        subscribeButton.setTitle(L("home.plan.subscribe"), for: .normal)
-        subscribeButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        subscribeButton.setTitleColor(.white, for: .normal)
-        subscribeButton.backgroundColor = AppColors.accent
-        subscribeButton.layer.cornerRadius = 10
-        subscribeButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
-        subscribeButton.addTarget(self, action: #selector(subscribeTapped), for: .touchUpInside)
-        topStack.addArrangedSubview(subscribeButton)
-
-        // Price label (Free only)
-        priceLabel.font = .systemFont(ofSize: 12)
-        priceLabel.textColor = AppColors.textMuted
-        topStack.addArrangedSubview(priceLabel)
-
-        // Subscribed badge (Pro/Premium)
-        let checkIcon = UIImageView(image: UIImage(systemName: "checkmark.circle.fill"))
-        checkIcon.tintColor = AppColors.green
-        checkIcon.translatesAutoresizingMaskIntoConstraints = false
-        checkIcon.widthAnchor.constraint(equalToConstant: 18).isActive = true
-        checkIcon.heightAnchor.constraint(equalToConstant: 18).isActive = true
-
-        let subscribedLabel = UILabel()
-        subscribedLabel.text = L("home.plan.subscribed")
-        subscribedLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        subscribedLabel.textColor = AppColors.green
-
-        subscribedStack.axis = .horizontal
-        subscribedStack.spacing = 6
-        subscribedStack.alignment = .center
-        subscribedStack.addArrangedSubview(checkIcon)
-        subscribedStack.addArrangedSubview(subscribedLabel)
-        topStack.addArrangedSubview(subscribedStack)
-
-        // Top wrapper with padding
-        let topWrapper = UIView()
-        topStack.translatesAutoresizingMaskIntoConstraints = false
-        topWrapper.addSubview(topStack)
+        let mainStack = UIStackView()
+        mainStack.axis = .vertical
+        mainStack.spacing = 16
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        planCard.addSubview(mainStack)
         NSLayoutConstraint.activate([
-            topStack.topAnchor.constraint(equalTo: topWrapper.topAnchor, constant: 20),
-            topStack.leadingAnchor.constraint(equalTo: topWrapper.leadingAnchor, constant: 20),
-            topStack.trailingAnchor.constraint(equalTo: topWrapper.trailingAnchor, constant: -20),
-            topStack.bottomAnchor.constraint(equalTo: topWrapper.bottomAnchor, constant: -16),
+            mainStack.topAnchor.constraint(equalTo: planCard.topAnchor, constant: 24),
+            mainStack.leadingAnchor.constraint(equalTo: planCard.leadingAnchor, constant: 24),
+            mainStack.trailingAnchor.constraint(equalTo: planCard.trailingAnchor, constant: -24),
+            mainStack.bottomAnchor.constraint(equalTo: planCard.bottomAnchor, constant: -24),
         ])
 
-        // === Divider ===
-        let divider = UIView()
-        divider.backgroundColor = AppColors.border
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        // Top area: badge + pro link
+        let topRow = UIStackView()
+        topRow.axis = .horizontal
+        topRow.alignment = .center
+        topRow.distribution = .equalSpacing
 
-        // === Bottom section: dual circular progress ===
-        let circleSize: CGFloat = 80
+        // Plan badge (pill shape)
+        planBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        planBadgeLabel.textColor = AppColors.accent
+        planBadgeLabel.backgroundColor = AppColors.accentSoft
+        planBadgeLabel.textAlignment = .center
+        planBadgeLabel.layer.cornerRadius = 20
+        planBadgeLabel.clipsToBounds = true
+        planBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        // Correction circle
+        let badgeWrapper = UIView()
+        badgeWrapper.addSubview(planBadgeLabel)
+        NSLayoutConstraint.activate([
+            planBadgeLabel.topAnchor.constraint(equalTo: badgeWrapper.topAnchor),
+            planBadgeLabel.leadingAnchor.constraint(equalTo: badgeWrapper.leadingAnchor),
+            planBadgeLabel.bottomAnchor.constraint(equalTo: badgeWrapper.bottomAnchor),
+            planBadgeLabel.heightAnchor.constraint(equalToConstant: 32),
+        ])
+        // Intrinsic content size + padding
+        planBadgeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        planBadgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        topRow.addArrangedSubview(badgeWrapper)
+
+        // Pro link button
+        proLinkButton.setTitle("Pro \(L("home.plan.subscribe")) \u{2192}", for: .normal)
+        proLinkButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        proLinkButton.setTitleColor(AppColors.accent, for: .normal)
+        proLinkButton.addTarget(self, action: #selector(subscribeTapped), for: .touchUpInside)
+        topRow.addArrangedSubview(proLinkButton)
+
+        mainStack.addArrangedSubview(topRow)
+
+        // Usage area: grey background with two circles
+        let usageContainer = UIView()
+        usageContainer.backgroundColor = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.06)
+            : UIColor(red: 0.965, green: 0.965, blue: 0.975, alpha: 1)
+        }
+        usageContainer.layer.cornerRadius = AppRadius.sm
+
+        let circleSize: CGFloat = 72
+
+        // Correction circle column
         let corrColumn = UIStackView()
         corrColumn.axis = .vertical
         corrColumn.spacing = 6
@@ -225,13 +253,15 @@ class HomeViewController: UIViewController {
             corrCenterLabel.centerXAnchor.constraint(equalTo: corrProgressContainer.centerXAnchor),
             corrCenterLabel.centerYAnchor.constraint(equalTo: corrProgressContainer.centerYAnchor),
         ])
-        corrSubLabel.text = L("home.stat.corrections")
+
+        corrSubLabel.text = L("home.daily.corrections")
         corrSubLabel.font = .systemFont(ofSize: 12, weight: .medium)
         corrSubLabel.textColor = AppColors.textSub
+
         corrColumn.addArrangedSubview(corrProgressContainer)
         corrColumn.addArrangedSubview(corrSubLabel)
 
-        // Translation circle
+        // Translation circle column
         let transColumn = UIStackView()
         transColumn.axis = .vertical
         transColumn.spacing = 6
@@ -251,52 +281,66 @@ class HomeViewController: UIViewController {
             transCenterLabel.centerXAnchor.constraint(equalTo: transProgressContainer.centerXAnchor),
             transCenterLabel.centerYAnchor.constraint(equalTo: transProgressContainer.centerYAnchor),
         ])
-        transSubLabel.text = L("home.stat.translations")
+
+        transSubLabel.text = L("home.daily.translations")
         transSubLabel.font = .systemFont(ofSize: 12, weight: .medium)
         transSubLabel.textColor = AppColors.textSub
+
         transColumn.addArrangedSubview(transProgressContainer)
         transColumn.addArrangedSubview(transSubLabel)
 
-        // Two circles side by side, centered
+        // Two circles side by side
         let circlesStack = UIStackView(arrangedSubviews: [corrColumn, transColumn])
         circlesStack.axis = .horizontal
         circlesStack.spacing = 32
         circlesStack.alignment = .center
         circlesStack.distribution = .equalCentering
-
-        // Bottom wrapper with padding
-        let bottomWrapper = UIView()
         circlesStack.translatesAutoresizingMaskIntoConstraints = false
-        bottomWrapper.addSubview(circlesStack)
+
+        usageContainer.addSubview(circlesStack)
         NSLayoutConstraint.activate([
-            circlesStack.topAnchor.constraint(equalTo: bottomWrapper.topAnchor, constant: 16),
-            circlesStack.centerXAnchor.constraint(equalTo: bottomWrapper.centerXAnchor),
-            circlesStack.bottomAnchor.constraint(equalTo: bottomWrapper.bottomAnchor, constant: -16),
+            circlesStack.topAnchor.constraint(equalTo: usageContainer.topAnchor, constant: 16),
+            circlesStack.centerXAnchor.constraint(equalTo: usageContainer.centerXAnchor),
+            circlesStack.bottomAnchor.constraint(equalTo: usageContainer.bottomAnchor, constant: -16),
         ])
 
-        // === Main vertical layout ===
-        let mainStack = UIStackView(arrangedSubviews: [topWrapper, divider, bottomWrapper])
-        mainStack.axis = .vertical
-        mainStack.spacing = 0
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-        planCard.addSubview(mainStack)
+        mainStack.addArrangedSubview(usageContainer)
 
-        NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: planCard.topAnchor),
-            mainStack.leadingAnchor.constraint(equalTo: planCard.leadingAnchor),
-            mainStack.trailingAnchor.constraint(equalTo: planCard.trailingAnchor),
-            mainStack.bottomAnchor.constraint(equalTo: planCard.bottomAnchor),
-        ])
+        // Reward Ad Buttons (free tier only, conditional per mode)
+        configureRewardButton(rewardCorrectionAdButton, action: #selector(rewardCorrectionTapped))
+        configureRewardButton(rewardTranslationAdButton, action: #selector(rewardTranslationTapped))
+
+        mainStack.addArrangedSubview(rewardCorrectionAdButton)
+        mainStack.addArrangedSubview(rewardTranslationAdButton)
+    }
+
+    private func configureRewardButton(_ button: UIButton, action: Selector) {
+        button.backgroundColor = AppColors.accentSoft
+        button.layer.cornerRadius = AppRadius.sm
+        button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        button.setTitleColor(AppColors.accent, for: .normal)
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+
+        let playIcon = UIImage(systemName: "play.fill")?.withConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)
+        )
+        button.setImage(playIcon, for: .normal)
+        button.tintColor = AppColors.accent
+        button.semanticContentAttribute = .forceLeftToRight
+        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -4, bottom: 0, right: 4)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.heightAnchor.constraint(equalToConstant: 40).isActive = true
     }
 
     private func setupCircle(container: UIView, trackLayer: inout CAShapeLayer, progressLayer: inout CAShapeLayer, used: Int, total: Int, color: UIColor) {
         trackLayer.removeFromSuperlayer()
         progressLayer.removeFromSuperlayer()
 
-        let size: CGFloat = 80
+        let size: CGFloat = 72
         let center = CGPoint(x: size / 2, y: size / 2)
-        let radius: CGFloat = 32
-        let lineWidth: CGFloat = 8
+        let radius: CGFloat = (size - 6) / 2 // 6pt lineWidth
+        let lineWidth: CGFloat = 6
         let startAngle = -CGFloat.pi / 2
         let endAngle = startAngle + 2 * CGFloat.pi
 
@@ -308,7 +352,11 @@ class HomeViewController: UIViewController {
         // Track
         trackLayer = CAShapeLayer()
         trackLayer.path = circularPath.cgPath
-        trackLayer.strokeColor = AppColors.border.cgColor
+        let trackColor = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.1)
+            : UIColor(red: 0.910, green: 0.910, blue: 0.929, alpha: 1)
+        }
+        trackLayer.strokeColor = trackColor.cgColor
         trackLayer.fillColor = UIColor.clear.cgColor
         trackLayer.lineWidth = lineWidth
         trackLayer.lineCap = .round
@@ -335,40 +383,28 @@ class HomeViewController: UIViewController {
         container.layer.addSublayer(progressLayer)
     }
 
-    @objc private func subscribeTapped() {
-        let paywallVC = PaywallViewController()
-        paywallVC.modalPresentationStyle = .pageSheet
-        present(paywallVC, animated: true)
-    }
-
     private func updatePlanCard() {
         let tier = SubscriptionStatus.shared.currentTier
         let usage = DailyUsageManager.shared
 
-        // Plan info (left column)
+        // Badge
         switch tier {
         case .free:
-            planNameLabel.text = L("home.plan.free")
-            planDescLabel.text = L("home.plan.free_desc")
-            subscribeButton.isHidden = false
-            priceLabel.isHidden = false
-            priceLabel.text = String(format: L("home.plan.price"), "$7.99")
-            subscribedStack.isHidden = true
+            planBadgeLabel.text = "  Free Plan  "
+            proLinkButton.isHidden = false
         case .pro:
-            planNameLabel.text = L("home.plan.pro")
-            planDescLabel.text = L("home.plan.pro_desc")
-            subscribeButton.isHidden = true
-            priceLabel.isHidden = true
-            subscribedStack.isHidden = false
+            planBadgeLabel.text = "  Pro Plan  "
+            proLinkButton.isHidden = true
+            rewardCorrectionAdButton.isHidden = true
+            rewardTranslationAdButton.isHidden = true
         case .premium:
-            planNameLabel.text = L("home.plan.premium")
-            planDescLabel.text = L("home.plan.premium_desc")
-            subscribeButton.isHidden = true
-            priceLabel.isHidden = true
-            subscribedStack.isHidden = false
+            planBadgeLabel.text = "  Premium Plan  "
+            proLinkButton.isHidden = true
+            rewardCorrectionAdButton.isHidden = true
+            rewardTranslationAdButton.isHidden = true
         }
 
-        // Correction circle (remaining / total including bonus)
+        // Correction circle
         let corrUsed = usage.correctionCount
         let corrTotal = FeatureGate.shared.dailyCorrectionLimit
             + (UserDefaults(suiteName: AppConstants.appGroupIdentifier)?.integer(forKey: "bonus_correction_count") ?? 0)
@@ -393,79 +429,176 @@ class HomeViewController: UIViewController {
             transCenterLabel.text = "\(transUsed)/\(transTotal)"
             transCenterLabel.font = .systemFont(ofSize: 15, weight: .bold)
             setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: corrUsed, total: corrTotal, color: AppColors.orange)
-            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: transUsed, total: transTotal, color: AppColors.blue)
+            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: transUsed, total: transTotal, color: AppColors.accent)
+        }
+
+        // Conditional reward button visibility (free tier only)
+        if tier == .free {
+            let corrMaxed = corrUsed >= corrTotal
+            let transMaxed = transUsed >= transTotal
+
+            rewardCorrectionAdButton.isHidden = !corrMaxed
+            rewardTranslationAdButton.isHidden = !transMaxed
+
+            rewardCorrectionAdButton.setTitle(String(format: L("home.reward_ad.cta_mode"), L("reward.mode.correction")), for: .normal)
+            rewardTranslationAdButton.setTitle(String(format: L("home.reward_ad.cta_mode"), L("reward.mode.translation")), for: .normal)
         }
     }
 
-    private func buildStatsGrid() -> UIView {
-        let topRow = UIStackView()
-        topRow.axis = .horizontal
-        topRow.spacing = 12
-        topRow.distribution = .fillEqually
+    // MARK: - 3. AI Writer Banner
 
-        let bottomRow = UIStackView()
-        bottomRow.axis = .horizontal
-        bottomRow.spacing = 12
-        bottomRow.distribution = .fillEqually
+    private func buildAIWriterBanner() {
+        aiWriterBanner.layer.cornerRadius = AppRadius.md
+        aiWriterBanner.clipsToBounds = true
+
+        // Gradient background
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1).cgColor, // #3182F6
+            UIColor(red: 0.106, green: 0.392, blue: 0.855, alpha: 1).cgColor, // #1B64DA
+        ]
+        // 135 degrees: startPoint top-left, endPoint bottom-right
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 1000, height: 200) // will be resized in layoutSubviews
+        aiWriterBanner.layer.insertSublayer(gradientLayer, at: 0)
+
+        // Decorative circle (top-right, partially clipped)
+        let decorCircle = UIView()
+        decorCircle.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        decorCircle.layer.cornerRadius = 50
+        decorCircle.translatesAutoresizingMaskIntoConstraints = false
+        aiWriterBanner.addSubview(decorCircle)
+        NSLayoutConstraint.activate([
+            decorCircle.widthAnchor.constraint(equalToConstant: 100),
+            decorCircle.heightAnchor.constraint(equalToConstant: 100),
+            decorCircle.topAnchor.constraint(equalTo: aiWriterBanner.topAnchor, constant: -30),
+            decorCircle.trailingAnchor.constraint(equalTo: aiWriterBanner.trailingAnchor, constant: 30),
+        ])
+
+        // Text content
+        let titleLabel = UILabel()
+        titleLabel.text = L("home.ai_banner.title")
+        titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        titleLabel.textColor = .white
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = L("home.ai_banner.desc")
+        subtitleLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.8)
+        subtitleLabel.numberOfLines = 0
+
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 4
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+        aiWriterBanner.addSubview(textStack)
+        NSLayoutConstraint.activate([
+            textStack.topAnchor.constraint(equalTo: aiWriterBanner.topAnchor, constant: 20),
+            textStack.leadingAnchor.constraint(equalTo: aiWriterBanner.leadingAnchor, constant: 20),
+            textStack.trailingAnchor.constraint(equalTo: aiWriterBanner.trailingAnchor, constant: -20),
+            textStack.bottomAnchor.constraint(equalTo: aiWriterBanner.bottomAnchor, constant: -20),
+        ])
+
+        // Tap gesture
+        let tap = UITapGestureRecognizer(target: self, action: #selector(aiWriterBannerTapped))
+        aiWriterBanner.addGestureRecognizer(tap)
+        aiWriterBanner.isUserInteractionEnabled = true
+
+        // Store gradient layer for resizing
+        aiWriterBanner.tag = 9999
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Resize gradient layer of AI Writer banner
+        if let gradientLayer = aiWriterBanner.layer.sublayers?.first as? CAGradientLayer {
+            gradientLayer.frame = aiWriterBanner.bounds
+        }
+    }
+
+    @objc private func aiWriterBannerTapped() {
+        tabBarController?.selectedIndex = 1
+    }
+
+    // MARK: - 4. Weekly Activity Card
+
+    private func buildActivityCard() -> UIView {
+        let card = UIView()
+        card.backgroundColor = AppColors.card
+        card.layer.cornerRadius = AppRadius.md
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.04
+        card.layer.shadowOffset = CGSize(width: 0, height: 1)
+        card.layer.shadowRadius = 3
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: card.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+        ])
 
         correctionCountLabel.text = "0"
         translationCountLabel.text = "0"
         clipboardCountLabel.text = "0"
         phrasesCountLabel.text = "0"
 
-        let cCard = makeStatCard(
-            icon: "pencil", color: AppColors.orange,
-            title: L("home.stat.corrections"), valueLabel: correctionCountLabel,
-            adBadge: correctionAdBadge
-        )
-        let correctionTap = UITapGestureRecognizer(target: self, action: #selector(correctionCardTapped))
-        cCard.addGestureRecognizer(correctionTap)
-        correctionCard = cCard
+        let rows: [(icon: String, color: UIColor, title: String, subtitle: String, valueLabel: UILabel, action: Selector)] = [
+            ("pencil", AppColors.orange, L("home.stat.corrections"), L("home.stat.this_week"), correctionCountLabel, #selector(correctionCardTapped)),
+            ("globe", AppColors.accent, L("home.stat.translations"), L("home.stat.this_week"), translationCountLabel, #selector(translationCardTapped)),
+            ("doc.on.clipboard", AppColors.green, L("home.stat.clipboard"), L("home.stat.saved"), clipboardCountLabel, #selector(clipboardCardTapped)),
+            ("bookmark.fill", AppColors.pink, L("home.stat.phrases"), L("home.stat.saved"), phrasesCountLabel, #selector(phrasesCardTapped)),
+        ]
 
-        let tCard = makeStatCard(
-            icon: "globe", color: AppColors.blue,
-            title: L("home.stat.translations"), valueLabel: translationCountLabel,
-            adBadge: translationAdBadge
-        )
-        let translationTap = UITapGestureRecognizer(target: self, action: #selector(translationCardTapped))
-        tCard.addGestureRecognizer(translationTap)
-        translationCard = tCard
+        for (i, row) in rows.enumerated() {
+            let rowView = makeActivityRow(
+                icon: row.icon,
+                color: row.color,
+                title: row.title,
+                subtitle: row.subtitle,
+                valueLabel: row.valueLabel,
+                action: row.action
+            )
+            stack.addArrangedSubview(rowView)
 
-        topRow.addArrangedSubview(cCard)
-        topRow.addArrangedSubview(tCard)
-        let clCard = makeStatCard(
-            icon: "doc.on.clipboard", color: AppColors.green,
-            title: L("home.stat.clipboard"), valueLabel: clipboardCountLabel
-        )
-        let clipboardTap = UITapGestureRecognizer(target: self, action: #selector(clipboardCardTapped))
-        clCard.addGestureRecognizer(clipboardTap)
+            if i < rows.count - 1 {
+                let divider = UIView()
+                divider.backgroundColor = AppColors.border
+                divider.translatesAutoresizingMaskIntoConstraints = false
+                divider.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
 
-        let pCard = makeStatCard(
-            icon: "bookmark.fill", color: AppColors.pink,
-            title: L("home.stat.phrases"), valueLabel: phrasesCountLabel
-        )
-        let phrasesTap = UITapGestureRecognizer(target: self, action: #selector(phrasesCardTapped))
-        pCard.addGestureRecognizer(phrasesTap)
+                let dividerWrapper = UIView()
+                divider.translatesAutoresizingMaskIntoConstraints = false
+                dividerWrapper.addSubview(divider)
+                NSLayoutConstraint.activate([
+                    divider.topAnchor.constraint(equalTo: dividerWrapper.topAnchor),
+                    divider.leadingAnchor.constraint(equalTo: dividerWrapper.leadingAnchor, constant: 16),
+                    divider.trailingAnchor.constraint(equalTo: dividerWrapper.trailingAnchor, constant: -16),
+                    divider.bottomAnchor.constraint(equalTo: dividerWrapper.bottomAnchor),
+                    divider.heightAnchor.constraint(equalToConstant: 0.5),
+                ])
+                stack.addArrangedSubview(dividerWrapper)
+            }
+        }
 
-        bottomRow.addArrangedSubview(clCard)
-        bottomRow.addArrangedSubview(pCard)
-
-        let grid = UIStackView(arrangedSubviews: [topRow, bottomRow])
-        grid.axis = .vertical
-        grid.spacing = 12
-        return grid
+        return card
     }
 
-    private func makeStatCard(icon: String, color: UIColor, title: String, valueLabel: UILabel, adBadge: UILabel? = nil) -> UIView {
-        let card = UIView()
-        card.backgroundColor = AppColors.card
-        card.layer.cornerRadius = 14
-        card.layer.borderWidth = 1
-        card.layer.borderColor = AppColors.border.cgColor
+    private func makeActivityRow(icon: String, color: UIColor, title: String, subtitle: String, valueLabel: UILabel, action: Selector) -> UIView {
+        let container = UIView()
+        container.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: action)
+        container.addGestureRecognizer(tap)
 
+        // Icon area (40x40 with colored background)
         let iconBg = UIView()
-        iconBg.backgroundColor = color.withAlphaComponent(0.15)
-        iconBg.layer.cornerRadius = 16
+        iconBg.backgroundColor = color.withAlphaComponent(0.12)
+        iconBg.layer.cornerRadius = 12
         iconBg.translatesAutoresizingMaskIntoConstraints = false
 
         let iconImage = UIImageView(image: UIImage(systemName: icon))
@@ -473,133 +606,93 @@ class HomeViewController: UIViewController {
         iconImage.contentMode = .scaleAspectFit
         iconImage.translatesAutoresizingMaskIntoConstraints = false
         iconBg.addSubview(iconImage)
-
-        let titleLabel = UILabel()
-        titleLabel.text = title.uppercased()
-        titleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-        titleLabel.textColor = AppColors.textMuted
-
-        valueLabel.font = .systemFont(ofSize: 26, weight: .bold)
-        valueLabel.textColor = AppColors.text
-
-        var arrangedViews: [UIView] = [iconBg, titleLabel, valueLabel]
-
-        // 광고 배지 (소진 시 표시)
-        if let badge = adBadge {
-            badge.text = "▶ " + L("home.watch_ad")
-            badge.font = .systemFont(ofSize: 11, weight: .semibold)
-            badge.textColor = .white
-            badge.backgroundColor = AppColors.accent
-            badge.layer.cornerRadius = 8
-            badge.clipsToBounds = true
-            badge.textAlignment = .center
-            badge.isHidden = true
-            arrangedViews.append(badge)
-        }
-
-        let stack = UIStackView(arrangedSubviews: arrangedViews)
-        stack.axis = .vertical
-        stack.spacing = 6
-        stack.alignment = .leading
-        stack.isUserInteractionEnabled = false
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(stack)
-
         NSLayoutConstraint.activate([
-            iconBg.widthAnchor.constraint(equalToConstant: 32),
-            iconBg.heightAnchor.constraint(equalToConstant: 32),
             iconImage.centerXAnchor.constraint(equalTo: iconBg.centerXAnchor),
             iconImage.centerYAnchor.constraint(equalTo: iconBg.centerYAnchor),
-            iconImage.widthAnchor.constraint(equalToConstant: 16),
-            iconImage.heightAnchor.constraint(equalToConstant: 16),
-            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
-            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
-            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            iconImage.widthAnchor.constraint(equalToConstant: 18),
+            iconImage.heightAnchor.constraint(equalToConstant: 18),
         ])
 
-        if let badge = adBadge {
-            badge.heightAnchor.constraint(equalToConstant: 24).isActive = true
-            badge.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        }
+        // Title + subtitle stack
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 15, weight: .regular)
+        titleLabel.textColor = AppColors.text
 
-        return card
-    }
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = subtitle
+        subtitleLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        subtitleLabel.textColor = AppColors.textMuted
 
-    private func buildQuickActions() -> UIView {
-        let container = UIView()
-        container.backgroundColor = AppColors.card
-        container.layer.cornerRadius = 14
-        container.layer.borderWidth = 1
-        container.layer.borderColor = AppColors.border.cgColor
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 2
 
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(stack)
+        // Value label
+        valueLabel.font = .systemFont(ofSize: 17, weight: .bold)
+        valueLabel.textColor = AppColors.text
+        valueLabel.textAlignment = .right
+        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        // Chevron
+        let chevronLabel = UILabel()
+        chevronLabel.text = "\u{203A}"
+        chevronLabel.font = .systemFont(ofSize: 20, weight: .regular)
+        chevronLabel.textColor = AppColors.textMuted
+        chevronLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        // Horizontal layout
+        iconBg.translatesAutoresizingMaskIntoConstraints = false
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+        chevronLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addSubview(iconBg)
+        container.addSubview(textStack)
+        container.addSubview(valueLabel)
+        container.addSubview(chevronLabel)
+
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: container.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            // Icon
+            iconBg.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            iconBg.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            iconBg.widthAnchor.constraint(equalToConstant: 40),
+            iconBg.heightAnchor.constraint(equalToConstant: 40),
+
+            // Text
+            textStack.leadingAnchor.constraint(equalTo: iconBg.trailingAnchor, constant: 12),
+            textStack.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            // Value
+            valueLabel.leadingAnchor.constraint(greaterThanOrEqualTo: textStack.trailingAnchor, constant: 8),
+            valueLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            // Chevron
+            chevronLabel.leadingAnchor.constraint(equalTo: valueLabel.trailingAnchor, constant: 8),
+            chevronLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            chevronLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            // Row height
+            container.heightAnchor.constraint(equalToConstant: 64),
         ])
-
-        let actions: [(String, String, Int)] = [
-            (L("ai_writer.title"), "sparkles", 1),
-            (L("history.filter.translate") + " " + L("tab.history"), "globe", 2),
-        ]
-
-        for (i, action) in actions.enumerated() {
-            let row = makeQuickActionRow(title: action.0, icon: action.1, tag: action.2)
-            stack.addArrangedSubview(row)
-            if i < actions.count - 1 {
-                let sep = UIView()
-                sep.backgroundColor = AppColors.border
-                sep.translatesAutoresizingMaskIntoConstraints = false
-                sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
-                stack.addArrangedSubview(sep)
-            }
-        }
 
         return container
     }
 
-    private func makeQuickActionRow(title: String, icon: String, tag: Int) -> UIView {
-        let btn = UIButton(type: .system)
-        btn.tag = tag
-        btn.addTarget(self, action: #selector(quickActionTapped(_:)), for: .touchUpInside)
-
-        var config = UIButton.Configuration.plain()
-        config.title = title
-        config.image = UIImage(systemName: icon)
-        config.imagePadding = 10
-        config.baseForegroundColor = AppColors.text
-        config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
-
-        let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
-        chevron.tintColor = AppColors.textMuted
-        chevron.translatesAutoresizingMaskIntoConstraints = false
-
-        btn.configuration = config
-        btn.contentHorizontalAlignment = .leading
-        btn.addSubview(chevron)
-        NSLayoutConstraint.activate([
-            chevron.centerYAnchor.constraint(equalTo: btn.centerYAnchor),
-            chevron.trailingAnchor.constraint(equalTo: btn.trailingAnchor, constant: -16),
-        ])
-
-        return btn
-    }
-
     // MARK: - Actions
 
-    @objc private func quickActionTapped(_ sender: UIButton) {
-        guard let tabBar = tabBarController else { return }
-        switch sender.tag {
-        case 1: tabBar.selectedIndex = 1 // AI Writer
-        case 2: tabBar.selectedIndex = 2 // History
-        default: break
-        }
+    @objc private func subscribeTapped() {
+        let paywallVC = PaywallViewController()
+        paywallVC.modalPresentationStyle = .pageSheet
+        present(paywallVC, animated: true)
+    }
+
+    @objc private func rewardCorrectionTapped() {
+        presentRewardedAds(mode: .correction)
+    }
+
+    @objc private func rewardTranslationTapped() {
+        presentRewardedAds(mode: .translation)
     }
 
     @objc private func correctionCardTapped() {
@@ -618,6 +711,14 @@ class HomeViewController: UIViewController {
         }
     }
 
+    @objc private func clipboardCardTapped() {
+        navigateToHistory(filter: .clipboard)
+    }
+
+    @objc private func phrasesCardTapped() {
+        navigateToHistory(filter: nil)
+    }
+
     private func presentRewardedAds(mode: RewardMode) {
         if DailyUsageManager.shared.canWatchRewardedAd(for: mode) {
             let rewardVC = RewardedAdsViewController(mode: mode)
@@ -630,14 +731,6 @@ class HomeViewController: UIViewController {
         }
     }
 
-    @objc private func clipboardCardTapped() {
-        navigateToHistory(filter: .clipboard)
-    }
-
-    @objc private func phrasesCardTapped() {
-        navigateToHistory(filter: nil)
-    }
-
     private func navigateToHistory(filter: HistoryType?) {
         guard let tabBar = tabBarController else { return }
         tabBar.selectedIndex = 2
@@ -647,41 +740,7 @@ class HomeViewController: UIViewController {
         }
     }
 
-    private func updateDailyLimitCards() {
-        guard !SubscriptionStatus.shared.isPro else {
-            // Pro 유저는 소진 UI 숨김
-            correctionAdBadge.isHidden = true
-            translationAdBadge.isHidden = true
-            correctionCard?.layer.borderColor = AppColors.border.cgColor
-            translationCard?.layer.borderColor = AppColors.border.cgColor
-            return
-        }
-
-        let correctionExhausted = DailyUsageManager.shared.remainingCorrections <= 0
-        let translationExhausted = DailyUsageManager.shared.remainingTranslations <= 0
-
-        // 교정 카드
-        if correctionExhausted {
-            correctionAdBadge.isHidden = false
-            correctionCard?.layer.borderColor = AppColors.orange.withAlphaComponent(0.5).cgColor
-            correctionCard?.layer.borderWidth = 1.5
-        } else {
-            correctionAdBadge.isHidden = true
-            correctionCard?.layer.borderColor = AppColors.border.cgColor
-            correctionCard?.layer.borderWidth = 1
-        }
-
-        // 번역 카드
-        if translationExhausted {
-            translationAdBadge.isHidden = false
-            translationCard?.layer.borderColor = AppColors.blue.withAlphaComponent(0.5).cgColor
-            translationCard?.layer.borderWidth = 1.5
-        } else {
-            translationAdBadge.isHidden = true
-            translationCard?.layer.borderColor = AppColors.border.cgColor
-            translationCard?.layer.borderWidth = 1
-        }
-    }
+    // MARK: - Notifications
 
     @objc private func handleHistoryChange() {
         refreshStats()
@@ -691,6 +750,9 @@ class HomeViewController: UIViewController {
         title = L("home.title")
         contentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         planCard.subviews.forEach { $0.removeFromSuperview() }
+        planCard.layer.sublayers?.removeAll()
+        aiWriterBanner.subviews.forEach { $0.removeFromSuperview() }
+        aiWriterBanner.layer.sublayers?.removeAll()
         corrTrackLayer.removeFromSuperlayer()
         corrProgressLayer.removeFromSuperlayer()
         transTrackLayer.removeFromSuperlayer()
@@ -703,17 +765,29 @@ class HomeViewController: UIViewController {
 
     private func refreshStats() {
         let stats = StatsManager.shared
+
+        // Date label
+        updateDateLabel()
+
+        // Greeting label
         let greeting = timeBasedGreeting()
-        greetingLabel.text = greeting
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.3
+        greetingLabel.attributedText = NSAttributedString(
+            string: greeting,
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 26, weight: .bold),
+                .foregroundColor: AppColors.text,
+                .paragraphStyle: paragraphStyle,
+            ]
+        )
 
         // Plan card update
         updatePlanCard()
 
+        // Weekly stats
         correctionCountLabel.text = "\(stats.weeklyCorrections)"
         translationCountLabel.text = "\(stats.weeklyTranslations)"
-
-        // Free 티어: 일일 할당량 소진 시 카드 UI 변경
-        updateDailyLimitCards()
 
         // Clipboard items count
         let clipboardData = UserDefaults(suiteName: AppConstants.appGroupIdentifier)?.data(forKey: AppConstants.UserDefaultsKeys.clipboardHistory)
@@ -734,6 +808,21 @@ class HomeViewController: UIViewController {
             phrasesCount = 0
         }
         phrasesCountLabel.text = "\(phrasesCount)"
+    }
+
+    private func updateDateLabel() {
+        let now = Date()
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale.current
+        timeFormatter.dateFormat = "a h:mm"
+
+        let weekdayFormatter = DateFormatter()
+        weekdayFormatter.locale = Locale.current
+        weekdayFormatter.dateFormat = "EEEE"
+
+        let timeString = timeFormatter.string(from: now)
+        let weekdayString = weekdayFormatter.string(from: now)
+        dateLabel.text = "\(timeString) \u{00B7} \(weekdayString)"
     }
 
     private func timeBasedGreeting() -> String {

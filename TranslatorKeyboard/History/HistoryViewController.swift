@@ -4,10 +4,11 @@ class HistoryViewController: UIViewController {
 
     private var allItems: [HistoryItem] = []
     private var filteredItems: [HistoryItem] = []
+    private var groupedItems: [(title: String, items: [HistoryItem])] = []
     private var selectedFilter: HistoryType?
 
     private let filterStack = UIStackView()
-    private let tableView = UITableView(frame: .zero, style: .plain)
+    private let tableView = UITableView(frame: .zero, style: .grouped)
     private let emptyLabel = UILabel()
 
     // MARK: - Lifecycle
@@ -72,8 +73,9 @@ class HistoryViewController: UIViewController {
             let btn = UIButton(type: .system)
             btn.setTitle(filter.0, for: .normal)
             btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-            btn.layer.cornerRadius = 14
-            btn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+            btn.layer.cornerRadius = 16
+            btn.clipsToBounds = true
+            btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
             btn.tag = i
             btn.addTarget(self, action: #selector(filterTapped(_:)), for: .touchUpInside)
             filterStack.addArrangedSubview(btn)
@@ -89,6 +91,7 @@ class HistoryViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(HistoryCell.self, forCellReuseIdentifier: "HistoryCell")
+        tableView.sectionHeaderTopPadding = 0
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: filterStack.bottomAnchor, constant: 12),
@@ -122,7 +125,9 @@ class HistoryViewController: UIViewController {
     @objc private func filterTapped(_ sender: UIButton) {
         let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard]
         selectedFilter = filters[sender.tag]
-        updateFilterAppearance()
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseOut) {
+            self.updateFilterAppearance()
+        }
         applyFilter()
     }
 
@@ -130,8 +135,16 @@ class HistoryViewController: UIViewController {
         let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard]
         for case let btn as UIButton in filterStack.arrangedSubviews {
             let isSelected = filters[btn.tag] == selectedFilter
-            btn.backgroundColor = isSelected ? AppColors.accent : AppColors.card
-            btn.setTitleColor(isSelected ? .white : AppColors.textMuted, for: .normal)
+            if isSelected {
+                btn.backgroundColor = AppColors.accent
+                btn.setTitleColor(.white, for: .normal)
+                btn.transform = CGAffineTransform(scaleX: 1.04, y: 1.04)
+            } else {
+                btn.backgroundColor = AppColors.card
+                btn.setTitleColor(AppColors.textMuted, for: .normal)
+                btn.transform = .identity
+            }
+            btn.layer.borderWidth = 0
         }
     }
 
@@ -146,9 +159,54 @@ class HistoryViewController: UIViewController {
         } else {
             filteredItems = allItems
         }
+        groupedItems = groupItemsByDate(filteredItems)
         tableView.reloadData()
         emptyLabel.isHidden = !filteredItems.isEmpty
         tableView.isHidden = filteredItems.isEmpty
+    }
+
+    // MARK: - Date Grouping
+
+    private func groupItemsByDate(_ items: [HistoryItem]) -> [(title: String, items: [HistoryItem])] {
+        let calendar = Calendar.current
+
+        var groups: [String: [HistoryItem]] = [:]
+        var orderedKeys: [String] = []
+
+        for item in items {
+            let key: String
+            if calendar.isDateInToday(item.createdAt) {
+                key = L("history.date.today")
+            } else if calendar.isDateInYesterday(item.createdAt) {
+                key = L("history.date.yesterday")
+            } else {
+                let formatter = DateFormatter()
+                formatter.locale = Locale.current
+                let currentLang = LocalizationManager.shared.currentLanguage
+                switch currentLang {
+                case .ko:
+                    formatter.dateFormat = "M월 d일"
+                case .ja:
+                    formatter.dateFormat = "M月d日"
+                case .zhHans:
+                    formatter.dateFormat = "M月d日"
+                default:
+                    formatter.dateFormat = "MMM d"
+                }
+                key = formatter.string(from: item.createdAt)
+            }
+
+            if groups[key] == nil {
+                groups[key] = []
+                orderedKeys.append(key)
+            }
+            groups[key]?.append(item)
+        }
+
+        return orderedKeys.compactMap { key in
+            guard let items = groups[key] else { return nil }
+            return (title: key, items: items)
+        }
     }
 
     // MARK: - Relative Time
@@ -166,20 +224,56 @@ class HistoryViewController: UIViewController {
 
 extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
 
+    func numberOfSections(in tableView: UITableView) -> Int {
+        groupedItems.count
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        filteredItems.count
+        groupedItems[section].items.count
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        let label = UILabel()
+        label.text = groupedItems[section].title
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.textColor = AppColors.textMuted
+        label.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
+            label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -6),
+        ])
+
+        return header
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        36
+    }
+
+    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        nil
+    }
+
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        0
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "HistoryCell", for: indexPath) as! HistoryCell
-        let item = filteredItems[indexPath.row]
+        let item = groupedItems[indexPath.section].items[indexPath.row]
         cell.configure(with: item, relativeTime: relativeTime(from: item.createdAt))
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let item = filteredItems[indexPath.row]
+        let item = groupedItems[indexPath.section].items[indexPath.row]
         let textToCopy = item.resultText ?? item.originalText
         UIPasteboard.general.string = textToCopy
 
@@ -207,7 +301,7 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let delete = UIContextualAction(style: .destructive, title: nil) { [weak self] _, _, completion in
             guard let self else { completion(false); return }
-            let item = self.filteredItems[indexPath.row]
+            let item = self.groupedItems[indexPath.section].items[indexPath.row]
             HistoryManager.shared.deleteItem(id: item.id)
             self.reloadData()
             completion(true)
@@ -242,20 +336,20 @@ class HistoryCell: UITableViewCell {
         selectionStyle = .none
 
         cardView.backgroundColor = AppColors.card
-        cardView.layer.cornerRadius = 12
+        cardView.layer.cornerRadius = 16
         cardView.layer.borderWidth = 1
         cardView.layer.borderColor = AppColors.border.cgColor
         cardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(cardView)
 
-        tagLabel.font = .systemFont(ofSize: 11, weight: .semibold)
+        tagLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         tagLabel.textColor = .white
-        tagLabel.layer.cornerRadius = 4
+        tagLabel.layer.cornerRadius = 6
         tagLabel.clipsToBounds = true
         tagLabel.textAlignment = .center
         tagLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        timeLabel.font = .systemFont(ofSize: 11)
+        timeLabel.font = .systemFont(ofSize: 12)
         timeLabel.textColor = AppColors.textMuted
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
 
@@ -267,8 +361,8 @@ class HistoryCell: UITableViewCell {
         separator.backgroundColor = AppColors.border
         separator.translatesAutoresizingMaskIntoConstraints = false
 
-        resultLabel.font = .systemFont(ofSize: 14)
-        resultLabel.textColor = AppColors.accent
+        resultLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        resultLabel.textColor = AppColors.text
         resultLabel.numberOfLines = 2
         resultLabel.translatesAutoresizingMaskIntoConstraints = false
 
@@ -314,20 +408,23 @@ class HistoryCell: UITableViewCell {
 
         switch item.type {
         case .translation:
-            tagLabel.text = " \(item.metadata ?? "KO → EN") "
-            tagLabel.backgroundColor = AppColors.blue
+            tagLabel.text = " \(item.metadata ?? "KO \u{2192} EN") "
+            tagLabel.backgroundColor = AppColors.accent
+            originalLabel.textColor = AppColors.textSub
             resultLabel.text = item.resultText
             separator.isHidden = false
             resultLabel.isHidden = false
         case .correction:
             tagLabel.text = " \(item.metadata ?? L("home.stat.corrections")) "
             tagLabel.backgroundColor = AppColors.orange
+            originalLabel.textColor = AppColors.textSub
             resultLabel.text = item.resultText
             separator.isHidden = false
             resultLabel.isHidden = false
         case .clipboard:
             tagLabel.text = " \(item.metadata ?? "Text") "
             tagLabel.backgroundColor = AppColors.green
+            originalLabel.textColor = AppColors.text
             separator.isHidden = true
             resultLabel.isHidden = true
         }

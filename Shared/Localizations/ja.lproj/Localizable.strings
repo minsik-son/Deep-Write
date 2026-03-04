@@ -182,6 +182,15 @@
 "home.stat.phrases" = "定型文";
 "home.quick_actions" = "クイックアクション";
 "home.watch_ad" = "広告を見て充電する";
+"home.activity.title" = "週間アクティビティ";
+"home.ai_banner.title" = "AIメッセージ作成";
+"home.ai_banner.desc" = "Geminiがシーンに合ったメッセージを作成します";
+"home.daily.corrections" = "校正";
+"home.daily.translations" = "翻訳";
+"home.reward_ad.cta" = "広告を見て充電する";
+"home.reward_ad.cta_mode" = "広告を見て%@を充電する";
+"home.stat.this_week" = "今週";
+"home.stat.saved" = "保存済み";
 
 // === AI Writer ===
 "ai_writer.title" = "AIメッセージ作成";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "購入に失敗しました。もう一度お試しください";
 "paywall.error_restore" = "復元に失敗しました";
 "paywall.error_no_subscription" = "アクティブな購読が見つかりません";
+
+// === New UI Keys ===
+"history.date.today" = "今日";
+"history.date.yesterday" = "昨日";
+"settings.plan.current" = "現在のプラン";
+"settings.plan.upgrade" = "アップグレード";
+"paywall.hero.title" = "制限なく\n自由に使おう";
+"paywall.hero.subtitle" = "Proにアップグレードして全機能をアンロック";
+"paywall.benefit.usage" = "1日100回使用";
+"paywall.benefit.usage_desc" = "1日100回の校正/翻訳が可能";
+"paywall.benefit.tones" = "全トーンスタイル";
+"paywall.benefit.tones_desc" = "すべての文体オプションを使用";
+"paywall.benefit.themes" = "プレミアムテーマ";
+"paywall.benefit.themes_desc" = "プレミアムキーボードテーマをアンロック";
+"paywall.benefit.no_ads" = "広告なし";
+"paywall.benefit.no_ads_desc" = "すべての広告を削除";
+"paywall.promo_code" = "プロモコードをお持ちですか？";
+"paywall.cancel_anytime" = "いつでも解約できます";

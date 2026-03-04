@@ -182,6 +182,15 @@
 "home.stat.phrases" = "저장 문구";
 "home.quick_actions" = "빠른 실행";
 "home.watch_ad" = "광고 보고 충전하기";
+"home.activity.title" = "주간 활동";
+"home.ai_banner.title" = "AI 메시지 작성";
+"home.ai_banner.desc" = "Gemini가 상황에 맞는 메시지를 작성해드려요";
+"home.daily.corrections" = "교정";
+"home.daily.translations" = "번역";
+"home.reward_ad.cta" = "광고 보고 충전하기";
+"home.reward_ad.cta_mode" = "광고 보고 %@ 충전하기";
+"home.stat.this_week" = "이번 주";
+"home.stat.saved" = "저장됨";
 
 // === AI Writer ===
 "ai_writer.title" = "AI 메시지 작성";
@@ -327,3 +336,21 @@
 "paywall.error_purchase" = "결제에 실패했습니다. 다시 시도해주세요";
 "paywall.error_restore" = "복원에 실패했습니다";
 "paywall.error_no_subscription" = "활성 구독을 찾을 수 없습니다";
+
+// === New UI Keys ===
+"history.date.today" = "오늘";
+"history.date.yesterday" = "어제";
+"settings.plan.current" = "현재 플랜";
+"settings.plan.upgrade" = "업그레이드";
+"paywall.hero.title" = "제한 없이\n자유롭게 쓰세요";
+"paywall.hero.subtitle" = "Pro로 업그레이드하고 모든 기능을 잠금해제하세요";
+"paywall.benefit.usage" = "일일 100회 사용";
+"paywall.benefit.usage_desc" = "하루 100회 교정/번역 가능";
+"paywall.benefit.tones" = "모든 톤 스타일";
+"paywall.benefit.tones_desc" = "기본, 반말, 존댓말, 정자체 모두 사용";
+"paywall.benefit.themes" = "프리미엄 테마";
+"paywall.benefit.themes_desc" = "프리미엄 키보드 테마 잠금해제";
+"paywall.benefit.no_ads" = "광고 없음";
+"paywall.benefit.no_ads_desc" = "모든 광고 제거";
+"paywall.promo_code" = "프로모 코드가 있으신가요?";
+"paywall.cancel_anytime" = "언제든지 해지할 수 있어요";
