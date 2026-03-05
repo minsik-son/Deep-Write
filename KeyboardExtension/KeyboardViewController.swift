@@ -136,6 +136,7 @@ class KeyboardViewController: UIInputViewController {
         toolbarView.hideSuggestions()
 
         checkClipboardForNewContent()
+        updateToolbarBadge()
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
     }
@@ -432,23 +433,23 @@ class KeyboardViewController: UIInputViewController {
         toolbarView.onTranslateToggle = { [weak self] in
             self?.toggleTranslationMode()
         }
-        toolbarView.onEmojiTap = { [weak self] emoji in
-            self?.textDocumentProxy.insertText(emoji)
-        }
         toolbarView.onEmojiKeyboardToggle = { [weak self] in
             self?.toggleEmojiKeyboard()
         }
         toolbarView.onCorrectionToggle = { [weak self] in
             self?.toggleCorrectionMode()
         }
-        toolbarView.onSettingsTap = { [weak self] in
-            self?.openContainingApp()
-        }
         toolbarView.onSavedPhrasesTap = { [weak self] in
             self?.showSavedPhrases()
         }
         toolbarView.onClipboardTap = { [weak self] in
             self?.toggleClipboardHistory()
+        }
+        toolbarView.onLogoTap = { [weak self] in
+            self?.showStatusPopup()
+        }
+        toolbarView.onLogoLongPress = { [weak self] in
+            self?.showContextMenu()
         }
         toolbarView.onSuggestionTap = { [weak self] suggestion in
             self?.applySuggestion(suggestion)
@@ -624,6 +625,8 @@ class KeyboardViewController: UIInputViewController {
         }
 
         updateHeight(for: mode)
+        updateReturnKeyForCurrentMode()
+        updateToolbarBadge()
     }
 
     private func toggleTranslationMode() {
@@ -1591,7 +1594,152 @@ class KeyboardViewController: UIInputViewController {
         phraseInputView.updateAppearance(isDark: isDark)
     }
 
+    // MARK: - Status Popup (Proposal 02)
+
+    private var statusPopupView: StatusPopupView?
+
+    private func showStatusPopup() {
+        hideContextMenu()
+        guard statusPopupView == nil else {
+            hideStatusPopup()
+            return
+        }
+        guard let inputView = self.inputView else { return }
+
+        let popup = StatusPopupView()
+        popup.translatesAutoresizingMaskIntoConstraints = false
+        inputView.addSubview(popup)
+        NSLayoutConstraint.activate([
+            popup.topAnchor.constraint(equalTo: toolbarView.bottomAnchor),
+            popup.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            popup.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            popup.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        // Populate data
+        let corrUsed = DailyUsageManager.shared.correctionCount
+        let corrRemain = DailyUsageManager.shared.remainingCorrections
+        let corrTotal = corrUsed + corrRemain
+        let transUsed = DailyUsageManager.shared.translationCount
+        let transRemain = DailyUsageManager.shared.remainingTranslations
+        let transTotal = transUsed + transRemain
+        let tier = SubscriptionStatus.shared.currentTier
+        let planName: String
+        switch tier {
+        case .free: planName = "Free"
+        case .pro: planName = "Pro"
+        case .premium: planName = "Premium"
+        }
+        popup.update(corrUsed: corrUsed, corrTotal: corrTotal,
+                     transUsed: transUsed, transTotal: transTotal,
+                     planName: planName, isPro: tier != .free)
+
+        popup.onUpgradeTap = { [weak self] in
+            self?.hideStatusPopup()
+            self?.openContainingApp(path: "paywall")
+        }
+        popup.onDismiss = { [weak self] in
+            self?.hideStatusPopup()
+        }
+
+        popup.alpha = 0
+        UIView.animate(withDuration: 0.2) {
+            popup.alpha = 1
+        }
+
+        statusPopupView = popup
+        inputView.bringSubviewToFront(toastLabel)
+    }
+
+    private func hideStatusPopup() {
+        guard let popup = statusPopupView else { return }
+        UIView.animate(withDuration: 0.15, animations: {
+            popup.alpha = 0
+        }) { _ in
+            popup.removeFromSuperview()
+        }
+        statusPopupView = nil
+    }
+
+    // MARK: - Context Menu (Proposal 02)
+
+    private var contextMenuView: ContextMenuView?
+
+    private func showContextMenu() {
+        hideStatusPopup()
+        guard contextMenuView == nil else {
+            hideContextMenu()
+            return
+        }
+        guard let inputView = self.inputView else { return }
+
+        let menu = ContextMenuView()
+        menu.translatesAutoresizingMaskIntoConstraints = false
+        inputView.addSubview(menu)
+        NSLayoutConstraint.activate([
+            menu.topAnchor.constraint(equalTo: toolbarView.bottomAnchor),
+            menu.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            menu.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            menu.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        menu.onSettingsTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.openContainingApp(path: "settings")
+        }
+        menu.onHelpTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.openContainingApp(path: "help")
+        }
+        menu.onDismiss = { [weak self] in
+            self?.hideContextMenu()
+        }
+
+        menu.alpha = 0
+        UIView.animate(withDuration: 0.2) {
+            menu.alpha = 1
+        }
+
+        contextMenuView = menu
+        inputView.bringSubviewToFront(toastLabel)
+    }
+
+    private func hideContextMenu() {
+        guard let menu = contextMenuView else { return }
+        UIView.animate(withDuration: 0.15, animations: {
+            menu.alpha = 0
+        }) { _ in
+            menu.removeFromSuperview()
+        }
+        contextMenuView = nil
+    }
+
+    // MARK: - Badge Count Update
+
+    private func updateToolbarBadge() {
+        let corrRemaining = CompositionSessionManager.shared.remainingSessions(for: .correct)
+        let transRemaining = CompositionSessionManager.shared.remainingSessions(for: .translate)
+        let total = max(0, corrRemaining) + max(0, transRemaining)
+        toolbarView.updateBadgeCount(total)
+    }
+
+    // MARK: - Return Key Mode Update (Proposal 03)
+
+    private func updateReturnKeyForCurrentMode() {
+        let hasText: Bool
+        switch currentMode {
+        case .translationMode:
+            hasText = !modeTextInputHandler.fullText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            keyboardLayoutView.updateReturnKey(mode: .translationMode, hasText: hasText)
+        case .correctionMode:
+            hasText = !modeTextInputHandler.fullText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            keyboardLayoutView.updateReturnKey(mode: .correctionMode, hasText: hasText)
+        case .defaultMode, .phraseInputMode:
+            keyboardLayoutView.clearReturnKeyOverride()
+        }
+    }
 }
+
 
 // MARK: - TextInputHandlerDelegate
 
@@ -1610,6 +1758,7 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         case .defaultMode:
             break
         }
+        updateReturnKeyForCurrentMode()
     }
 
     func textInputHandler(_ handler: TextInputHandler, didUpdateComposing text: String) {
@@ -1626,6 +1775,7 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         case .defaultMode:
             break
         }
+        updateReturnKeyForCurrentMode()
     }
 }
 

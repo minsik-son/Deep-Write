@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "紧急";
 "keyboard.return.continue" = "继续";
 "keyboard.return.newline" = "换行";
+"keyboard.return.translate" = "翻译";
+"keyboard.return.correct" = "纠正";
+"keyboard.status.remaining_today" = "今日剩余次数";
+"keyboard.status.plan" = "套餐";
+"keyboard.status.upgrade_pro" = "升级";
+"keyboard.menu.settings" = "键盘设置";
+"keyboard.menu.help" = "帮助";
+"keyboard.suggestion.recommended" = "推荐";
+"keyboard.suggestion.alternative" = "备选";
 
 // === Keyboard UI ===
 "keyboard.space" = "空格";

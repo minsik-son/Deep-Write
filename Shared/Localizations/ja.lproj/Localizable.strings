@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "緊急";
 "keyboard.return.continue" = "続ける";
 "keyboard.return.newline" = "改行";
+"keyboard.return.translate" = "翻訳";
+"keyboard.return.correct" = "校正";
+"keyboard.status.remaining_today" = "今日の残り回数";
+"keyboard.status.plan" = "プラン";
+"keyboard.status.upgrade_pro" = "にアップグレード";
+"keyboard.menu.settings" = "キーボード設定";
+"keyboard.menu.help" = "ヘルプ";
+"keyboard.suggestion.recommended" = "推奨";
+"keyboard.suggestion.alternative" = "代替";
 
 // === Keyboard UI ===
 "keyboard.space" = "スペース";

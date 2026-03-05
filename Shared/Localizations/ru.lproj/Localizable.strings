@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "Экстренный";
 "keyboard.return.continue" = "Продолжить";
 "keyboard.return.newline" = "ввод";
+"keyboard.return.translate" = "Перевод";
+"keyboard.return.correct" = "Исправить";
+"keyboard.status.remaining_today" = "Осталось сегодня";
+"keyboard.status.plan" = "План";
+"keyboard.status.upgrade_pro" = " обновить";
+"keyboard.menu.settings" = "Настройки клавиатуры";
+"keyboard.menu.help" = "Помощь";
+"keyboard.suggestion.recommended" = "Рекомендуемый";
+"keyboard.suggestion.alternative" = "Альтернатива";
 
 // === Keyboard UI ===
 "keyboard.space" = "пробел";

@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "긴급";
 "keyboard.return.continue" = "계속";
 "keyboard.return.newline" = "줄바꿈";
+"keyboard.return.translate" = "번역";
+"keyboard.return.correct" = "교정";
+"keyboard.status.remaining_today" = "오늘 남은 횟수";
+"keyboard.status.plan" = "플랜";
+"keyboard.status.upgrade_pro" = "로 업그레이드";
+"keyboard.menu.settings" = "키보드 설정";
+"keyboard.menu.help" = "도움말";
+"keyboard.suggestion.recommended" = "추천";
+"keyboard.suggestion.alternative" = "대안";
 
 // === Keyboard UI ===
 "keyboard.space" = "간격";

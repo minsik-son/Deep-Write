@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "Notfall";
 "keyboard.return.continue" = "Fortfahren";
 "keyboard.return.newline" = "Eingabe";
+"keyboard.return.translate" = "Übersetzen";
+"keyboard.return.correct" = "Korrigieren";
+"keyboard.status.remaining_today" = "Heute verbleibend";
+"keyboard.status.plan" = "Plan";
+"keyboard.status.upgrade_pro" = " upgraden";
+"keyboard.menu.settings" = "Tastatureinstellungen";
+"keyboard.menu.help" = "Hilfe";
+"keyboard.suggestion.recommended" = "Empfohlen";
+"keyboard.suggestion.alternative" = "Alternative";
 
 // === Keyboard UI ===
 "keyboard.space" = "Leertaste";

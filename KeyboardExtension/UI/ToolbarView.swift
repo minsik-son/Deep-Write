@@ -6,43 +6,64 @@ class ToolbarView: UIView {
 
     var onTranslateToggle: (() -> Void)?
     var onCorrectionToggle: (() -> Void)?
-    var onEmojiTap: ((String) -> Void)?
     var onEmojiKeyboardToggle: (() -> Void)?
-    var onSettingsTap: (() -> Void)?
     var onSavedPhrasesTap: (() -> Void)?
     var onClipboardTap: (() -> Void)?
     var onSuggestionTap: ((String) -> Void)?
     var onSuggestionDismiss: (() -> Void)?
+    var onLogoTap: (() -> Void)?
+    var onLogoLongPress: (() -> Void)?
 
-    // MARK: - Toolbar button definitions
+    // MARK: - Toolbar Views
 
-    private struct ToolbarItem {
-        let iconName: String
-        let action: Selector
-        let tag: Int
-    }
-
-    private let toolbarItems: [ToolbarItem] = [
-        ToolbarItem(iconName: "t.circle", action: #selector(logoTapped), tag: 0),
-        ToolbarItem(iconName: "face.smiling", action: #selector(emojiButtonTapped), tag: 1),
-        ToolbarItem(iconName: "doc.on.clipboard", action: #selector(clipboardHistoryTapped), tag: 2),
-        ToolbarItem(iconName: "bookmark", action: #selector(clipboardTapped), tag: 3),
-        ToolbarItem(iconName: "checkmark.circle", action: #selector(checklistTapped), tag: 4),
-        ToolbarItem(iconName: "globe", action: #selector(translateTapped), tag: 5),
-        ToolbarItem(iconName: "gearshape", action: #selector(settingsTapped), tag: 6),
-    ]
-
-    // MARK: - Views
-
-    private let stack: UIStackView = {
+    private let toolbarStack: UIStackView = {
         let sv = UIStackView()
         sv.axis = .horizontal
-        sv.distribution = .fillEqually
         sv.alignment = .center
+        sv.distribution = .fill
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
     }()
 
+    private let leftGroup: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.distribution = .fillEqually
+        sv.alignment = .center
+        sv.spacing = 0
+        return sv
+    }()
+
+    private let rightGroup: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.distribution = .fill
+        sv.alignment = .center
+        sv.spacing = 4
+        return sv
+    }()
+
+    private let flexSpace = UIView()
+
+    // Logo badge
+    private let logoBadge: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 10, weight: .bold)
+        label.textColor = .white
+        label.backgroundColor = UIColor(red: 0.941, green: 0.267, blue: 0.322, alpha: 1) // #F04452
+        label.textAlignment = .center
+        label.layer.cornerRadius = 8
+        label.clipsToBounds = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
+
+    // CTA pills
+    private let correctionPill = UIButton(type: .system)
+    private let translationPill = UIButton(type: .system)
+
+    // Status label
     private let statusLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 12)
@@ -53,19 +74,25 @@ class ToolbarView: UIView {
         return label
     }()
 
-    private let suggestionStack: UIStackView = {
-        let sv = UIStackView()
-        sv.axis = .horizontal
-        sv.distribution = .fillEqually
-        sv.alignment = .fill
+    // MARK: - Suggestion Views (Chip Style)
+
+    private let suggestionScrollView: UIScrollView = {
+        let sv = UIScrollView()
+        sv.showsHorizontalScrollIndicator = false
         sv.translatesAutoresizingMaskIntoConstraints = false
         sv.isHidden = true
+        sv.contentInset = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
         return sv
     }()
 
-    private var suggestionButtons: [UIButton] = []
-    private var separatorLines: [UIView] = []
-    private let bottomBorder = UIView()
+    private let suggestionChipStack: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.spacing = 8
+        sv.alignment = .center
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        return sv
+    }()
 
     private let dismissButton: UIButton = {
         let btn = UIButton(type: .system)
@@ -85,6 +112,14 @@ class ToolbarView: UIView {
         return v
     }()
 
+    // Track logo button for badge positioning
+    private var logoButton: UIButton?
+
+    // MARK: - Theme
+
+    private var customTheme: KeyboardTheme?
+    private var isDark = false
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -101,27 +136,27 @@ class ToolbarView: UIView {
     private func setupViews() {
         backgroundColor = .clear
 
-        addSubview(stack)
+        addSubview(toolbarStack)
         addSubview(statusLabel)
-        addSubview(suggestionStack)
+        addSubview(suggestionScrollView)
         addSubview(dismissSeparator)
         addSubview(dismissButton)
 
         dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            toolbarStack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            toolbarStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            toolbarStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            toolbarStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
 
             statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             statusLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            suggestionStack.topAnchor.constraint(equalTo: topAnchor),
-            suggestionStack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            suggestionStack.trailingAnchor.constraint(equalTo: dismissSeparator.leadingAnchor),
-            suggestionStack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            suggestionScrollView.topAnchor.constraint(equalTo: topAnchor),
+            suggestionScrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            suggestionScrollView.trailingAnchor.constraint(equalTo: dismissSeparator.leadingAnchor),
+            suggestionScrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             dismissSeparator.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             dismissSeparator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
@@ -134,27 +169,124 @@ class ToolbarView: UIView {
             dismissButton.widthAnchor.constraint(equalToConstant: 44),
         ])
 
-        for item in toolbarItems {
-            let btn = makeToolbarButton(iconName: item.iconName, action: item.action, tag: item.tag)
-            stack.addArrangedSubview(btn)
-        }
+        // Suggestion chip scroll view
+        suggestionScrollView.addSubview(suggestionChipStack)
+        NSLayoutConstraint.activate([
+            suggestionChipStack.topAnchor.constraint(equalTo: suggestionScrollView.topAnchor),
+            suggestionChipStack.leadingAnchor.constraint(equalTo: suggestionScrollView.leadingAnchor),
+            suggestionChipStack.trailingAnchor.constraint(equalTo: suggestionScrollView.trailingAnchor),
+            suggestionChipStack.bottomAnchor.constraint(equalTo: suggestionScrollView.bottomAnchor),
+            suggestionChipStack.heightAnchor.constraint(equalTo: suggestionScrollView.heightAnchor),
+        ])
 
-        buildSuggestionButtons()
+        // Build left group buttons
+        buildLeftGroup()
+
+        // Build right group pills
+        buildRightGroup()
+
+        // Assemble toolbar
+        toolbarStack.addArrangedSubview(leftGroup)
+        toolbarStack.addArrangedSubview(flexSpace)
+        toolbarStack.addArrangedSubview(rightGroup)
+
+        // FlexSpace fills remaining space
+        flexSpace.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        leftGroup.setContentHuggingPriority(.required, for: .horizontal)
+        rightGroup.setContentHuggingPriority(.required, for: .horizontal)
     }
 
-    private func makeToolbarButton(iconName: String, action: Selector, tag: Int) -> UIButton {
-        let btn = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .light)
-        btn.setImage(UIImage(systemName: iconName, withConfiguration: config), for: .normal)
-        btn.tintColor = .label
-        btn.tag = tag
-        btn.addTarget(self, action: action, for: .touchUpInside)
-        btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
-        return btn
+    // MARK: - Left Group (4 icon buttons)
+
+    private func buildLeftGroup() {
+        let items: [(icon: String, action: Selector, tag: Int)] = [
+            ("t.circle", #selector(logoTapped), 0),
+            ("face.smiling", #selector(emojiButtonTapped), 1),
+            ("doc.on.clipboard", #selector(clipboardHistoryTapped), 2),
+            ("bookmark", #selector(savedPhrasesTapped), 3),
+        ]
+
+        for item in items {
+            let btn = UIButton(type: .system)
+            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .light)
+            btn.setImage(UIImage(systemName: item.icon, withConfiguration: config), for: .normal)
+            btn.tintColor = .label
+            btn.tag = item.tag
+            btn.addTarget(self, action: item.action, for: .touchUpInside)
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
+            leftGroup.addArrangedSubview(btn)
+
+            if item.tag == 0 {
+                logoButton = btn
+                // Long press gesture on logo
+                let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLogoLongPress(_:)))
+                longPress.minimumPressDuration = 0.5
+                btn.addGestureRecognizer(longPress)
+            }
+        }
+
+        // Add badge to logo button
+        if let logo = logoButton {
+            logo.addSubview(logoBadge)
+            NSLayoutConstraint.activate([
+                logoBadge.topAnchor.constraint(equalTo: logo.topAnchor, constant: 0),
+                logoBadge.trailingAnchor.constraint(equalTo: logo.trailingAnchor, constant: -2),
+                logoBadge.heightAnchor.constraint(equalToConstant: 16),
+                logoBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
+            ])
+        }
+    }
+
+    // MARK: - Right Group (CTA pills)
+
+    private func buildRightGroup() {
+        configurePill(correctionPill,
+                      icon: "checkmark.circle",
+                      title: L("reward.mode.correction"),
+                      bgColor: UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 0.12),
+                      tintColor: UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 1), // #FF9F43
+                      action: #selector(correctionPillTapped))
+
+        configurePill(translationPill,
+                      icon: "globe",
+                      title: L("reward.mode.translation"),
+                      bgColor: UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 0.12),
+                      tintColor: UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1), // #3182F6
+                      action: #selector(translationPillTapped))
+
+        rightGroup.addArrangedSubview(correctionPill)
+        rightGroup.addArrangedSubview(translationPill)
+    }
+
+    private func configurePill(_ pill: UIButton, icon: String, title: String, bgColor: UIColor, tintColor: UIColor, action: Selector) {
+        pill.backgroundColor = bgColor
+        pill.layer.cornerRadius = 18
+        pill.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        pill.setTitleColor(tintColor, for: .normal)
+        pill.contentEdgeInsets = UIEdgeInsets(top: 7, left: 14, bottom: 7, right: 14)
+
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        pill.setImage(UIImage(systemName: icon, withConfiguration: iconConfig), for: .normal)
+        pill.tintColor = tintColor
+        pill.semanticContentAttribute = .forceLeftToRight
+        pill.imageEdgeInsets = UIEdgeInsets(top: 0, left: -3, bottom: 0, right: 3)
+        pill.setTitle(title, for: .normal)
+        pill.addTarget(self, action: action, for: .touchUpInside)
+        pill.translatesAutoresizingMaskIntoConstraints = false
     }
 
     // MARK: - Public Methods
+
+    func updateBadgeCount(_ count: Int) {
+        if count > 0 {
+            logoBadge.text = "\(count)"
+            logoBadge.isHidden = false
+        } else {
+            logoBadge.isHidden = true
+        }
+    }
 
     func showStatusMessage(_ message: String) {
         statusLabel.text = message
@@ -165,127 +297,112 @@ class ToolbarView: UIView {
         statusLabel.isHidden = true
     }
 
-    private var customTheme: KeyboardTheme?
-
     func applyTheme(_ theme: KeyboardTheme?) {
         customTheme = theme
     }
 
     func updateAppearance(isDark: Bool) {
+        self.isDark = isDark
+        let textColor: UIColor
+        let suggestionBg: UIColor
+
         if let theme = customTheme {
             backgroundColor = theme.toolbarBackground
-            for case let btn as UIButton in stack.arrangedSubviews {
-                btn.tintColor = theme.keyTextColor
-            }
-            for btn in suggestionButtons {
-                btn.setTitleColor(theme.keyTextColor, for: .normal)
-            }
-            dismissButton.setTitleColor(theme.keyTextColor, for: .normal)
-            let suggestionBg = theme.keyboardBackground
-            suggestionStack.backgroundColor = suggestionBg
-            dismissButton.backgroundColor = suggestionBg
+            textColor = theme.keyTextColor
+            suggestionBg = theme.keyboardBackground
         } else {
             backgroundColor = isDark ? UIColor(white: 0.12, alpha: 1) : .clear
-            for case let btn as UIButton in stack.arrangedSubviews {
-                btn.tintColor = isDark ? .white : .label
-            }
-            for btn in suggestionButtons {
-                btn.setTitleColor(isDark ? .white : .label, for: .normal)
-            }
-            dismissButton.setTitleColor(isDark ? .white : .label, for: .normal)
-            let suggestionBg = isDark
+            textColor = isDark ? .white : .label
+            suggestionBg = isDark
                 ? UIColor(white: 0.08, alpha: 1)
                 : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1)
-            suggestionStack.backgroundColor = suggestionBg
-            dismissButton.backgroundColor = suggestionBg
         }
+
+        // Left group icons
+        for case let btn as UIButton in leftGroup.arrangedSubviews {
+            btn.tintColor = textColor
+        }
+
+        // Dismiss button
+        dismissButton.setTitleColor(textColor, for: .normal)
+        suggestionScrollView.backgroundColor = suggestionBg
+        dismissButton.backgroundColor = suggestionBg
+
+        // Update chip colors
+        updateChipAppearance()
     }
 
+    func updatePillLabels() {
+        correctionPill.setTitle(L("reward.mode.correction"), for: .normal)
+        translationPill.setTitle(L("reward.mode.translation"), for: .normal)
+    }
+
+    // MARK: - Suggestions (Chip Style)
+
     func showSuggestions(_ suggestions: [String]) {
-        for (i, btn) in suggestionButtons.enumerated() {
-            if i < suggestions.count {
-                btn.setTitle(suggestions[i], for: .normal)
-                btn.isHidden = false
-            } else {
-                btn.setTitle(nil, for: .normal)
-                btn.isHidden = true
-            }
-            btn.titleLabel?.font = .systemFont(ofSize: 15)
+        // Clear old chips
+        suggestionChipStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        for (i, suggestion) in suggestions.enumerated() {
+            let chip = createSuggestionChip(title: suggestion, tag: i, isPrimary: i == 0)
+            suggestionChipStack.addArrangedSubview(chip)
         }
-        stack.isHidden = true
-        suggestionStack.isHidden = false
-        separatorLines.forEach { $0.isHidden = false }
+
+        toolbarStack.isHidden = true
+        suggestionScrollView.isHidden = false
         dismissButton.isHidden = false
         dismissSeparator.isHidden = false
-        bottomBorder.isHidden = false
-        setNeedsLayout()
+        suggestionScrollView.contentOffset = .zero
     }
 
     func hideSuggestions() {
-        suggestionStack.isHidden = true
-        stack.isHidden = false
-        separatorLines.forEach { $0.isHidden = true }
+        suggestionScrollView.isHidden = true
+        toolbarStack.isHidden = false
         dismissButton.isHidden = true
         dismissSeparator.isHidden = true
-        bottomBorder.isHidden = true
     }
 
-    private func buildSuggestionButtons() {
-        // 버튼 3개만 stack에 추가 (separator 제외)
-        for i in 0..<3 {
-            let btn = UIButton(type: .system)
-            btn.titleLabel?.font = .systemFont(ofSize: 15)
-            btn.setTitleColor(.label, for: .normal)
-            btn.tag = i
-            btn.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
-            suggestionButtons.append(btn)
-            suggestionStack.addArrangedSubview(btn)
+    private func createSuggestionChip(title: String, tag: Int, isPrimary: Bool) -> UIButton {
+        let chip = UIButton(type: .system)
+        chip.setTitle(title, for: .normal)
+        chip.tag = tag
+
+        if isPrimary {
+            chip.backgroundColor = UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1) // accent
+            chip.setTitleColor(.white, for: .normal)
+            chip.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+            chip.layer.shadowColor = UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 0.3).cgColor
+            chip.layer.shadowOffset = CGSize(width: 0, height: 1)
+            chip.layer.shadowOpacity = 1
+            chip.layer.shadowRadius = 4
+        } else {
+            let chipBg = customTheme?.keyBackground ?? (isDark ? UIColor(white: 0.29, alpha: 1) : .white)
+            chip.backgroundColor = chipBg
+            chip.setTitleColor(customTheme?.keyTextColor ?? (isDark ? .white : .label), for: .normal)
+            chip.titleLabel?.font = .systemFont(ofSize: 14, weight: .regular)
+            chip.layer.shadowColor = UIColor.black.cgColor
+            chip.layer.shadowOffset = CGSize(width: 0, height: 1)
+            chip.layer.shadowOpacity = isDark ? 0.4 : 0.2
+            chip.layer.shadowRadius = 0.5
         }
 
-        // 구분선 2개를 별도 subview로 추가
-        for _ in 0..<2 {
-            let sep = UIView()
-            sep.backgroundColor = .separator
-            sep.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(sep)
-            separatorLines.append(sep)
+        chip.contentEdgeInsets = UIEdgeInsets(top: 8, left: 14, bottom: 8, right: 14)
+        chip.layer.cornerRadius = 10
+        chip.clipsToBounds = false
+        chip.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
+        return chip
+    }
+
+    private func updateChipAppearance() {
+        for case let chip as UIButton in suggestionChipStack.arrangedSubviews {
+            let isPrimary = chip.tag == 0
+            if !isPrimary {
+                let chipBg = customTheme?.keyBackground ?? (isDark ? UIColor(white: 0.29, alpha: 1) : .white)
+                chip.backgroundColor = chipBg
+                chip.setTitleColor(customTheme?.keyTextColor ?? (isDark ? .white : .label), for: .normal)
+                chip.layer.shadowOpacity = isDark ? 0.4 : 0.2
+            }
         }
-
-        // 하단 경계선
-        bottomBorder.backgroundColor = .separator
-        bottomBorder.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(bottomBorder)
-
-        NSLayoutConstraint.activate([
-            bottomBorder.leadingAnchor.constraint(equalTo: leadingAnchor),
-            bottomBorder.trailingAnchor.constraint(equalTo: trailingAnchor),
-            bottomBorder.bottomAnchor.constraint(equalTo: bottomAnchor),
-            bottomBorder.heightAnchor.constraint(equalToConstant: 0.5),
-        ])
-
-        bottomBorder.isHidden = true
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        guard !suggestionStack.isHidden, suggestionButtons.count == 3 else { return }
-        let availableWidth = bounds.width - 44 - 0.5 // dismiss button + separator
-        let thirdWidth = availableWidth / 3.0
-        for (i, sep) in separatorLines.enumerated() {
-            let x = thirdWidth * CGFloat(i + 1)
-            let sepHeight = bounds.height * 0.5
-            let y = (bounds.height - sepHeight) / 2.0
-            sep.frame = CGRect(x: x - 0.25, y: y, width: 0.5, height: sepHeight)
-        }
-    }
-
-    @objc private func suggestionTapped(_ sender: UIButton) {
-        guard let title = sender.title(for: .normal), !title.isEmpty else { return }
-        onSuggestionTap?(title)
-    }
-
-    @objc private func dismissTapped() {
-        onSuggestionDismiss?()
     }
 
     // MARK: - Hit Test
@@ -293,18 +410,42 @@ class ToolbarView: UIView {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard !isHidden, bounds.contains(point) else { return nil }
 
-        // Suggestion mode: use default hit-testing
-        if !suggestionStack.isHidden {
+        // Suggestion mode: default hit-testing
+        if !suggestionScrollView.isHidden {
             return super.hitTest(point, with: event)
         }
 
-        // Toolbar mode: route any touch to the nearest toolbar button
-        guard !stack.isHidden else { return nil }
-        let stackPoint = convert(point, to: stack)
+        // Toolbar mode: check pills first, then icons
+        guard !toolbarStack.isHidden else { return nil }
+
+        // Check right group pills first (they have higher priority)
+        let rightPoint = convert(point, to: rightGroup)
+        if rightGroup.bounds.contains(rightPoint) {
+            return rightGroup.hitTest(rightPoint, with: event)
+        }
+
+        // Then check left group — route to nearest button
+        let leftPoint = convert(point, to: leftGroup)
+        if leftGroup.bounds.contains(leftPoint) {
+            var nearestButton: UIButton?
+            var nearestDistance: CGFloat = .greatestFiniteMagnitude
+            for case let btn as UIButton in leftGroup.arrangedSubviews {
+                let dist = abs(leftPoint.x - btn.frame.midX)
+                if dist < nearestDistance {
+                    nearestDistance = dist
+                    nearestButton = btn
+                }
+            }
+            return nearestButton ?? super.hitTest(point, with: event)
+        }
+
+        // Flex space area — route to nearest left icon
+        let stackPoint = convert(point, to: toolbarStack)
         var nearestButton: UIButton?
         var nearestDistance: CGFloat = .greatestFiniteMagnitude
-        for case let btn as UIButton in stack.arrangedSubviews {
-            let dist = abs(stackPoint.x - btn.frame.midX)
+        for case let btn as UIButton in leftGroup.arrangedSubviews {
+            let btnCenter = leftGroup.convert(CGPoint(x: btn.frame.midX, y: btn.frame.midY), to: toolbarStack)
+            let dist = abs(stackPoint.x - btnCenter.x)
             if dist < nearestDistance {
                 nearestDistance = dist
                 nearestButton = btn
@@ -316,7 +457,14 @@ class ToolbarView: UIView {
     // MARK: - Actions
 
     @objc private func logoTapped() {
-        // App branding — no-op for now
+        onLogoTap?()
+    }
+
+    @objc private func handleLogoLongPress(_ gesture: UILongPressGestureRecognizer) {
+        if gesture.state == .began {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onLogoLongPress?()
+        }
     }
 
     @objc private func emojiButtonTapped() {
@@ -327,19 +475,26 @@ class ToolbarView: UIView {
         onClipboardTap?()
     }
 
-    @objc private func clipboardTapped() {
+    @objc private func savedPhrasesTapped() {
         onSavedPhrasesTap?()
     }
 
-    @objc private func checklistTapped() {
+    @objc private func correctionPillTapped() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         onCorrectionToggle?()
     }
 
-    @objc private func translateTapped() {
+    @objc private func translationPillTapped() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         onTranslateToggle?()
     }
 
-    @objc private func settingsTapped() {
-        onSettingsTap?()
+    @objc private func chipTapped(_ sender: UIButton) {
+        guard let title = sender.title(for: .normal), !title.isEmpty else { return }
+        onSuggestionTap?(title)
+    }
+
+    @objc private func dismissTapped() {
+        onSuggestionDismiss?()
     }
 }

@@ -61,6 +61,10 @@ class KeyboardLayoutView: UIView {
         didSet { if oldValue != returnKeyIsBlue { buildKeyboard() } }
     }
 
+    // Mode-aware return key override (Proposal 03)
+    private var returnKeyModeOverride: KeyboardMode?
+    private var returnKeyHasText: Bool = true
+
     var showNumberRow: Bool = true {
         didSet { if oldValue != showNumberRow { buildKeyboard() } }
     }
@@ -1184,6 +1188,42 @@ class KeyboardLayoutView: UIView {
         guard currentPage == .letters else { return }
         guard isShifted != shifted else { return }
         isShifted = shifted
+        buildKeyboard()
+    }
+
+    // MARK: - Mode-Aware Return Key (Proposal 03)
+
+    func updateReturnKey(mode: KeyboardMode, hasText: Bool) {
+        returnKeyModeOverride = mode
+        returnKeyHasText = hasText
+
+        // Find the return key button and update it in-place (no full rebuild)
+        guard let returnButton = allKeyButtons.first(where: { $0.accessibilityLabel == Self.returnKey }) else { return }
+
+        let config: (label: String, color: UIColor)
+        switch mode {
+        case .defaultMode, .phraseInputMode:
+            // Don't override — use the standard returnKeyDisplayName/returnKeyIsBlue logic
+            returnButton.alpha = 1.0
+            returnButton.isUserInteractionEnabled = false // touch handled at view level
+            return
+        case .translationMode:
+            config = (L("keyboard.return.translate"), UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1))
+        case .correctionMode:
+            config = (L("keyboard.return.correct"), UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 1))
+        }
+
+        returnButton.setTitle(config.label, for: .normal)
+        returnButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        returnButton.setImage(nil, for: .normal)
+        returnButton.backgroundColor = config.color
+        returnButton.setTitleColor(.white, for: .normal)
+        returnButton.alpha = hasText ? 1.0 : 0.5
+    }
+
+    func clearReturnKeyOverride() {
+        returnKeyModeOverride = nil
+        returnKeyHasText = true
         buildKeyboard()
     }
 }

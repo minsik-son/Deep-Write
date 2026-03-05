@@ -82,6 +82,15 @@
 "keyboard.return.emergency" = "Urgence";
 "keyboard.return.continue" = "Continuer";
 "keyboard.return.newline" = "retour";
+"keyboard.return.translate" = "Traduire";
+"keyboard.return.correct" = "Corriger";
+"keyboard.status.remaining_today" = "Restant aujourd'hui";
+"keyboard.status.plan" = "Forfait";
+"keyboard.status.upgrade_pro" = " passer";
+"keyboard.menu.settings" = "Paramètres du clavier";
+"keyboard.menu.help" = "Aide";
+"keyboard.suggestion.recommended" = "Recommandé";
+"keyboard.suggestion.alternative" = "Alternative";
 
 // === Keyboard UI ===
 "keyboard.space" = "espace";
