@@ -467,8 +467,8 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Deferred Callbacks
 
     private func setupTranslationCallbacks() {
-        translationInputView.onCloseTranslation = { [weak self] in
-            self?.exitTranslationMode()
+        translationInputView.onClearText = { [weak self] in
+            self?.translationManager.cancelPending()
         }
         translationInputView.onHeightChanged = { [weak self] newHeight in
             self?.updateInputHeight(newHeight, isTranslation: true)
@@ -489,7 +489,7 @@ class KeyboardViewController: UIInputViewController {
 
     private func setupCorrectionCallbacks() {
         correctionInputView.setPlaceholder(L("correction.placeholder"))
-        correctionInputView.onCloseTranslation = { [weak self] in
+        correctionInputView.onClearText = { [weak self] in
             self?.exitCorrectionMode()
         }
         correctionInputView.onHeightChanged = { [weak self] newHeight in
@@ -500,6 +500,9 @@ class KeyboardViewController: UIInputViewController {
         }
         correctionLanguageBar.onToneTap = { [weak self] in
             self?.toggleTonePicker()
+        }
+        correctionLanguageBar.onCloseTap = { [weak self] in
+            self?.exitCorrectionMode()
         }
     }
 

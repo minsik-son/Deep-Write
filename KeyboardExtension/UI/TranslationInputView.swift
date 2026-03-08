@@ -3,7 +3,7 @@ import UIKit
 class TranslationInputView: UIView {
 
     var onTextChanged: ((String) -> Void)?
-    var onCloseTranslation: (() -> Void)?
+    var onClearText: (() -> Void)?
     var onHeightChanged: ((CGFloat) -> Void)?
 
     private var textBuffer: String = ""
@@ -55,12 +55,13 @@ class TranslationInputView: UIView {
         return label
     }()
 
-    private let closeButton: UIButton = {
+    private let clearButton: UIButton = {
         let btn = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        btn.setImage(UIImage(systemName: "xmark", withConfiguration: config), for: .normal)
+        btn.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: config), for: .normal)
         btn.tintColor = .tertiaryLabel
         btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.isHidden = true
         return btn
     }()
 
@@ -105,7 +106,7 @@ class TranslationInputView: UIView {
         containerView.addSubview(placeholderLabel)
         containerView.addSubview(cursorView)
         containerView.addSubview(counterLabel)
-        containerView.addSubview(closeButton)
+        containerView.addSubview(clearButton)
 
         NSLayoutConstraint.activate([
             // Container fills self with margins
@@ -115,14 +116,14 @@ class TranslationInputView: UIView {
             containerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
 
             // Close button — top-right, fixed position
-            closeButton.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 7),
-            closeButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -2),
-            closeButton.widthAnchor.constraint(equalToConstant: 30),
-            closeButton.heightAnchor.constraint(equalToConstant: 30),
+            clearButton.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 7),
+            clearButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -2),
+            clearButton.widthAnchor.constraint(equalToConstant: 30),
+            clearButton.heightAnchor.constraint(equalToConstant: 30),
 
             // Counter — top-right, next to close button
             counterLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
-            counterLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -4),
+            counterLabel.trailingAnchor.constraint(equalTo: clearButton.leadingAnchor, constant: -4),
 
             // Input label — fills left area, multi-line, no max height
             inputLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 10),
@@ -151,7 +152,7 @@ class TranslationInputView: UIView {
         cursorTop?.isActive = true
 
         // Actions
-        closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        clearButton.addTarget(self, action: #selector(clearTapped), for: .touchUpInside)
 
         updateDisplay()
     }
@@ -164,7 +165,10 @@ class TranslationInputView: UIView {
 
     // MARK: - Actions
 
-    @objc private func closeTapped() { onCloseTranslation?() }
+    @objc private func clearTapped() {
+        onClearText?()
+        clear()
+    }
 
     // MARK: - Public Methods
 
@@ -194,6 +198,7 @@ class TranslationInputView: UIView {
         inputLabel.text = text
         placeholderLabel.isHidden = !text.isEmpty
         counterLabel.isHidden = text.isEmpty
+        clearButton.isHidden = text.isEmpty
         updateCounter(count: text.count)
         notifyHeightChangeIfNeeded()
         updateCursorPosition()
@@ -214,12 +219,12 @@ class TranslationInputView: UIView {
             backgroundColor = theme.toolbarBackground
             containerView.backgroundColor = theme.keyBackground
             inputLabel.textColor = theme.keyTextColor
-            closeButton.tintColor = theme.keyTextColor.withAlphaComponent(0.4)
+            clearButton.tintColor = theme.keyTextColor.withAlphaComponent(0.4)
             placeholderLabel.textColor = theme.keyTextColor.withAlphaComponent(0.4)
         } else {
             backgroundColor = .clear
             containerView.backgroundColor = isDark ? UIColor(white: 0.18, alpha: 1) : UIColor(white: 0.95, alpha: 1)
-            closeButton.tintColor = isDark ? UIColor(white: 0.4, alpha: 1) : .tertiaryLabel
+            clearButton.tintColor = isDark ? UIColor(white: 0.4, alpha: 1) : .tertiaryLabel
             inputLabel.textColor = isDark ? .white : .label
             placeholderLabel.textColor = isDark ? UIColor(white: 0.6, alpha: 1) : UIColor.placeholderText.withAlphaComponent(0.5)
         }
@@ -247,6 +252,7 @@ class TranslationInputView: UIView {
         inputLabel.text = textBuffer
         placeholderLabel.isHidden = !textBuffer.isEmpty
         counterLabel.isHidden = textBuffer.isEmpty
+        clearButton.isHidden = textBuffer.isEmpty
         updateCounter(count: textBuffer.count)
         notifyHeightChangeIfNeeded()
         updateCursorPosition()
