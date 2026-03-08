@@ -1179,9 +1179,17 @@ class KeyboardViewController: UIInputViewController {
 
         switch tab {
         case .source:
+            if language.code == targetLanguageCode {
+                targetLanguageCode = sourceLanguageCode
+                AppGroupManager.shared.set(targetLanguageCode, forKey: AppConstants.UserDefaultsKeys.targetLanguage)
+            }
             sourceLanguageCode = language.code
             AppGroupManager.shared.set(language.code, forKey: AppConstants.UserDefaultsKeys.sourceLanguage)
         case .target:
+            if language.code == sourceLanguageCode {
+                sourceLanguageCode = targetLanguageCode
+                AppGroupManager.shared.set(sourceLanguageCode, forKey: AppConstants.UserDefaultsKeys.sourceLanguage)
+            }
             targetLanguageCode = language.code
             AppGroupManager.shared.set(language.code, forKey: AppConstants.UserDefaultsKeys.targetLanguage)
         }

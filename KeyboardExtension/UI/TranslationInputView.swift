@@ -20,7 +20,7 @@ class TranslationInputView: UIView {
         label.font = .systemFont(ofSize: 15)
         label.textColor = .label
         label.numberOfLines = 0
-        label.lineBreakMode = .byWordWrapping
+        label.lineBreakMode = .byCharWrapping
         label.translatesAutoresizingMaskIntoConstraints = false
         label.setContentHuggingPriority(.required, for: .vertical)
         label.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -201,6 +201,7 @@ class TranslationInputView: UIView {
         clearButton.isHidden = text.isEmpty
         updateCounter(count: text.count)
         notifyHeightChangeIfNeeded()
+        layoutIfNeeded()
         updateCursorPosition()
     }
 
@@ -255,6 +256,7 @@ class TranslationInputView: UIView {
         clearButton.isHidden = textBuffer.isEmpty
         updateCounter(count: textBuffer.count)
         notifyHeightChangeIfNeeded()
+        layoutIfNeeded()
         updateCursorPosition()
     }
 
@@ -294,51 +296,84 @@ class TranslationInputView: UIView {
         }
 
         let font = inputLabel.font!
-        let lineHeight = ceil(font.lineHeight)
 
-        // Use Core Text (CTFramesetter) — matches UILabel's internal text rendering engine,
-        // unlike NSLayoutManager (TextKit 1) which wraps text at different positions
+        // ─── TextKit 1 스택 생성 (UILabel과 동일한 레이아웃 엔진) ───
+        let textStorage = NSTextStorage(string: text)
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(size: CGSize(width: maxWidth, height: .greatestFiniteMagnitude))
+
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = inputLabel.lineBreakMode
+
+        textStorage.addLayoutManager(layoutManager)
+        layoutManager.addTextContainer(textContainer)
+
+        // 폰트 + paragraphStyle 적용
+        let fullRange = NSRange(location: 0, length: textStorage.length)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = inputLabel.lineBreakMode
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .paragraphStyle: paragraphStyle
-        ]
+        textStorage.addAttribute(.font, value: font, range: fullRange)
+        textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
 
-        // Text ends with \n — cursor goes to the beginning of the next empty line
+        // 레이아웃 강제 계산
+        layoutManager.ensureLayout(for: textContainer)
+
+        // ═══════════════════════════════════════════════════════════
+        // CASE 1: 텍스트가 "\n"으로 끝남 → 다음 빈 줄의 맨 앞에 커서
+        // ═══════════════════════════════════════════════════════════
         if text.hasSuffix("\n") {
-            let attrString = NSAttributedString(string: text + " ", attributes: attrs)
-            let frameSetter = CTFramesetterCreateWithAttributedString(attrString)
-            let path = CGMutablePath()
-            path.addRect(CGRect(x: 0, y: 0, width: maxWidth, height: .greatestFiniteMagnitude))
-            let frame = CTFramesetterCreateFrame(frameSetter, CFRange(location: 0, length: 0), path, nil)
-            let lineCount = (CTFrameGetLines(frame) as! [CTLine]).count
+            let lastCharRange = NSRange(location: max(0, textStorage.length - 1), length: 1)
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: lastCharRange, actualCharacterRange: nil)
 
-            cursorLeading?.constant = 0
-            cursorTop?.constant = max(0, CGFloat(lineCount - 1) * lineHeight)
+            if glyphRange.location != NSNotFound {
+                let lineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
+                cursorLeading?.constant = 0
+                cursorTop?.constant = lineRect.origin.y + lineRect.size.height
+            } else {
+                cursorLeading?.constant = 0
+                cursorTop?.constant = 0
+            }
             return
         }
 
-        let attrString = NSAttributedString(string: text, attributes: attrs)
-        let frameSetter = CTFramesetterCreateWithAttributedString(attrString)
-        let path = CGMutablePath()
-        path.addRect(CGRect(x: 0, y: 0, width: maxWidth, height: .greatestFiniteMagnitude))
-        let frame = CTFramesetterCreateFrame(frameSetter, CFRange(location: 0, length: 0), path, nil)
-        let lines = CTFrameGetLines(frame) as! [CTLine]
-
-        guard !lines.isEmpty else {
+        // ═══════════════════════════════════════════════════════════
+        // CASE 2: 일반 텍스트 → 마지막 글자 뒤에 커서
+        // ═══════════════════════════════════════════════════════════
+        let lastCharIndex = textStorage.length - 1
+        guard lastCharIndex >= 0 else {
             cursorLeading?.constant = 0
             cursorTop?.constant = 0
             return
         }
 
-        // Y: position cursor at the top of the last line
-        cursorTop?.constant = max(0, CGFloat(lines.count - 1) * lineHeight)
+        let lastCharRange = NSRange(location: lastCharIndex, length: 1)
+        let glyphRange = layoutManager.glyphRange(forCharacterRange: lastCharRange, actualCharacterRange: nil)
 
-        // X: exact offset after the last character on the last line
-        let lastLine = lines.last!
-        let lineRange = CTLineGetStringRange(lastLine)
-        let cursorOffset = CTLineGetOffsetForStringIndex(lastLine, lineRange.location + lineRange.length, nil)
-        cursorLeading?.constant = min(CGFloat(cursorOffset), maxWidth)
+        guard glyphRange.length > 0, glyphRange.location != NSNotFound else {
+            cursorLeading?.constant = 0
+            cursorTop?.constant = 0
+            return
+        }
+
+        let lastGlyphIndex = glyphRange.location
+
+        // 마지막 글리프가 속한 줄의 프레임
+        let lineFragmentRect = layoutManager.lineFragmentRect(forGlyphAt: lastGlyphIndex, effectiveRange: nil)
+
+        // 마지막 글리프의 줄 내 위치
+        let glyphLocation = layoutManager.location(forGlyphAt: lastGlyphIndex)
+
+        // 마지막 글리프의 바운딩 렉트 (너비 계산용)
+        let singleGlyphRange = NSRange(location: lastGlyphIndex, length: 1)
+        let boundingRect = layoutManager.boundingRect(forGlyphRange: singleGlyphRange, in: textContainer)
+
+        // X: 글리프 위치 + 글리프 너비 = 글리프 바로 뒤
+        let cursorX = glyphLocation.x + boundingRect.width
+
+        // Y: 줄 프레임의 시작 Y
+        let cursorY = lineFragmentRect.origin.y
+
+        cursorLeading?.constant = min(cursorX, maxWidth)
+        cursorTop?.constant = max(0, cursorY)
     }
 }

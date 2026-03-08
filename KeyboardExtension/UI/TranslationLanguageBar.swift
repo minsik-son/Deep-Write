@@ -24,6 +24,7 @@ class TranslationLanguageBar: UIView {
         btn.titleLabel?.textAlignment = .right
         btn.contentHorizontalAlignment = .right
         btn.contentEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        btn.setTitleColor(.label, for: .normal)
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
@@ -35,6 +36,7 @@ class TranslationLanguageBar: UIView {
         btn.titleLabel?.textAlignment = .left
         btn.contentHorizontalAlignment = .left
         btn.contentEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        btn.setTitleColor(.label, for: .normal)
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
