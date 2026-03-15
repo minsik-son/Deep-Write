@@ -403,17 +403,17 @@ final class CherryBlossomView: UIView {
         let vSpeed: CGFloat
 
         if dirRoll < 0.70 {
-            // 7시 방향 — 왼쪽 아래 대각선
-            hSpeed = CGFloat.random(in: -80 ... -30)
-            vSpeed = CGFloat.random(in: 40...80)
+            // 7시 방향 — 왼쪽 아래 대각선 (속도 절반)
+            hSpeed = CGFloat.random(in: -40 ... -15)
+            vSpeed = CGFloat.random(in: 20...40)
         } else if dirRoll < 0.85 {
-            // 9시 방향 — 거의 수평
-            hSpeed = CGFloat.random(in: -100 ... -50)
-            vSpeed = CGFloat.random(in: 15...35)
+            // 9시 방향 — 거의 수평 (속도 절반)
+            hSpeed = CGFloat.random(in: -50 ... -25)
+            vSpeed = CGFloat.random(in: 8...18)
         } else {
-            // 수직 낙하
-            hSpeed = CGFloat.random(in: -15...5)
-            vSpeed = CGFloat.random(in: 50...90)
+            // 수직 낙하 (속도 절반)
+            hSpeed = CGFloat.random(in: -8...3)
+            vSpeed = CGFloat.random(in: 25...45)
         }
 
         return Petal(
@@ -473,7 +473,7 @@ final class CherryBlossomView: UIView {
         petal.x += petal.horizontalSpeed * dt
 
         // 좌우 wobble (sin wave)
-        petal.wobblePhase += dt * 1.2
+        petal.wobblePhase += dt * 0.6
         let sway = sin(petal.wobblePhase) * petal.wobbleAmp * 0.3
         petal.x += sway
 
@@ -521,14 +521,14 @@ final class CherryBlossomView: UIView {
         // 방향 재랜덤
         let dirRoll = CGFloat.random(in: 0...1)
         if dirRoll < 0.70 {
-            petal.horizontalSpeed = CGFloat.random(in: -80 ... -30)
-            petal.speed = CGFloat.random(in: 40...80)
+            petal.horizontalSpeed = CGFloat.random(in: -40 ... -15)
+            petal.speed = CGFloat.random(in: 20...40)
         } else if dirRoll < 0.85 {
-            petal.horizontalSpeed = CGFloat.random(in: -100 ... -50)
-            petal.speed = CGFloat.random(in: 15...35)
+            petal.horizontalSpeed = CGFloat.random(in: -50 ... -25)
+            petal.speed = CGFloat.random(in: 8...18)
         } else {
-            petal.horizontalSpeed = CGFloat.random(in: -15...5)
-            petal.speed = CGFloat.random(in: 50...90)
+            petal.horizontalSpeed = CGFloat.random(in: -8...3)
+            petal.speed = CGFloat.random(in: 25...45)
         }
     }
 
