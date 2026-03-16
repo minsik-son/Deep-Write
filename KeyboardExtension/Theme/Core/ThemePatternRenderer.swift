@@ -2,57 +2,70 @@ import UIKit
 
 final class ThemePatternRenderer {
 
-    /// 64×64 패턴 타일 이미지 생성. 캐시하여 재사용.
-    private static var cache: [String: UIImage] = [:]
+    /// 직렬 큐: NSCache 접근의 원자성 보장 (null 체크 → 생성 → setObject race condition 방지)
+    private static let cacheQueue = DispatchQueue(label: "com.translatorkeyboard.patternCache")
+
+    /// NSCache: OS 메모리 압박 시 자동 퇴거(eviction). countLimit=5로 동시 보유 패턴 제한.
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.countLimit = 5
+        c.totalCostLimit = 5 * 1024 * 1024  // 5MB 상한
+        return c
+    }()
 
     static func patternImage(style: PatternStyle, tint: UIColor, opacity: CGFloat, size: CGSize = CGSize(width: 64, height: 64)) -> UIImage? {
         guard style != .none else { return nil }
 
         let key = "\(style)-\(tint.hexString)-\(opacity)-\(size.width)x\(size.height)"
-        if let cached = cache[key] { return cached }
+        let nsKey = key as NSString
 
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { ctx in
-            let rect = CGRect(origin: .zero, size: size)
-            UIColor.clear.setFill()
-            ctx.fill(rect)
+        // ── 직렬 큐로 원자적 캐시 접근 ──
+        return cacheQueue.sync {
+            if let cached = cache.object(forKey: nsKey) { return cached }
 
-            switch style {
-            case .stars:
-                drawStars(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .noise:
-                drawNoise(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .aurora:
-                drawAurora(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .metalLines:
-                drawMetalLines(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .petals:
-                drawPetals(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .bubbles:
-                drawBubbles(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .woodGrain:
-                drawWoodGrain(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .matrixRain:
-                drawMatrixRain(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .ripple:
-                drawRipple(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .edgeGlow:
-                drawEdgeGlow(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
-            case .snowfall:
-                break  // 눈 파티클은 SnowfallView에서 처리, 패턴 이미지 불필요
-            case .cherryBlossom:
-                break  // 벚꽃 파티클은 CherryBlossomView에서 처리
-            case .none:
-                break
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let image = renderer.image { ctx in
+                let rect = CGRect(origin: .zero, size: size)
+                UIColor.clear.setFill()
+                ctx.fill(rect)
+
+                switch style {
+                case .stars:
+                    drawStars(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .noise:
+                    drawNoise(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .aurora:
+                    drawAurora(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .metalLines:
+                    drawMetalLines(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .petals:
+                    drawPetals(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .bubbles:
+                    drawBubbles(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .woodGrain:
+                    drawWoodGrain(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .matrixRain:
+                    drawMatrixRain(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .ripple:
+                    drawRipple(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .edgeGlow:
+                    drawEdgeGlow(in: ctx.cgContext, rect: rect, tint: tint, opacity: opacity)
+                case .snowfall:
+                    break  // 눈 파티클은 SnowfallView에서 처리, 패턴 이미지 불필요
+                case .cherryBlossom:
+                    break  // 벚꽃 파티클은 CherryBlossomView에서 처리
+                case .none:
+                    break
+                }
             }
-        }
 
-        cache[key] = image
-        return image
+            cache.setObject(image, forKey: nsKey)
+            return image
+        }
     }
 
     static func clearCache() {
-        cache.removeAll()
+        cache.removeAllObjects()
     }
 
     // MARK: - Pattern Drawing Methods (고정값 — 랜덤 없음)

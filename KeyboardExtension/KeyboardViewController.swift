@@ -143,19 +143,35 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Lifecycle
 
     deinit {
-        kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        #if DEBUG
+        kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier)")
         kbLogger.warning("💀 children.count at deinit = \(self.children.count)")
+        #endif
 
-        // 강제 정리 (디버그용 — deinit이 호출되는지 확인이 목적)
+        // NotificationCenter 정리 (스레드 무관 — iOS 9+ 안전)
         NotificationCenter.default.removeObserver(self)
+
+        // 안전망: viewWillDisappear에서 이미 정리되었으면 nil → 스킵.
+        // 만약 viewWillDisappear 없이 deinit이 호출되는 예외 상황 대비.
+        // UIInputViewController의 deinit은 UIKit이 메인스레드에서 호출.
+        if let hc = settingsLinkHostingController {
+            hc.willMove(toParent: nil)
+            hc.view.removeFromSuperview()
+            hc.removeFromParent()
+            settingsLinkHostingController = nil
+        }
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // CoreText 글리프 캐시 swizzling 활성화 (1회만 실행, 중복 호출 안전)
+        CoreTextCacheManager.activate()
+        #if DEBUG
         kbLogger.info("📌 viewDidLoad START — pid=\(ProcessInfo.processInfo.processIdentifier)")
         kbLogger.info("📌 Memory at viewDidLoad: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 Memory comparison — phys_footprint: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB, resident_size: \(self.currentResidentMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
-
+        #endif
 
         HistoryManager.shared.migrateClipboardHistoryIfNeeded()
         setupUI()
@@ -174,13 +190,24 @@ class KeyboardViewController: UIInputViewController {
             object: nil
         )
 
+        #if DEBUG
         kbLogger.info("📌 viewDidLoad END — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        #endif
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        #if DEBUG
         kbLogger.warning("⚠️ didReceiveMemoryWarning! Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        #endif
+
+        // Static 캐시 일괄 해제
         ThemePatternRenderer.clearCache()
+        MatrixRainView.clearCharacterImageCache()
+
+        #if DEBUG
+        kbLogger.warning("⚠️ After cache clear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        #endif
     }
 
     @objc private func powerStateDidChange() {
@@ -189,8 +216,20 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        #if DEBUG
         kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 settingsLinkHostingController isNil=\(self.settingsLinkHostingController == nil), container.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
+        #endif
+
+        // ════════════════════════════════════════════
+        // 조기 해제 복원 — 같은 인스턴스 재사용 시 (알림센터, 앱 스위처 등)
+        // viewWillDisappear에서 정리한 리소스를 필요 시 재생성
+        // ════════════════════════════════════════════
+
+        // UIHostingController 복원 (nil이면 setupSettingsLink가 재생성)
+        if settingsLinkHostingController == nil {
+            setupSettingsLink()
+        }
 
         // ── 즉시 필요한 것만 동기 실행 ──
         textProxyManager.updateProxy(textDocumentProxy)
@@ -220,15 +259,111 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        kbLogger.info("📌 viewWillDisappear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
-        kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
 
+        #if DEBUG
+        kbLogger.info("📌 viewWillDisappear START — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
         kbLogger.info("📌 children.count = \(self.children.count)")
-        // CC-4: QuickNote 자동 저장
+        #endif
+
+        // CC-4: QuickNote 자동 저장 (기존 로직 유지)
         if currentMode == .quickNoteMode {
             autoSaveIfNeeded()
         }
         CompositionSessionManager.shared.endSession(reason: .keyboardHidden)
+
+        // ════════════════════════════════════════════
+        // 조기 해제 (Early Teardown) — 단계별 메모리 측정
+        // ════════════════════════════════════════════
+
+        #if DEBUG
+        let mem0 = currentMemoryMB()
+        #endif
+
+        // 1) UIHostingController 즉시 정리
+        if let hc = settingsLinkHostingController {
+            hc.willMove(toParent: nil)
+            hc.view.removeFromSuperview()
+            hc.removeFromParent()
+            settingsLinkHostingController = nil
+        }
+
+        #if DEBUG
+        let mem1 = currentMemoryMB()
+        kbLogger.info("🔬 [1] UIHostingController 정리 후 — Memory: \(mem1, format: .fixed(precision: 2)) MB (delta: \(mem1 - mem0, format: .fixed(precision: 2)) MB)")
+        #endif
+
+        // 2) KeyboardLayoutView 애니메이션 + CADisplayLink 정리
+        keyboardLayoutView.prepareForDismiss()
+
+        #if DEBUG
+        let mem2 = currentMemoryMB()
+        kbLogger.info("🔬 [2] prepareForDismiss 후 — Memory: \(mem2, format: .fixed(precision: 2)) MB (delta: \(mem2 - mem1, format: .fixed(precision: 2)) MB)")
+        #endif
+
+        // 3) Static 캐시 강제 해제
+        #if DEBUG
+        kbLogger.info("🔬 [3] 캐시 상태 — TranslationCache: \(TranslationCache.shared.debugCacheInfo)")
+        #endif
+        ThemePatternRenderer.clearCache()
+        MatrixRainView.clearCharacterImageCache()
+
+        #if DEBUG
+        let mem3 = currentMemoryMB()
+        kbLogger.info("🔬 [3] Static 캐시 해제 후 — Memory: \(mem3, format: .fixed(precision: 2)) MB (delta: \(mem3 - mem2, format: .fixed(precision: 2)) MB)")
+        #endif
+
+        // 4) Optional views 해제
+        #if DEBUG
+        kbLogger.info("🔬 [4] Optional views 상태 — emoji:\(self.emojiKeyboardView != nil) clipboard:\(self.clipboardHistoryView != nil) savedPhrases:\(self.savedPhrasesView != nil) langPicker:\(self.languagePickerView != nil)")
+        #endif
+
+        if let ev = emojiKeyboardView {
+            ev.prepareForDismiss()  // CoreText 글리프 캐시 클리어
+            ev.removeFromSuperview()
+            emojiKeyboardView = nil
+        }
+        if let cv = clipboardHistoryView {
+            cv.removeFromSuperview()
+            clipboardHistoryView = nil
+        }
+        if let sv = savedPhrasesView {
+            sv.removeFromSuperview()
+            savedPhrasesView = nil
+        }
+        if let lp = languagePickerView {
+            lp.removeFromSuperview()
+            languagePickerView = nil
+        }
+
+        #if DEBUG
+        let mem4 = currentMemoryMB()
+        kbLogger.info("🔬 [4] Optional views 해제 후 — Memory: \(mem4, format: .fixed(precision: 2)) MB (delta: \(mem4 - mem3, format: .fixed(precision: 2)) MB)")
+        #endif
+
+        // 5) QuickNote views 해제
+        #if DEBUG
+        kbLogger.info("🔬 [5] QuickNote views 상태 — list:\(self.quickNoteListView != nil) read:\(self.quickNoteReadView != nil) edit:\(self.quickNoteEditView != nil)")
+        #endif
+
+        if let qnl = quickNoteListView {
+            qnl.removeFromSuperview()
+            quickNoteListView = nil
+        }
+        if let qnr = quickNoteReadView {
+            qnr.removeFromSuperview()
+            quickNoteReadView = nil
+        }
+        if let qne = quickNoteEditView {
+            qne.removeFromSuperview()
+            quickNoteEditView = nil
+        }
+
+        #if DEBUG
+        let mem5 = currentMemoryMB()
+        kbLogger.info("🔬 [5] QuickNote views 해제 후 — Memory: \(mem5, format: .fixed(precision: 2)) MB (delta: \(mem5 - mem4, format: .fixed(precision: 2)) MB)")
+        kbLogger.info("📌 viewWillDisappear END — Memory: \(mem5, format: .fixed(precision: 2)) MB (총 delta: \(mem5 - mem0, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func reloadLocalizedStrings() {
@@ -479,6 +614,10 @@ class KeyboardViewController: UIInputViewController {
 
     private func setupTranslationViewsIfNeeded() {
         guard !isTranslationViewsSetUp, let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 setupTranslationViews START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         isTranslationViewsSetUp = true
 
         [translationLanguageBar, translationInputView].forEach {
@@ -515,10 +654,18 @@ class KeyboardViewController: UIInputViewController {
         translationLanguageBar.updateAppearance(isDark: isDark)
         translationInputView.applyTheme(theme)
         translationInputView.updateAppearance(isDark: isDark)
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 setupTranslationViews END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func setupCorrectionViewsIfNeeded() {
         guard !isCorrectionViewsSetUp, let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 setupCorrectionViews START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         isCorrectionViewsSetUp = true
 
         [correctionLanguageBar, correctionInputView].forEach {
@@ -556,10 +703,18 @@ class KeyboardViewController: UIInputViewController {
         correctionLanguageBar.updateAppearance(isDark: isDark)
         correctionInputView.applyTheme(theme)
         correctionInputView.updateAppearance(isDark: isDark)
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 setupCorrectionViews END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func setupPhraseViewsIfNeeded() {
         guard !isPhraseViewsSetUp, let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 setupPhraseViews START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         isPhraseViewsSetUp = true
 
         [phraseInputHeaderView, phraseInputView].forEach {
@@ -587,6 +742,10 @@ class KeyboardViewController: UIInputViewController {
         keyboardTopToPhraseInputConstraint?.priority = .defaultHigh
 
         setupPhraseCallbacks()
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 setupPhraseViews END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     // MARK: - Deferred Callbacks
@@ -745,8 +904,18 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - SwiftUI Settings Link
 
     private func setupSettingsLink() {
+        #if DEBUG
         kbLogger.info("🔗 setupSettingsLink START — existing hostingController isNil=\(self.settingsLinkHostingController == nil)")
         kbLogger.info("🔗 container.subviews.count BEFORE = \(self.toolbarView.settingsLinkContainer.subviews.count)")
+        #endif
+
+        // ── 중복 생성 방지: 이미 설정되어 있으면 스킵 ──
+        if settingsLinkHostingController != nil {
+            #if DEBUG
+            kbLogger.info("🔗 setupSettingsLink SKIPPED — already exists")
+            #endif
+            return
+        }
 
         let hostingController = UIHostingController(rootView: SettingsLinkView())
         hostingController.view.translatesAutoresizingMaskIntoConstraints = false
@@ -768,16 +937,35 @@ class KeyboardViewController: UIInputViewController {
         // UIHostingController 참조 보관 (메모리 해제 방지)
         self.settingsLinkHostingController = hostingController
 
+        #if DEBUG
         kbLogger.info("🔗 setupSettingsLink END — container.subviews.count AFTER = \(self.toolbarView.settingsLinkContainer.subviews.count)")
         kbLogger.info("🔗 Memory after setupSettingsLink: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("🔗 children.count = \(self.children.count)")
+        #endif
     }
 
     // MARK: - Debug: Memory Measurement
 
+    #if DEBUG
+    /// Jetsam이 실제로 보는 phys_footprint (MB)
     private func currentMemoryMB() -> Double {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        if result == KERN_SUCCESS {
+            return Double(info.phys_footprint) / (1024 * 1024)
+        }
+        return 0
+    }
+
+    /// resident_size (비교용, 기존 측정값)
+    private func currentResidentMB() -> Double {
         var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<integer_t>.size)
         let result = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
@@ -786,8 +974,9 @@ class KeyboardViewController: UIInputViewController {
         if result == KERN_SUCCESS {
             return Double(info.resident_size) / (1024 * 1024)
         }
-        return -1
+        return 0
     }
+    #endif
 
     // MARK: - Mode Switching
 
@@ -1031,6 +1220,10 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Saved Phrases
 
     private func showSavedPhrases() {
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showSavedPhrases START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         if savedPhrasesView == nil {
             guard let inputView = self.inputView else { return }
             let sv = SavedPhrasesView()
@@ -1063,6 +1256,10 @@ class KeyboardViewController: UIInputViewController {
         UIView.animate(withDuration: 0.2) {
             self.savedPhrasesView?.alpha = 1
         }
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showSavedPhrases END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func hideSavedPhrases() {
@@ -1088,6 +1285,10 @@ class KeyboardViewController: UIInputViewController {
             showStatusMessage(L("keyboard.error.full_access"))
             return
         }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showClipboard START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         if clipboardHistoryView == nil {
             guard let inputView = self.inputView else { return }
             let cv = ClipboardHistoryView()
@@ -1119,6 +1320,10 @@ class KeyboardViewController: UIInputViewController {
         UIView.animate(withDuration: 0.2) {
             self.clipboardHistoryView?.alpha = 1
         }
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showClipboard END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func hideClipboardHistory() {
@@ -1288,6 +1493,10 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func showEmojiKeyboard() {
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showEmojiKeyboard START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
         if emojiKeyboardView == nil {
             guard let inputView = self.inputView else { return }
             let emoji = EmojiKeyboardView()
@@ -1315,12 +1524,25 @@ class KeyboardViewController: UIInputViewController {
         isEmojiMode = true
         keyboardLayoutView.isHidden = true
         emojiKeyboardView?.isHidden = false
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showEmojiKeyboard END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        kbLogger.info("🔬 CoreText tracked caches: \(CoreTextCacheManager.shared.trackedCacheCount)")
+        #endif
     }
 
     private func hideEmojiKeyboard() {
         isEmojiMode = false
+
+        // 이모지 뷰 dismiss 시 CoreText 글리프 캐시 전체 클리어
+        emojiKeyboardView?.prepareForDismiss()
+
         emojiKeyboardView?.isHidden = true
         keyboardLayoutView.isHidden = false
+
+        #if DEBUG
+        kbLogger.info("🧹 hideEmojiKeyboard — 글리프 캐시 클리어 완료, Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        #endif
     }
 
     private func hasFullAccess() -> Bool {
@@ -2214,6 +2436,10 @@ extension KeyboardViewController {
 
     private func showQuickNoteList() {
         guard let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteList START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
 
         // CC-2: 편집/읽기 뷰가 있으면 제거
         quickNoteEditView?.removeFromSuperview()
@@ -2245,6 +2471,10 @@ extension KeyboardViewController {
         listView.reloadNotes()
 
         inputView.bringSubviewToFront(toastLabel)
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteList END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func setupQuickNoteListCallbacks() {
@@ -2266,6 +2496,10 @@ extension KeyboardViewController {
 
     private func enterQuickNoteRead(note: QuickNote) {
         guard let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteRead START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
 
         quickNoteSubState = .reading(note)
 
@@ -2294,6 +2528,10 @@ extension KeyboardViewController {
 
         applyQuickNoteTheme()
         inputView.bringSubviewToFront(toastLabel)
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteRead END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func setupQuickNoteReadCallbacks(_ readView: QuickNoteReadView, note: QuickNote) {
@@ -2325,6 +2563,10 @@ extension KeyboardViewController {
 
     private func enterQuickNoteEdit(note: QuickNote?) {
         guard let inputView = self.inputView else { return }
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteEdit START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
 
         // READ 뷰가 남아있으면 제거
         quickNoteReadView?.removeFromSuperview()
@@ -2376,6 +2618,10 @@ extension KeyboardViewController {
         updateHeight(for: .quickNoteMode, animated: true)
         inputView.bringSubviewToFront(toastLabel)
         checkAutoCapitalize()
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showQuickNoteEdit END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func setupQuickNoteEditCallbacks() {

@@ -148,6 +148,9 @@ final class CherryBlossomView: UIView {
     }
 
     func stopAnimation() {
+        #if DEBUG
+        print("🔬 CherryBlossom stopAnimation — petals:\(petals.count) flowerLayers:\(flowerLayers.count) sublayers:\(layer.sublayers?.count ?? 0)")
+        #endif
         isAnimating = false
         displayLink?.invalidate()
         displayLink = nil
@@ -352,6 +355,9 @@ final class CherryBlossomView: UIView {
         stamenLayer.strokeColor = nil
         layer.addSublayer(stamenLayer)
         flowerLayers.append(stamenLayer)
+        #if DEBUG
+        print("🔬 CherryBlossom — flowerCluster created: layers=\(flowerLayers.count), total sublayers: \(layer.sublayers?.count ?? 0)")
+        #endif
     }
 
     private func removeFlowerCluster() {
@@ -371,6 +377,9 @@ final class CherryBlossomView: UIView {
             let petal = makePetal(viewW: viewW, viewH: viewH, randomizeY: true)
             petals.append(petal)
         }
+        #if DEBUG
+        print("🔬 CherryBlossom — petals created: \(petals.count), sublayers: \(layer.sublayers?.count ?? 0)")
+        #endif
     }
 
     private func makePetal(viewW: CGFloat, viewH: CGFloat, randomizeY: Bool) -> Petal {

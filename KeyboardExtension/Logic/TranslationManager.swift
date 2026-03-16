@@ -161,6 +161,20 @@ class TranslationManager {
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)
         CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: translatedText)
 
+        #if DEBUG
+        var memInfo = task_vm_info_data_t()
+        var memCount = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let memResult = withUnsafeMutablePointer(to: &memInfo) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(memCount)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &memCount)
+            }
+        }
+        if memResult == KERN_SUCCESS {
+            let mb = Float(memInfo.phys_footprint) / (1024 * 1024)
+            print("🔬 Translation response received — Memory: \(String(format: "%.2f", mb)) MB, cache: \(TranslationCache.shared.debugCacheInfo)")
+        }
+        #endif
+
         // 카운트는 세션 종료 시 CompositionSessionManager에서 1회만 기록
         delegate?.translationManager(self, didTranslate: translatedText, from: sourceLang, to: targetLang)
     }

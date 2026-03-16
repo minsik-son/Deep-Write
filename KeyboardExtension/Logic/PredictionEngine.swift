@@ -81,6 +81,19 @@ final class PredictionEngine {
                 self.unigrams = newUnigrams
                 self.loadedLanguage = language
                 self.isLoading = false
+                #if DEBUG
+                var info = task_vm_info_data_t()
+                var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+                let result = withUnsafeMutablePointer(to: &info) {
+                    $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                        task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+                    }
+                }
+                if result == KERN_SUCCESS {
+                    let mb = Float(info.phys_footprint) / (1024 * 1024)
+                    print("🔬 PredictionEngine loaded — trigrams:\(self.trigrams.count) bigrams:\(self.bigrams.count) unigrams:\(self.unigrams.count) — Memory: \(String(format: "%.2f", mb)) MB")
+                }
+                #endif
                 completion?()
             }
         }

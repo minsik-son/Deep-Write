@@ -58,6 +58,11 @@ final class MatrixRainView: UIView {
         }
     }
 
+    /// 메모리 워닝 시 문자 이미지 캐시 해제 — 다음 startAnimation()에서 재생성됨
+    static func clearCharacterImageCache() {
+        _characterImages = nil
+    }
+
     // MARK: - Color Palette (pre-cached — v3 색상 개선)
 
     /// 20단계 색상 팔레트: index 0 = head (밝은 흰-초록), index 19 = tail (어두운 초록)

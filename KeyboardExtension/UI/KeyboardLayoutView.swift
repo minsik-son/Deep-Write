@@ -799,6 +799,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 3.0
                     button.layer.shadowOpacity = 0.2
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     button.setTitleColor(theme.returnKeyAccentTextColor, for: .normal)
                 } else if case .frostedGlass(_, let borderColor, _) = theme.specialKeyVisualStyle {
                     button.backgroundColor = theme.returnKeyAccentColor
@@ -808,6 +809,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 2.0
                     button.layer.shadowOpacity = 0.05
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     button.setTitleColor(theme.returnKeyAccentTextColor, for: .normal)
                     addSnowCap(to: button)
                 } else {
@@ -833,6 +835,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = CGSize(width: 0, height: 3)
                     button.layer.shadowRadius = 1.5
                     button.layer.shadowOpacity = 1.0
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     // 기존 tag 9902 UIView 정리 (v1 마이그레이션 안전 처리)
                     if let oldHv = button.viewWithTag(9902) { oldHv.removeFromSuperview() }
                     applyWoodHighlightGradient(to: button, highlightAlpha: highlightAlpha)
@@ -844,6 +847,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 3.0
                     button.layer.shadowOpacity = 0.2
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                 case .frostedGlass(let bgAlpha, let borderColor, _):
                     button.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
                     button.layer.borderWidth = 1.0
@@ -852,6 +856,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 2.0
                     button.layer.shadowOpacity = 0.05
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     addSnowCap(to: button)
                 }
                 button.setTitleColor(theme.keyTextColor, for: .normal)
@@ -874,6 +879,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = CGSize(width: 0, height: 3)
                     button.layer.shadowRadius = 1.5
                     button.layer.shadowOpacity = 1.0
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     // 기존 tag 9902 UIView 정리 (v1 마이그레이션 안전 처리)
                     if let oldHv = button.viewWithTag(9902) { oldHv.removeFromSuperview() }
                     applyWoodHighlightGradient(to: button, highlightAlpha: highlightAlpha)
@@ -885,6 +891,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 3.0
                     button.layer.shadowOpacity = 0.2
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                 case .frostedGlass(let bgAlpha, let borderColor, _):
                     button.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
                     button.layer.borderWidth = 1.0
@@ -893,6 +900,7 @@ class KeyboardLayoutView: UIView {
                     button.layer.shadowOffset = .zero
                     button.layer.shadowRadius = 2.0
                     button.layer.shadowOpacity = 0.05
+                    button.layer.shadowPath = UIBezierPath(roundedRect: button.bounds, cornerRadius: button.layer.cornerRadius).cgPath
                     addSnowCap(to: button)
                 }
                 button.setTitleColor(theme.keyTextColor, for: .normal)
@@ -1939,6 +1947,14 @@ class KeyboardLayoutView: UIView {
                     sublayer.frame = bounds
                 }
             }
+
+            // shadowPath 갱신 — bounds 확정 후에만 유효한 path 설정
+            if button.layer.shadowOpacity > 0 && bounds.width > 0 {
+                button.layer.shadowPath = UIBezierPath(
+                    roundedRect: bounds,
+                    cornerRadius: button.layer.cornerRadius
+                ).cgPath
+            }
         }
 
         // Wave animation projection 재계산
@@ -2540,6 +2556,107 @@ class KeyboardLayoutView: UIView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { [weak self] in
             self?.isMemoryConstrained = false
         }
+    }
+
+    // MARK: - Early Teardown (키보드 dismiss 시 호출)
+
+    #if DEBUG
+    /// 진단 전용 메모리 측정 — phys_footprint (Jetsam 기준)
+    private func diagnosticMemoryMB() -> Float {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? Float(info.phys_footprint) / (1024 * 1024) : 0
+    }
+    #endif
+
+    /// KeyboardViewController.viewWillDisappear에서 호출.
+    /// 무거운 애니메이션 뷰와 CADisplayLink를 즉시 정리하여 오버랩 구간 메모리 피크 억제.
+    /// 멱등성(Idempotent) 보장 — 여러 번 호출해도 안전.
+    func prepareForDismiss() {
+        #if DEBUG
+        let mem0 = diagnosticMemoryMB()
+        print("🔬 prepareForDismiss START — Memory: \(String(format: "%.2f", mem0)) MB")
+        print("🔬 DisplayLinks — wave:\(waveDisplayLink != nil) lens:\(lensDisplayLink != nil) edgeGlow:\(edgeGlowDisplayLink != nil) trackpad:\(displayLink != nil)")
+        print("🔬 AnimViews — matrix:\(matrixRainView != nil) mercury:\(mercuryRippleView != nil) stardust:\(stardustView != nil) snowfall:\(snowfallView != nil) cherry:\(cherryBlossomView != nil)")
+        #endif
+
+        // CADisplayLink 전부 정지 + 해제
+        stopWaveAnimation()
+        waveDisplayLink?.invalidate()
+        waveDisplayLink = nil
+
+        stopLensAnimation()
+        lensDisplayLink?.invalidate()
+        lensDisplayLink = nil
+
+        stopEdgeGlowAnimation()
+        edgeGlowDisplayLink?.invalidate()
+        edgeGlowDisplayLink = nil
+
+        displayLink?.invalidate()
+        displayLink = nil
+
+        #if DEBUG
+        let mem1 = diagnosticMemoryMB()
+        print("🔬 [A] CADisplayLink 해제 후 — Memory: \(String(format: "%.2f", mem1)) MB (delta: \(String(format: "%.2f", mem1 - mem0)) MB)")
+        #endif
+
+        // 애니메이션 뷰 정지 + 제거 + nil
+        if let rv = matrixRainView {
+            rv.stopAnimation()
+            rv.removeFromSuperview()
+            matrixRainView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [B1] matrixRainView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+        if let rv = mercuryRippleView {
+            rv.stopAnimation()
+            rv.removeFromSuperview()
+            mercuryRippleView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [B2] mercuryRippleView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+        if let sv = stardustView {
+            sv.stopAnimation()
+            sv.removeFromSuperview()
+            stardustView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [B3] stardustView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+        if let sv = snowfallView {
+            sv.stopAnimation()
+            sv.removeFromSuperview()
+            snowfallView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [B4] snowfallView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+        if let cv = cherryBlossomView {
+            cv.stopAnimation()
+            cv.removeFromSuperview()
+            cherryBlossomView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [B5] cherryBlossomView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+
+        #if DEBUG
+        let memEnd = diagnosticMemoryMB()
+        print("🔬 prepareForDismiss END — Memory: \(String(format: "%.2f", memEnd)) MB (총 delta: \(String(format: "%.2f", memEnd - mem0)) MB)")
+        #endif
     }
 
     deinit {

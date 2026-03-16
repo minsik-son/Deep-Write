@@ -7,6 +7,7 @@ class EmojiKeyboardView: UIView {
 
     private var isDark = false
     private var currentCategoryIndex = 0
+    private var cachedCellSize: CGSize = .zero
 
     // MARK: - Emoji Categories
 
@@ -277,6 +278,10 @@ class EmojiKeyboardView: UIView {
     }
 
     @objc private func categoryTapped(_ sender: UIButton) {
+        // 카테고리 전환 전에 이전 카테고리의 CoreText 글리프 캐시 클리어
+        // → 최대 1개 카테고리분의 글리프만 메모리에 유지
+        CoreTextCacheManager.shared.clearGlyphCaches()
+
         currentCategoryIndex = sender.tag
         collectionView.reloadData()
         collectionView.setContentOffset(.zero, animated: false)
@@ -305,6 +310,13 @@ class EmojiKeyboardView: UIView {
         backspaceButton.tintColor = isDark ? .white : .black
         updateCategoryHighlight()
     }
+
+    // MARK: - Cleanup
+
+    /// 이모지 키보드가 dismiss될 때 호출. CoreText 글리프 캐시를 전부 클리어.
+    func prepareForDismiss() {
+        CoreTextCacheManager.shared.clearGlyphCaches()
+    }
 }
 
 // MARK: - UICollectionView DataSource & Delegate
@@ -327,11 +339,14 @@ extension EmojiKeyboardView: UICollectionViewDataSource, UICollectionViewDelegat
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let totalWidth = collectionView.bounds.width - 16 // 8 + 8 insets
-        let columns: CGFloat = 8
-        let spacing: CGFloat = 4 * (columns - 1)
-        let cellWidth = floor((totalWidth - spacing) / columns)
-        return CGSize(width: cellWidth, height: cellWidth)
+        if cachedCellSize == .zero || cachedCellSize.width <= 0 {
+            let totalWidth = collectionView.bounds.width - 16 // 8 + 8 insets
+            let columns: CGFloat = 8
+            let spacing: CGFloat = 4 * (columns - 1)
+            let cellWidth = floor((totalWidth - spacing) / columns)
+            cachedCellSize = CGSize(width: cellWidth, height: cellWidth)
+        }
+        return cachedCellSize
     }
 }
 
@@ -345,7 +360,7 @@ private class EmojiCell: UICollectionViewCell {
 
     let label: UILabel = {
         let l = UILabel()
-        l.font = .systemFont(ofSize: 30)
+        l.font = .systemFont(ofSize: 26)
         l.textAlignment = .center
         l.translatesAutoresizingMaskIntoConstraints = false
         return l

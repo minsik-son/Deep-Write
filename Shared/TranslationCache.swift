@@ -52,4 +52,14 @@ final class TranslationCache {
         cache.removeAll()
         accessOrder.removeAll()
     }
+
+    #if DEBUG
+    /// 현재 캐시 상태 (디버그 전용)
+    var debugCacheInfo: String {
+        let count = cache.count
+        let totalChars = cache.values.reduce(0) { $0 + $1.translatedText.count }
+        let estimatedKB = (totalChars * 2) / 1024  // UTF-16 기준
+        return "entries=\(count)/\(maxItems), ~\(estimatedKB)KB"
+    }
+    #endif
 }
