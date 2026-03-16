@@ -1,4 +1,5 @@
 import UIKit
+import SwiftUI
 
 class ToolbarView: UIView {
 
@@ -12,8 +13,6 @@ class ToolbarView: UIView {
     var onQuickNoteTap: (() -> Void)?
     var onSuggestionTap: ((String) -> Void)?
     var onSuggestionDismiss: (() -> Void)?
-    var onLogoTap: (() -> Void)?
-    var onLogoLongPress: (() -> Void)?
 
     // MARK: - Toolbar Views
 
@@ -21,48 +20,18 @@ class ToolbarView: UIView {
         let sv = UIStackView()
         sv.axis = .horizontal
         sv.alignment = .center
-        sv.distribution = .fill
+        sv.distribution = .fillEqually
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
     }()
 
-    private let leftGroup: UIStackView = {
-        let sv = UIStackView()
-        sv.axis = .horizontal
-        sv.distribution = .fillEqually
-        sv.alignment = .center
-        sv.spacing = 0
-        return sv
+    /// SwiftUI Link를 담는 컨테이너 뷰 (UIHostingController.view가 들어감)
+    let settingsLinkContainer: UIView = {
+        let v = UIView()
+        v.backgroundColor = .clear
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
     }()
-
-    private let rightGroup: UIStackView = {
-        let sv = UIStackView()
-        sv.axis = .horizontal
-        sv.distribution = .fill
-        sv.alignment = .center
-        sv.spacing = 4
-        return sv
-    }()
-
-    private let flexSpace = UIView()
-
-    // Logo badge
-    private let logoBadge: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 10, weight: .bold)
-        label.textColor = .white
-        label.backgroundColor = UIColor(red: 0.941, green: 0.267, blue: 0.322, alpha: 1) // #F04452
-        label.textAlignment = .center
-        label.layer.cornerRadius = 8
-        label.clipsToBounds = true
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.isHidden = true
-        return label
-    }()
-
-    // CTA pills
-    private let correctionPill = UIButton(type: .system)
-    private let translationPill = UIButton(type: .system)
 
     // Status label
     private let statusLabel: UILabel = {
@@ -112,9 +81,6 @@ class ToolbarView: UIView {
         v.isHidden = true
         return v
     }()
-
-    // Track logo button for badge positioning
-    private var logoButton: UIButton?
 
     // MARK: - Theme
 
@@ -180,39 +146,40 @@ class ToolbarView: UIView {
             suggestionChipStack.heightAnchor.constraint(equalTo: suggestionScrollView.heightAnchor),
         ])
 
-        // Build left group buttons
-        buildLeftGroup()
-
-        // Build right group pills
-        buildRightGroup()
-
-        // Assemble toolbar
-        toolbarStack.addArrangedSubview(leftGroup)
-        toolbarStack.addArrangedSubview(flexSpace)
-        toolbarStack.addArrangedSubview(rightGroup)
-
-        // FlexSpace fills remaining space
-        flexSpace.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        leftGroup.setContentHuggingPriority(.required, for: .horizontal)
-        rightGroup.setContentHuggingPriority(.required, for: .horizontal)
+        // Build all toolbar buttons
+        buildToolbarButtons()
     }
 
-    // MARK: - Left Group (4 icon buttons)
+    // MARK: - Build Toolbar Buttons
 
-    private func buildLeftGroup() {
-        let items: [(icon: String, action: Selector, tag: Int)] = [
-            ("t.circle", #selector(logoTapped), 0),
-            ("face.smiling", #selector(emojiButtonTapped), 1),
-            ("doc.on.clipboard", #selector(clipboardHistoryTapped), 2),
-            ("bookmark", #selector(savedPhrasesTapped), 3),
-            ("note.text", #selector(noteTapped), 4),
+    private func buildToolbarButtons() {
+        // 아이콘 7개 일렬 배치 (index 0은 SwiftUI Link 컨테이너)
+        // index 0: plus.circle — settingsLinkContainer (SwiftUI Link)
+        // index 1-6: UIButton (기존 기능)
+
+        let buttonItems: [(icon: String, action: Selector, tag: Int)] = [
+            ("face.smiling",      #selector(emojiButtonTapped),       1),
+            ("doc.on.clipboard",  #selector(clipboardHistoryTapped),  2),
+            ("bookmark",          #selector(savedPhrasesTapped),      3),
+            ("note.text",         #selector(noteTapped),              4),
+            ("checkmark.circle",  #selector(correctionButtonTapped),  5),
+            ("globe",             #selector(translationButtonTapped), 6),
         ]
 
         // CC-6: 반응형 spacing (iPhone SE 등 좁은 화면 대응)
         let screenWidth = UIScreen.main.bounds.width
-        leftGroup.spacing = screenWidth <= 375 ? -2 : 0
+        toolbarStack.spacing = screenWidth <= 375 ? 0 : 2
 
-        for item in items {
+        // 0번: SwiftUI Link 컨테이너 (+ 버튼)
+        settingsLinkContainer.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            settingsLinkContainer.widthAnchor.constraint(equalToConstant: 36),
+            settingsLinkContainer.heightAnchor.constraint(equalToConstant: 34),
+        ])
+        toolbarStack.addArrangedSubview(settingsLinkContainer)
+
+        // 1-6번: 일반 UIButton
+        for item in buttonItems {
             let btn = UIButton(type: .system)
             let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .light)
             btn.setImage(UIImage(systemName: item.icon, withConfiguration: config), for: .normal)
@@ -222,77 +189,11 @@ class ToolbarView: UIView {
             btn.translatesAutoresizingMaskIntoConstraints = false
             btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
             btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
-            leftGroup.addArrangedSubview(btn)
-
-            if item.tag == 0 {
-                logoButton = btn
-                // Long press gesture on logo
-                let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLogoLongPress(_:)))
-                longPress.minimumPressDuration = 0.5
-                btn.addGestureRecognizer(longPress)
-            }
+            toolbarStack.addArrangedSubview(btn)
         }
-
-        // Add badge to logo button
-        if let logo = logoButton {
-            logo.addSubview(logoBadge)
-            NSLayoutConstraint.activate([
-                logoBadge.topAnchor.constraint(equalTo: logo.topAnchor, constant: 0),
-                logoBadge.trailingAnchor.constraint(equalTo: logo.trailingAnchor, constant: -2),
-                logoBadge.heightAnchor.constraint(equalToConstant: 16),
-                logoBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
-            ])
-        }
-    }
-
-    // MARK: - Right Group (CTA pills)
-
-    private func buildRightGroup() {
-        configurePill(correctionPill,
-                      icon: "checkmark.circle",
-                      title: L("reward.mode.correction"),
-                      bgColor: UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 0.12),
-                      tintColor: UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 1), // #FF9F43
-                      action: #selector(correctionPillTapped))
-
-        configurePill(translationPill,
-                      icon: "globe",
-                      title: L("reward.mode.translation"),
-                      bgColor: UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 0.12),
-                      tintColor: UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1), // #3182F6
-                      action: #selector(translationPillTapped))
-
-        rightGroup.addArrangedSubview(correctionPill)
-        rightGroup.addArrangedSubview(translationPill)
-    }
-
-    private func configurePill(_ pill: UIButton, icon: String, title: String, bgColor: UIColor, tintColor: UIColor, action: Selector) {
-        pill.backgroundColor = bgColor
-        pill.layer.cornerRadius = 18
-        pill.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
-        pill.setTitleColor(tintColor, for: .normal)
-        pill.contentEdgeInsets = UIEdgeInsets(top: 7, left: 14, bottom: 7, right: 14)
-
-        let iconConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-        pill.setImage(UIImage(systemName: icon, withConfiguration: iconConfig), for: .normal)
-        pill.tintColor = tintColor
-        pill.semanticContentAttribute = .forceLeftToRight
-        pill.imageEdgeInsets = UIEdgeInsets(top: 0, left: -3, bottom: 0, right: 3)
-        pill.setTitle(title, for: .normal)
-        pill.addTarget(self, action: action, for: .touchUpInside)
-        pill.translatesAutoresizingMaskIntoConstraints = false
     }
 
     // MARK: - Public Methods
-
-    func updateBadgeCount(_ count: Int) {
-        if count > 0 {
-            logoBadge.text = "\(count)"
-            logoBadge.isHidden = false
-        } else {
-            logoBadge.isHidden = true
-        }
-    }
 
     func showStatusMessage(_ message: String) {
         statusLabel.text = message
@@ -324,29 +225,9 @@ class ToolbarView: UIView {
                 : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1)
         }
 
-        // Left group icons
-        for case let btn as UIButton in leftGroup.arrangedSubviews {
+        // 모든 아이콘 버튼 색상 업데이트 (settingsLinkContainer 제외)
+        for case let btn as UIButton in toolbarStack.arrangedSubviews {
             btn.tintColor = textColor
-        }
-
-        // Pill colors: apply theme colors for custom themes
-        if let theme = customTheme {
-            correctionPill.setTitleColor(theme.keyTextColor, for: .normal)
-            correctionPill.tintColor = theme.keyTextColor
-            correctionPill.backgroundColor = theme.specialKeyBackground
-
-            translationPill.setTitleColor(theme.keyTextColor, for: .normal)
-            translationPill.tintColor = theme.keyTextColor
-            translationPill.backgroundColor = theme.specialKeyBackground
-        } else {
-            // Restore default pill colors
-            correctionPill.setTitleColor(UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 1), for: .normal)
-            correctionPill.tintColor = UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 1)
-            correctionPill.backgroundColor = UIColor(red: 1, green: 0.624, blue: 0.263, alpha: 0.12)
-
-            translationPill.setTitleColor(UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1), for: .normal)
-            translationPill.tintColor = UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1)
-            translationPill.backgroundColor = UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 0.12)
         }
 
         // Dismiss button
@@ -369,7 +250,8 @@ class ToolbarView: UIView {
         guard let tileName = theme.woodTileImageName,
               let tileImg = UIImage(named: tileName) else { return }
 
-        for case let btn as UIButton in leftGroup.arrangedSubviews {
+        // toolbarStack의 모든 UIButton에 나무 텍스처 적용
+        for case let btn as UIButton in toolbarStack.arrangedSubviews {
             btn.backgroundColor = theme.specialKeyBackground
 
             let patternTag = 9903
@@ -402,43 +284,12 @@ class ToolbarView: UIView {
 
             btn.tintColor = theme.keyTextColor
         }
-
-        for pill in [correctionPill, translationPill] {
-            pill.backgroundColor = theme.specialKeyBackground
-            pill.layer.cornerRadius = 5
-            pill.layer.borderWidth = 1
-            pill.layer.borderColor = UIColor(white: 0, alpha: 0.2).cgColor
-            pill.layer.shadowColor = UIColor(white: 0, alpha: 0.25).cgColor
-            pill.layer.shadowOffset = CGSize(width: 0, height: 2)
-            pill.layer.shadowRadius = 1
-            pill.layer.shadowOpacity = 1.0
-            pill.clipsToBounds = false
-
-            let patternTag = 9903
-            pill.viewWithTag(patternTag)?.removeFromSuperview()
-
-            let pv = UIView()
-            pv.tag = patternTag
-            pv.backgroundColor = UIColor(patternImage: tileImg)
-            pv.alpha = 0.4
-            pv.isUserInteractionEnabled = false
-            pv.layer.cornerRadius = 5
-            pv.clipsToBounds = true
-            pv.translatesAutoresizingMaskIntoConstraints = false
-            pill.insertSubview(pv, at: 0)
-            NSLayoutConstraint.activate([
-                pv.topAnchor.constraint(equalTo: pill.topAnchor),
-                pv.bottomAnchor.constraint(equalTo: pill.bottomAnchor),
-                pv.leadingAnchor.constraint(equalTo: pill.leadingAnchor),
-                pv.trailingAnchor.constraint(equalTo: pill.trailingAnchor),
-            ])
-        }
     }
 
     private func cleanupWoodToolbarStyle() {
         let patternTag = 9903
 
-        for case let btn as UIButton in leftGroup.arrangedSubviews {
+        for case let btn as UIButton in toolbarStack.arrangedSubviews {
             btn.viewWithTag(patternTag)?.removeFromSuperview()
             btn.layer.shadowOpacity = 0
             btn.layer.borderWidth = 0
@@ -446,20 +297,6 @@ class ToolbarView: UIView {
             btn.backgroundColor = .clear
             btn.layer.cornerRadius = 0
         }
-
-        for pill in [correctionPill, translationPill] {
-            pill.viewWithTag(patternTag)?.removeFromSuperview()
-            pill.layer.shadowOpacity = 0
-            pill.layer.borderWidth = 0
-            pill.clipsToBounds = true
-            pill.backgroundColor = .clear
-            pill.layer.cornerRadius = pill.bounds.height / 2
-        }
-    }
-
-    func updatePillLabels() {
-        correctionPill.setTitle(L("reward.mode.correction"), for: .normal)
-        translationPill.setTitle(L("reward.mode.translation"), for: .normal)
     }
 
     // MARK: - Suggestions (Chip Style)
@@ -540,36 +377,21 @@ class ToolbarView: UIView {
             return super.hitTest(point, with: event)
         }
 
-        // Toolbar mode: check pills first, then icons
+        // Toolbar mode
         guard !toolbarStack.isHidden else { return nil }
 
-        // Check right group pills first (they have higher priority)
-        let rightPoint = convert(point, to: rightGroup)
-        if rightGroup.bounds.contains(rightPoint) {
-            return rightGroup.hitTest(rightPoint, with: event)
+        // settingsLinkContainer 영역은 SwiftUI Link가 처리하도록 우선 통과
+        let containerPoint = convert(point, to: settingsLinkContainer)
+        if settingsLinkContainer.bounds.contains(containerPoint) {
+            return settingsLinkContainer.hitTest(containerPoint, with: event)
         }
 
-        // Then check left group — route to nearest button
-        let leftPoint = convert(point, to: leftGroup)
-        if leftGroup.bounds.contains(leftPoint) {
-            var nearestButton: UIButton?
-            var nearestDistance: CGFloat = .greatestFiniteMagnitude
-            for case let btn as UIButton in leftGroup.arrangedSubviews {
-                let dist = abs(leftPoint.x - btn.frame.midX)
-                if dist < nearestDistance {
-                    nearestDistance = dist
-                    nearestButton = btn
-                }
-            }
-            return nearestButton ?? super.hitTest(point, with: event)
-        }
-
-        // Flex space area — route to nearest left icon
+        // 나머지 영역은 가장 가까운 버튼으로 라우팅
         let stackPoint = convert(point, to: toolbarStack)
         var nearestButton: UIButton?
         var nearestDistance: CGFloat = .greatestFiniteMagnitude
-        for case let btn as UIButton in leftGroup.arrangedSubviews {
-            let btnCenter = leftGroup.convert(CGPoint(x: btn.frame.midX, y: btn.frame.midY), to: toolbarStack)
+        for case let btn as UIButton in toolbarStack.arrangedSubviews {
+            let btnCenter = CGPoint(x: btn.frame.midX, y: btn.frame.midY)
             let dist = abs(stackPoint.x - btnCenter.x)
             if dist < nearestDistance {
                 nearestDistance = dist
@@ -580,17 +402,6 @@ class ToolbarView: UIView {
     }
 
     // MARK: - Actions
-
-    @objc private func logoTapped() {
-        onLogoTap?()
-    }
-
-    @objc private func handleLogoLongPress(_ gesture: UILongPressGestureRecognizer) {
-        if gesture.state == .began {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onLogoLongPress?()
-        }
-    }
 
     @objc private func emojiButtonTapped() {
         onEmojiKeyboardToggle?()
@@ -608,12 +419,12 @@ class ToolbarView: UIView {
         onQuickNoteTap?()
     }
 
-    @objc private func correctionPillTapped() {
+    @objc private func correctionButtonTapped() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         onCorrectionToggle?()
     }
 
-    @objc private func translationPillTapped() {
+    @objc private func translationButtonTapped() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         onTranslateToggle?()
     }

@@ -1,4 +1,5 @@
 import UIKit
+import SwiftUI
 
 enum KeyboardMode {
     case defaultMode
@@ -21,6 +22,7 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - UI Components
 
     private lazy var toolbarView = ToolbarView()
+    private var settingsLinkHostingController: UIHostingController<SettingsLinkView>?
     private lazy var translationLanguageBar = TranslationLanguageBar()
     private lazy var translationInputView = TranslationInputView()
     private lazy var correctionLanguageBar = CorrectionLanguageBar()
@@ -143,6 +145,7 @@ class KeyboardViewController: UIInputViewController {
         setupUI()
         setupDelegates()
         setupCallbacks()
+        setupSettingsLink()
         loadCachedSettings()
         switchMode(to: .defaultMode)
         restoreState()
@@ -189,7 +192,6 @@ class KeyboardViewController: UIInputViewController {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.checkClipboardForNewContent()
-            self?.updateToolbarBadge()
         }
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
@@ -660,13 +662,7 @@ class KeyboardViewController: UIInputViewController {
             self?.hideStatusPopup()
             self?.toggleQuickNoteMode()
         }
-        toolbarView.onLogoTap = { [weak self] in
-            self?.hideContextMenu()
-            self?.showStatusPopup()
-        }
-        toolbarView.onLogoLongPress = { [weak self] in
-            self?.showContextMenu()
-        }
+        // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
         toolbarView.onSuggestionTap = { [weak self] suggestion in
             self?.applySuggestion(suggestion)
         }
@@ -719,6 +715,30 @@ class KeyboardViewController: UIInputViewController {
             }
             keyboardLayoutView.setLanguage(lang)
         }
+    }
+
+    // MARK: - SwiftUI Settings Link
+
+    private func setupSettingsLink() {
+        let hostingController = UIHostingController(rootView: SettingsLinkView())
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        hostingController.view.backgroundColor = .clear
+
+        // UIHostingController를 child로 추가
+        addChild(hostingController)
+        toolbarView.settingsLinkContainer.addSubview(hostingController.view)
+        hostingController.didMove(toParent: self)
+
+        // 컨테이너에 꽉 채움
+        NSLayoutConstraint.activate([
+            hostingController.view.topAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.bottomAnchor),
+            hostingController.view.leadingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.trailingAnchor),
+        ])
+
+        // UIHostingController 참조 보관 (메모리 해제 방지)
+        self.settingsLinkHostingController = hostingController
     }
 
     // MARK: - Mode Switching
@@ -855,7 +875,6 @@ class KeyboardViewController: UIInputViewController {
 
         updateHeight(for: mode)
         updateReturnKeyForCurrentMode()
-        updateToolbarBadge()
     }
 
     private func toggleTranslationMode() {
@@ -2012,15 +2031,6 @@ class KeyboardViewController: UIInputViewController {
         contextMenuView = nil
     }
 
-    // MARK: - Badge Count Update
-
-    private func updateToolbarBadge() {
-        let corrRemaining = CompositionSessionManager.shared.remainingSessions(for: .correct)
-        let transRemaining = CompositionSessionManager.shared.remainingSessions(for: .translate)
-        let total = max(0, corrRemaining) + max(0, transRemaining)
-        toolbarView.updateBadgeCount(total)
-    }
-
     // MARK: - Return Key Mode Update (Proposal 03)
 
     private func updateReturnKeyForCurrentMode() {
@@ -2410,5 +2420,19 @@ extension KeyboardViewController {
         }
 
         checkAutoCapitalize()
+    }
+}
+
+// MARK: - SwiftUI Settings Link
+
+struct SettingsLinkView: View {
+    var body: some View {
+        Link(destination: URL(string: "translatorkeyboard://settings")!) {
+            Image(systemName: "plus.circle")
+                .font(.system(size: 18, weight: .light))
+                .foregroundColor(Color(UIColor.label))
+                .frame(width: 36, height: 34)
+                .contentShape(Rectangle())
+        }
     }
 }
