@@ -142,10 +142,20 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Lifecycle
 
+    deinit {
+        kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.warning("💀 children.count at deinit = \(self.children.count)")
+
+        // 강제 정리 (디버그용 — deinit이 호출되는지 확인이 목적)
+        NotificationCenter.default.removeObserver(self)
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         kbLogger.info("📌 viewDidLoad START — pid=\(ProcessInfo.processInfo.processIdentifier)")
         kbLogger.info("📌 Memory at viewDidLoad: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
+
 
         HistoryManager.shared.migrateClipboardHistoryIfNeeded()
         setupUI()
@@ -211,6 +221,9 @@ class KeyboardViewController: UIInputViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         kbLogger.info("📌 viewWillDisappear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
+
+        kbLogger.info("📌 children.count = \(self.children.count)")
         // CC-4: QuickNote 자동 저장
         if currentMode == .quickNoteMode {
             autoSaveIfNeeded()
