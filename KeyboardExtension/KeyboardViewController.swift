@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import os.log
 
 enum KeyboardMode {
     case defaultMode
@@ -18,6 +19,9 @@ enum QuickNoteSubState {
 class KeyboardViewController: UIInputViewController {
 
     private var currentMode: KeyboardMode = .defaultMode
+
+    // MARK: - Debug Logger
+    private let kbLogger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "SettingsLink")
 
     // MARK: - UI Components
 
@@ -140,6 +144,8 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        kbLogger.info("📌 viewDidLoad START — pid=\(ProcessInfo.processInfo.processIdentifier)")
+        kbLogger.info("📌 Memory at viewDidLoad: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
 
         HistoryManager.shared.migrateClipboardHistoryIfNeeded()
         setupUI()
@@ -157,10 +163,13 @@ class KeyboardViewController: UIInputViewController {
             name: .NSProcessInfoPowerStateDidChange,
             object: nil
         )
+
+        kbLogger.info("📌 viewDidLoad END — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        kbLogger.warning("⚠️ didReceiveMemoryWarning! Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         ThemePatternRenderer.clearCache()
     }
 
@@ -170,6 +179,8 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 settingsLinkHostingController isNil=\(self.settingsLinkHostingController == nil), container.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
 
         // ── 즉시 필요한 것만 동기 실행 ──
         textProxyManager.updateProxy(textDocumentProxy)
@@ -199,6 +210,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        kbLogger.info("📌 viewWillDisappear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         // CC-4: QuickNote 자동 저장
         if currentMode == .quickNoteMode {
             autoSaveIfNeeded()
@@ -720,6 +732,9 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - SwiftUI Settings Link
 
     private func setupSettingsLink() {
+        kbLogger.info("🔗 setupSettingsLink START — existing hostingController isNil=\(self.settingsLinkHostingController == nil)")
+        kbLogger.info("🔗 container.subviews.count BEFORE = \(self.toolbarView.settingsLinkContainer.subviews.count)")
+
         let hostingController = UIHostingController(rootView: SettingsLinkView())
         hostingController.view.translatesAutoresizingMaskIntoConstraints = false
         hostingController.view.backgroundColor = .clear
@@ -739,6 +754,26 @@ class KeyboardViewController: UIInputViewController {
 
         // UIHostingController 참조 보관 (메모리 해제 방지)
         self.settingsLinkHostingController = hostingController
+
+        kbLogger.info("🔗 setupSettingsLink END — container.subviews.count AFTER = \(self.toolbarView.settingsLinkContainer.subviews.count)")
+        kbLogger.info("🔗 Memory after setupSettingsLink: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        kbLogger.info("🔗 children.count = \(self.children.count)")
+    }
+
+    // MARK: - Debug: Memory Measurement
+
+    private func currentMemoryMB() -> Double {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        if result == KERN_SUCCESS {
+            return Double(info.resident_size) / (1024 * 1024)
+        }
+        return -1
     }
 
     // MARK: - Mode Switching

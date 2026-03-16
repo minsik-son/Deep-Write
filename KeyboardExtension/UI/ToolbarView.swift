@@ -20,7 +20,7 @@ class ToolbarView: UIView {
         let sv = UIStackView()
         sv.axis = .horizontal
         sv.alignment = .center
-        sv.distribution = .fillEqually
+        sv.distribution = .equalSpacing
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
     }()
