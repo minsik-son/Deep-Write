@@ -2561,8 +2561,8 @@ class KeyboardLayoutView: UIView {
     // MARK: - Early Teardown (키보드 dismiss 시 호출)
 
     #if DEBUG
-    /// 진단 전용 메모리 측정 — phys_footprint (Jetsam 기준)
-    private func diagnosticMemoryMB() -> Float {
+    /// 진단 전용 메모리 측정 — phys_footprint (Jetsam이 사용하는 실제 기준)
+    private func diagnosticMemoryMB() -> Double {
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
         let result = withUnsafeMutablePointer(to: &info) {
@@ -2570,7 +2570,10 @@ class KeyboardLayoutView: UIView {
                 task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
             }
         }
-        return result == KERN_SUCCESS ? Float(info.phys_footprint) / (1024 * 1024) : 0
+        if result == KERN_SUCCESS {
+            return Double(info.phys_footprint) / (1024 * 1024)
+        }
+        return 0
     }
     #endif
 

@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import ObjectiveC
+import os
 
 /// CoreText가 내부적으로 사용하는 NSCache 인스턴스를 탐지·추적하여
 /// 이모지 글리프 캐시를 전략적으로 클리어하는 매니저.
@@ -17,6 +18,9 @@ import ObjectiveC
 final class CoreTextCacheManager {
 
     static let shared = CoreTextCacheManager()
+    #if DEBUG
+    private static let logger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "CoreTextCache")
+    #endif
     private init() {}
 
     // MARK: - Properties
@@ -110,12 +114,20 @@ final class CoreTextCacheManager {
         let caches = trackedCaches.allObjects
         lock.unlock()
 
-        for cache in caches {
-            cache.removeAllObjects()
+        #if DEBUG
+        let beforeCount = caches.count
+        #endif
+
+        // autoreleasepool로 감싸서 removeAllObjects 과정에서 생성되는
+        // autorelease 임시 객체가 즉시 해제되도록 강제
+        autoreleasepool {
+            for cache in caches {
+                cache.removeAllObjects()
+            }
         }
 
         #if DEBUG
-        print("🧹 CoreTextCacheManager: \(caches.count)개 글리프 캐시 클리어 완료")
+        Self.logger.info("🧹 CoreText glyph caches cleared: \(beforeCount) caches (with autoreleasepool)")
         #endif
     }
 
@@ -125,4 +137,21 @@ final class CoreTextCacheManager {
         defer { lock.unlock() }
         return trackedCaches.count
     }
+
+    #if DEBUG
+    /// 추적된 모든 CoreText 캐시에 들어있는 총 객체 수 추정
+    /// NSCache는 직접적인 count API가 없으므로, countLimit을 확인하고
+    /// 실제로는 removeAllObjects 전후 메모리 비교로 효과를 측정해야 함.
+    /// 이 프로퍼티는 추적된 캐시의 countLimit 정보를 반환.
+    var totalCachedObjectCount: String {
+        lock.lock()
+        let caches = trackedCaches.allObjects
+        lock.unlock()
+        var info: [String] = []
+        for (i, cache) in caches.enumerated() {
+            info.append("cache\(i): countLimit=\(cache.countLimit), totalCostLimit=\(cache.totalCostLimit)")
+        }
+        return info.isEmpty ? "no tracked caches" : info.joined(separator: ", ")
+    }
+    #endif
 }

@@ -22,6 +22,7 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Debug Logger
     private let kbLogger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "SettingsLink")
+    private static let staticLogger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "SettingsLink")
 
     // MARK: - UI Components
 
@@ -144,22 +145,37 @@ class KeyboardViewController: UIInputViewController {
 
     deinit {
         #if DEBUG
-        kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier)")
+        let deinitMemory = Self.measurePhysFootprint()
+        kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier) [cycle \(Self.lifecycleCount)]")
         kbLogger.warning("💀 children.count at deinit = \(self.children.count)")
+        kbLogger.warning("💀 Memory at DEINIT: \(deinitMemory, format: .fixed(precision: 2)) MB (phys_footprint)")
         #endif
 
         // NotificationCenter 정리 (스레드 무관 — iOS 9+ 안전)
         NotificationCenter.default.removeObserver(self)
 
         // 안전망: viewWillDisappear에서 이미 정리되었으면 nil → 스킵.
-        // 만약 viewWillDisappear 없이 deinit이 호출되는 예외 상황 대비.
-        // UIInputViewController의 deinit은 UIKit이 메인스레드에서 호출.
         if let hc = settingsLinkHostingController {
             hc.willMove(toParent: nil)
             hc.view.removeFromSuperview()
             hc.removeFromParent()
             settingsLinkHostingController = nil
         }
+
+        #if DEBUG
+        let afterCleanup = Self.measurePhysFootprint()
+        kbLogger.warning("💀 Memory after DEINIT cleanup: \(afterCleanup, format: .fixed(precision: 2)) MB (delta: \(afterCleanup - deinitMemory, format: .fixed(precision: 2)) MB)")
+
+        // malloc pressure relief — DEINIT에서도 한번 더 시도
+        Self.testMallocPressureRelief()
+        Self.logMallocZoneStats()
+
+        let finalMemory = Self.measurePhysFootprint()
+        kbLogger.warning("💀 DEINIT final (pressure_relief 후): \(finalMemory, format: .fixed(precision: 2)) MB")
+
+        // 다음 사이클 viewDidLoad에서 비교할 수 있도록 저장
+        Self.lastDeinitMemory = finalMemory
+        #endif
     }
 
     override func viewDidLoad() {
@@ -191,7 +207,18 @@ class KeyboardViewController: UIInputViewController {
         )
 
         #if DEBUG
-        kbLogger.info("📌 viewDidLoad END — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        Self.lifecycleCount += 1
+        let currentMem = self.currentMemoryMB()
+        kbLogger.info("📌 viewDidLoad END — Memory: \(currentMem, format: .fixed(precision: 2)) MB [cycle \(Self.lifecycleCount)]")
+        Self.logMallocZoneStats()
+        kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
+
+        // 이전 사이클 DEINIT과 비교 — asyncAfter 대체
+        if Self.lastDeinitMemory > 0 {
+            let delta = currentMem - Self.lastDeinitMemory
+            kbLogger.info("📌 [CROSS-CYCLE] 이전 DEINIT: \(Self.lastDeinitMemory, format: .fixed(precision: 2)) MB → 현재 viewDidLoad: \(currentMem, format: .fixed(precision: 2)) MB (delta: \(delta, format: .fixed(precision: 2)) MB)")
+            kbLogger.info("📌 [CROSS-CYCLE] delta > 0이면 DEINIT~viewDidLoad 사이 시스템이 메모리를 회수하지 못한 것")
+        }
         #endif
     }
 
@@ -362,7 +389,18 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let mem5 = currentMemoryMB()
         kbLogger.info("🔬 [5] QuickNote views 해제 후 — Memory: \(mem5, format: .fixed(precision: 2)) MB (delta: \(mem5 - mem4, format: .fixed(precision: 2)) MB)")
-        kbLogger.info("📌 viewWillDisappear END — Memory: \(mem5, format: .fixed(precision: 2)) MB (총 delta: \(mem5 - mem0, format: .fixed(precision: 2)) MB)")
+        kbLogger.info("📌 viewWillDisappear END — Memory: \(mem5, format: .fixed(precision: 2)) MB (총 delta: \(mem5 - mem0, format: .fixed(precision: 2)) MB) [cycle \(Self.lifecycleCount)]")
+        Self.logMallocZoneStats()
+        #endif
+
+        // ═══ malloc pressure relief — Release에서도 실행 (치료 목적) ═══
+        // malloc zone이 보유 중인 미사용 페이지를 OS에 반환 요청
+        malloc_zone_pressure_relief(nil, 0)
+
+        #if DEBUG
+        let memAfterRelief = currentMemoryMB()
+        kbLogger.info("🔬 [malloc_pressure_relief] viewWillDisappear 후 → \(memAfterRelief, format: .fixed(precision: 2)) MB")
+        kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
         #endif
     }
 
@@ -976,6 +1014,45 @@ class KeyboardViewController: UIInputViewController {
         }
         return 0
     }
+
+    /// 사이클 간 메모리 추적용 static 변수
+    private static var lastDeinitMemory: Double = 0
+    private static var lifecycleCount: Int = 0
+
+    /// deinit에서 사용 가능한 static 메모리 측정 (self 접근 불필요)
+    private static func measurePhysFootprint() -> Double {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        if result == KERN_SUCCESS {
+            return Double(info.phys_footprint) / (1024 * 1024)
+        }
+        return 0
+    }
+
+    /// malloc zone 통계 — 할당 중인 메모리 vs 실제 사용 중인 메모리
+    private static func logMallocZoneStats() {
+        if let zone = malloc_default_zone() {
+            var stats = malloc_statistics_t()
+            malloc_zone_statistics(zone, &stats)
+            let allocatedMB = Double(stats.size_allocated) / (1024 * 1024)
+            let inUseMB = Double(stats.size_in_use) / (1024 * 1024)
+            let freeMB = allocatedMB - inUseMB
+            staticLogger.info("🔬 [malloc] default zone — allocated: \(allocatedMB, format: .fixed(precision: 2)) MB, in_use: \(inUseMB, format: .fixed(precision: 2)) MB, free_in_zone: \(freeMB, format: .fixed(precision: 2)) MB")
+        }
+    }
+
+    /// malloc에게 미사용 메모리를 OS에 반환하도록 요청하고 효과를 측정
+    private static func testMallocPressureRelief() {
+        let before = measurePhysFootprint()
+        let released = malloc_zone_pressure_relief(nil, 0)
+        let after = measurePhysFootprint()
+        staticLogger.info("🔬 [malloc_pressure_relief] before: \(before, format: .fixed(precision: 2)) MB → after: \(after, format: .fixed(precision: 2)) MB (delta: \(after - before, format: .fixed(precision: 2)) MB, bytes_released: \(released))")
+    }
     #endif
 
     // MARK: - Mode Switching
@@ -1534,6 +1611,12 @@ class KeyboardViewController: UIInputViewController {
     private func hideEmojiKeyboard() {
         isEmojiMode = false
 
+        #if DEBUG
+        let beforeClear = currentMemoryMB()
+        let cacheCountBefore = CoreTextCacheManager.shared.trackedCacheCount
+        let cacheObjectsBefore = CoreTextCacheManager.shared.totalCachedObjectCount
+        #endif
+
         // 이모지 뷰 dismiss 시 CoreText 글리프 캐시 전체 클리어
         emojiKeyboardView?.prepareForDismiss()
 
@@ -1541,7 +1624,11 @@ class KeyboardViewController: UIInputViewController {
         keyboardLayoutView.isHidden = false
 
         #if DEBUG
-        kbLogger.info("🧹 hideEmojiKeyboard — 글리프 캐시 클리어 완료, Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        let afterClear = currentMemoryMB()
+        kbLogger.info("🧹 hideEmojiKeyboard — clearGlyphCaches 효과:")
+        kbLogger.info("🧹   before: \(beforeClear, format: .fixed(precision: 2)) MB → after: \(afterClear, format: .fixed(precision: 2)) MB (delta: \(afterClear - beforeClear, format: .fixed(precision: 2)) MB)")
+        kbLogger.info("🧹   tracked caches: \(cacheCountBefore), cached objects before clear: \(cacheObjectsBefore)")
+        Self.logMallocZoneStats()
         #endif
     }
 
