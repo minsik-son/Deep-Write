@@ -6,21 +6,20 @@ import os
 /// CoreText가 내부적으로 사용하는 NSCache 인스턴스를 탐지·추적하여
 /// 이모지 글리프 캐시를 전략적으로 클리어하는 매니저.
 ///
-/// CoreText는 이모지를 렌더링할 때 각 글리프를 CGImage로 래스터라이즈하여
-/// NSCache에 저장한다 (~65KB/글리프). 이 캐시는 didReceiveMemoryWarning에서도
-/// 자동 퇴거되지 않으므로, 수동으로 removeAllObjects()를 호출해야 한다.
-///
-/// 동작 원리:
-/// 1. NSCache.setObject(_:forKey:cost:)를 swizzle
-/// 2. 저장되는 값이 CGImage인 NSCache 인스턴스를 CoreText 캐시로 판단
-/// 3. 해당 인스턴스를 weak reference로 추적
-/// 4. clearGlyphCaches() 호출 시 추적된 모든 캐시에 removeAllObjects()
+/// Phase 4 v3 (SwiftKey 방식 적용):
+/// - setObject:forKey: 와 setObject:forKey:cost: 양쪽 모두 swizzle
+/// - activate()를 KeyboardViewController.init()에서 호출 (viewDidLoad보다 이전)
+/// - Thread-local 재진입 가드로 이중 카운팅 방지 + 스레드 안전
+/// - defer로 예외 시에도 플래그 복구 보장
+/// - 블록 static 유지로 use-after-free 방지
 final class CoreTextCacheManager {
 
     static let shared = CoreTextCacheManager()
+
     #if DEBUG
     private static let logger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "CoreTextCache")
     #endif
+
     private init() {}
 
     // MARK: - Properties
@@ -29,78 +28,145 @@ final class CoreTextCacheManager {
     private let trackedCaches = NSHashTable<NSCache<AnyObject, AnyObject>>.weakObjects()
     private let lock = NSLock()
 
-    /// 원본 IMP 보관 (swizzle 전 구현체)
-    private static var originalIMP: IMP?
+    /// 원본 IMP 보관
+    private static var originalSetObjectForKeyCostIMP: IMP?
+    private static var originalSetObjectForKeyIMP: IMP?
 
-    /// 중복 swizzle 방지 플래그
+    /// 블록 유지용 (imp_implementationWithBlock의 블록이 해제되지 않도록)
+    private static var retainedBlockCost: Any?
+    private static var retainedBlockNoKey: Any?
+
+    /// 중복 swizzle 방지
     private static var isActivated = false
+
+    /// Thread-local 재진입 키
+    private static let reentrantKey = "com.translatorkeyboard.CoreTextCacheManager.isInsideSwizzle"
+
+    /// [DEBUG] 인터셉트 카운터
+    #if DEBUG
+    private static var interceptCountCost: Int = 0
+    private static var interceptCountNoCost: Int = 0
+    private static var cgImageCountCost: Int = 0
+    private static var cgImageCountNoCost: Int = 0
+    #endif
 
     // MARK: - Activation (1회만 호출)
 
-    /// 키보드 최초 로드 시 1회 호출. NSCache swizzling을 설정한다.
-    /// viewDidLoad에서 호출할 것. 중복 호출 안전 (guard로 보호).
-    ///
-    /// ⚠️ 이 메서드는 #if DEBUG가 아님 — Release 빌드에서도 동작해야 한다.
+    /// ⚠️ KeyboardViewController.init()에서 호출할 것 (viewDidLoad보다 이전).
+    /// Release 빌드에서도 동작.
     static func activate() {
         guard !isActivated else { return }
         isActivated = true
 
-        // NSCache의 setObject:forKey:cost: 메서드를 swizzle
-        // (setObject:forKey: 는 내부적으로 cost:0 으로 이 메서드를 호출)
-        guard let nsCacheClass = NSClassFromString("NSCache"),
-              let method = class_getInstanceMethod(nsCacheClass, sel_registerName("setObject:forKey:cost:"))
-        else {
+        guard let nsCacheClass = NSClassFromString("NSCache") else {
             #if DEBUG
-            print("⚠️ CoreTextCacheManager: NSCache swizzle 대상 메서드를 찾을 수 없음")
+            logger.error("⚠️ CoreTextCacheManager: NSCache 클래스를 찾을 수 없음")
             #endif
             return
         }
 
-        // 원본 IMP 보존
-        originalIMP = method_getImplementation(method)
+        // ─── Swizzle 1: setObject:forKey:cost: ───
+        if let methodCost = class_getInstanceMethod(nsCacheClass, sel_registerName("setObject:forKey:cost:")) {
+            originalSetObjectForKeyCostIMP = method_getImplementation(methodCost)
 
-        // 새 구현: 원본 호출 + CoreText 캐시 탐지
-        // ⚠️ cost 파라미터는 NSUInteger → Swift에서 UInt (Int가 아님)
-        let newBlock: @convention(block) (AnyObject, AnyObject, AnyObject, UInt) -> Void = {
-            cacheObj, value, key, cost in
+            let blockCost: @convention(block) (AnyObject, AnyObject, AnyObject, UInt) -> Void = {
+                cacheObj, value, key, cost in
 
-            // 원본 메서드 호출 (swizzle 전 구현체)
-            typealias OriginalFunc = @convention(c) (AnyObject, Selector, AnyObject, AnyObject, UInt) -> Void
-            let selector = sel_registerName("setObject:forKey:cost:")
-            if let origIMP = CoreTextCacheManager.originalIMP {
-                let original = unsafeBitCast(origIMP, to: OriginalFunc.self)
-                original(cacheObj, selector, value, key, cost)
-            }
+                // Thread-local 재진입 체크
+                let alreadyInside = Thread.current.threadDictionary[CoreTextCacheManager.reentrantKey] as? Bool ?? false
 
-            // CoreText 글리프 캐시 탐지: 값이 CGImage인 NSCache를 추적
-            // CoreText는 글리프를 CGImage로 래스터라이즈하여 NSCache에 저장
-            // 우리 앱의 ThemePatternRenderer는 UIImage를 저장하므로 오탐 없음
-            if CFGetTypeID(value) == CGImage.typeID {
-                if let cache = cacheObj as? NSCache<AnyObject, AnyObject> {
-                    CoreTextCacheManager.shared.trackCache(cache)
+                if !alreadyInside {
+                    Thread.current.threadDictionary[CoreTextCacheManager.reentrantKey] = true
+                }
+                defer {
+                    if !alreadyInside {
+                        Thread.current.threadDictionary[CoreTextCacheManager.reentrantKey] = false
+                    }
+                }
+
+                // 원본 호출
+                typealias OrigFunc = @convention(c) (AnyObject, Selector, AnyObject, AnyObject, UInt) -> Void
+                let sel = sel_registerName("setObject:forKey:cost:")
+                if let imp = CoreTextCacheManager.originalSetObjectForKeyCostIMP {
+                    let orig = unsafeBitCast(imp, to: OrigFunc.self)
+                    orig(cacheObj, sel, value, key, cost)
+                }
+
+                // 재진입이 아닌 경우에만 탐지 로직
+                if !alreadyInside {
+                    #if DEBUG
+                    CoreTextCacheManager.interceptCountCost += 1
+                    #endif
+
+                    if CFGetTypeID(value) == CGImage.typeID {
+                        #if DEBUG
+                        CoreTextCacheManager.cgImageCountCost += 1
+                        #endif
+                        if let cache = cacheObj as? NSCache<AnyObject, AnyObject> {
+                            CoreTextCacheManager.shared.trackCache(cache, source: "cost")
+                        }
+                    }
                 }
             }
+
+            retainedBlockCost = blockCost
+            method_setImplementation(methodCost, imp_implementationWithBlock(blockCost))
         }
 
-        let newIMP = imp_implementationWithBlock(newBlock)
-        method_setImplementation(method, newIMP)
+        // ─── Swizzle 2: setObject:forKey: (SwiftKey 방식 핵심) ───
+        if let methodNoKey = class_getInstanceMethod(nsCacheClass, sel_registerName("setObject:forKey:")) {
+            originalSetObjectForKeyIMP = method_getImplementation(methodNoKey)
+
+            let blockNoKey: @convention(block) (AnyObject, AnyObject, AnyObject) -> Void = {
+                cacheObj, value, key in
+
+                // Thread-local 재진입 가드 설정
+                Thread.current.threadDictionary[CoreTextCacheManager.reentrantKey] = true
+                defer {
+                    Thread.current.threadDictionary[CoreTextCacheManager.reentrantKey] = false
+                }
+
+                // 원본 호출 (내부적으로 setObject:forKey:cost:를 호출할 수 있음)
+                typealias OrigFunc = @convention(c) (AnyObject, Selector, AnyObject, AnyObject) -> Void
+                let sel = sel_registerName("setObject:forKey:")
+                if let imp = CoreTextCacheManager.originalSetObjectForKeyIMP {
+                    let orig = unsafeBitCast(imp, to: OrigFunc.self)
+                    orig(cacheObj, sel, value, key)
+                }
+
+                #if DEBUG
+                CoreTextCacheManager.interceptCountNoCost += 1
+                #endif
+
+                // CGImage 탐지
+                if CFGetTypeID(value) == CGImage.typeID {
+                    #if DEBUG
+                    CoreTextCacheManager.cgImageCountNoCost += 1
+                    #endif
+                    if let cache = cacheObj as? NSCache<AnyObject, AnyObject> {
+                        CoreTextCacheManager.shared.trackCache(cache, source: "noKey")
+                    }
+                }
+            }
+
+            retainedBlockNoKey = blockNoKey
+            method_setImplementation(methodNoKey, imp_implementationWithBlock(blockNoKey))
+        }
 
         #if DEBUG
-        print("✅ CoreTextCacheManager: NSCache swizzle 활성화 완료")
+        logger.info("✅ CoreTextCacheManager Phase4v3: 듀얼 swizzle 활성화 완료")
         #endif
     }
 
     // MARK: - Cache Tracking
 
-    /// CoreText 글리프 캐시로 판단된 NSCache를 등록
-    private func trackCache(_ cache: NSCache<AnyObject, AnyObject>) {
+    private func trackCache(_ cache: NSCache<AnyObject, AnyObject>, source: String) {
         lock.lock()
         defer { lock.unlock() }
-        // 이미 추적 중이면 스킵 (NSHashTable.contains는 O(1))
         if !trackedCaches.contains(cache) {
             trackedCaches.add(cache)
             #if DEBUG
-            print("🔍 CoreTextCacheManager: 새 CoreText 캐시 탐지 (총 \(trackedCaches.count)개 추적 중)")
+            Self.logger.info("🔍 CoreTextCacheManager: 새 캐시 탐지 via \(source) (총 \(self.trackedCaches.count)개 추적 중)")
             #endif
         }
     }
@@ -108,18 +174,16 @@ final class CoreTextCacheManager {
     // MARK: - Cache Clearing
 
     /// 추적된 모든 CoreText 글리프 캐시를 클리어한다.
-    /// 이모지 카테고리 전환, 이모지 뷰 dismiss, viewWillDisappear 시 호출.
     func clearGlyphCaches() {
         lock.lock()
         let caches = trackedCaches.allObjects
+        let cacheCount = caches.count
         lock.unlock()
 
         #if DEBUG
-        let beforeCount = caches.count
+        let beforeMB = Self.currentPhysFootprint()
         #endif
 
-        // autoreleasepool로 감싸서 removeAllObjects 과정에서 생성되는
-        // autorelease 임시 객체가 즉시 해제되도록 강제
         autoreleasepool {
             for cache in caches {
                 cache.removeAllObjects()
@@ -127,22 +191,55 @@ final class CoreTextCacheManager {
         }
 
         #if DEBUG
-        Self.logger.info("🧹 CoreText glyph caches cleared: \(beforeCount) caches (with autoreleasepool)")
+        let afterMB = Self.currentPhysFootprint()
+        let deltaMB = afterMB - beforeMB
+        Self.logger.info("🧹 CoreText glyph caches cleared: \(cacheCount) caches (with autoreleasepool)")
+        Self.logger.info("🧹 clearGlyphCaches phys_footprint: \(beforeMB, format: .fixed(precision: 4)) → \(afterMB, format: .fixed(precision: 4)) MB (delta: \(deltaMB, format: .fixed(precision: 4)) MB)")
         #endif
     }
 
-    /// 현재 추적 중인 캐시 개수 (디버그용)
+    /// 현재 추적 중인 캐시 개수
     var trackedCacheCount: Int {
         lock.lock()
         defer { lock.unlock() }
         return trackedCaches.count
     }
 
+    // MARK: - Memory Measurement (DEBUG only)
+
     #if DEBUG
-    /// 추적된 모든 CoreText 캐시에 들어있는 총 객체 수 추정
-    /// NSCache는 직접적인 count API가 없으므로, countLimit을 확인하고
-    /// 실제로는 removeAllObjects 전후 메모리 비교로 효과를 측정해야 함.
-    /// 이 프로퍼티는 추적된 캐시의 countLimit 정보를 반환.
+    private static func currentPhysFootprint() -> Double {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return 0 }
+        return Double(info.phys_footprint) / (1024 * 1024)
+    }
+    #endif
+
+    // MARK: - Diagnostics (DEBUG)
+
+    #if DEBUG
+    /// 인터셉트 통계 로깅
+    static func logInterceptStats() {
+        logger.info("📊 [Swizzle Stats] setObject:forKey:cost: 호출 \(interceptCountCost)회, CGImage 탐지 \(cgImageCountCost)회")
+        logger.info("📊 [Swizzle Stats] setObject:forKey: 호출 \(interceptCountNoCost)회, CGImage 탐지 \(cgImageCountNoCost)회")
+        logger.info("📊 [Swizzle Stats] 추적 중인 캐시: \(shared.trackedCacheCount)개")
+    }
+
+    /// 인터셉트 카운터 리셋
+    static func resetInterceptCounters() {
+        interceptCountCost = 0
+        interceptCountNoCost = 0
+        cgImageCountCost = 0
+        cgImageCountNoCost = 0
+    }
+
+    /// 추적된 캐시 상세 정보
     var totalCachedObjectCount: String {
         lock.lock()
         let caches = trackedCaches.allObjects

@@ -27,7 +27,12 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - UI Components
 
     private lazy var toolbarView = ToolbarView()
-    private var settingsLinkHostingController: UIHostingController<SettingsLinkView>?
+    /// 프로세스 수명 동안 유지되는 단일 UIHostingController (SwiftUI 런타임 누적 방지)
+    private static var sharedSettingsHC: UIHostingController<SettingsLinkView>?
+    /// 현재 VC에서 사용 중인 참조 (weak — static이 소유권 보유)
+    private weak var settingsLinkHostingController: UIHostingController<SettingsLinkView>?
+    /// re-parent 시 이전 constraint를 명시적으로 정리하기 위한 참조
+    private var settingsHCConstraints: [NSLayoutConstraint] = []
     private lazy var translationLanguageBar = TranslationLanguageBar()
     private lazy var translationInputView = TranslationInputView()
     private lazy var correctionLanguageBar = CorrectionLanguageBar()
@@ -143,6 +148,16 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Lifecycle
 
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        CoreTextCacheManager.activate()  // Phase 4: viewDidLoad보다 이전에 활성화
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        CoreTextCacheManager.activate()
+    }
+
     deinit {
         #if DEBUG
         let deinitMemory = Self.measurePhysFootprint()
@@ -154,12 +169,14 @@ class KeyboardViewController: UIInputViewController {
         // NotificationCenter 정리 (스레드 무관 — iOS 9+ 안전)
         NotificationCenter.default.removeObserver(self)
 
-        // 안전망: viewWillDisappear에서 이미 정리되었으면 nil → 스킵.
-        if let hc = settingsLinkHostingController {
+        // UIHostingController는 static으로 프로세스 수명 동안 유지
+        // deinit에서 파괴하지 않음 — 다음 VC가 re-parent하여 재사용
+        if let hc = settingsLinkHostingController, hc.parent === self {
+            NSLayoutConstraint.deactivate(settingsHCConstraints)
+            settingsHCConstraints = []
             hc.willMove(toParent: nil)
             hc.view.removeFromSuperview()
             hc.removeFromParent()
-            settingsLinkHostingController = nil
         }
 
         #if DEBUG
@@ -172,17 +189,20 @@ class KeyboardViewController: UIInputViewController {
 
         let finalMemory = Self.measurePhysFootprint()
         kbLogger.warning("💀 DEINIT final (pressure_relief 후): \(finalMemory, format: .fixed(precision: 2)) MB")
+        Self.diagnoseMemoryBreakdown()
 
         // 다음 사이클 viewDidLoad에서 비교할 수 있도록 저장
         Self.lastDeinitMemory = finalMemory
+        CoreTextCacheManager.logInterceptStats()
         #endif
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // CoreText 글리프 캐시 swizzling 활성화 (1회만 실행, 중복 호출 안전)
-        CoreTextCacheManager.activate()
+        // CoreTextCacheManager.activate()는 init()으로 이동됨 (Phase 4)
         #if DEBUG
+        CoreTextCacheManager.resetInterceptCounters()
+        kbLogger.info("📊 [Phase4] Swizzle 인터셉트 카운터 리셋")
         kbLogger.info("📌 viewDidLoad START — pid=\(ProcessInfo.processInfo.processIdentifier)")
         kbLogger.info("📌 Memory at viewDidLoad: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 Memory comparison — phys_footprint: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB, resident_size: \(self.currentResidentMB(), format: .fixed(precision: 2)) MB")
@@ -212,6 +232,7 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("📌 viewDidLoad END — Memory: \(currentMem, format: .fixed(precision: 2)) MB [cycle \(Self.lifecycleCount)]")
         Self.logMallocZoneStats()
         kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
+        Self.diagnoseMemoryBreakdown()
 
         // 이전 사이클 DEINIT과 비교 — asyncAfter 대체
         if Self.lastDeinitMemory > 0 {
@@ -307,12 +328,15 @@ class KeyboardViewController: UIInputViewController {
         let mem0 = currentMemoryMB()
         #endif
 
-        // 1) UIHostingController 즉시 정리
+        // 1) UIHostingController — static 재사용이므로 detach만 (파괴하지 않음)
         if let hc = settingsLinkHostingController {
+            NSLayoutConstraint.deactivate(settingsHCConstraints)
+            settingsHCConstraints = []
             hc.willMove(toParent: nil)
             hc.view.removeFromSuperview()
             hc.removeFromParent()
-            settingsLinkHostingController = nil
+            // settingsLinkHostingController는 weak이므로 nil 할당 불필요
+            // Self.sharedSettingsHC는 유지 — 다음 사이클에서 재사용
         }
 
         #if DEBUG
@@ -391,10 +415,12 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("🔬 [5] QuickNote views 해제 후 — Memory: \(mem5, format: .fixed(precision: 2)) MB (delta: \(mem5 - mem4, format: .fixed(precision: 2)) MB)")
         kbLogger.info("📌 viewWillDisappear END — Memory: \(mem5, format: .fixed(precision: 2)) MB (총 delta: \(mem5 - mem0, format: .fixed(precision: 2)) MB) [cycle \(Self.lifecycleCount)]")
         Self.logMallocZoneStats()
+        Self.diagnoseMemoryBreakdown()
+        CoreTextCacheManager.logInterceptStats()
         #endif
 
-        // ═══ malloc pressure relief — Release에서도 실행 (치료 목적) ═══
-        // malloc zone이 보유 중인 미사용 페이지를 OS에 반환 요청
+        // ═══ 시스템 캐시 cleanup + malloc pressure relief — Release에서도 실행 ═══
+        triggerSystemCacheCleanup()
         malloc_zone_pressure_relief(nil, 0)
 
         #if DEBUG
@@ -943,43 +969,81 @@ class KeyboardViewController: UIInputViewController {
 
     private func setupSettingsLink() {
         #if DEBUG
-        kbLogger.info("🔗 setupSettingsLink START — existing hostingController isNil=\(self.settingsLinkHostingController == nil)")
+        kbLogger.info("🔗 setupSettingsLink START — sharedHC isNil=\(Self.sharedSettingsHC == nil), localRef isNil=\(self.settingsLinkHostingController == nil)")
         kbLogger.info("🔗 container.subviews.count BEFORE = \(self.toolbarView.settingsLinkContainer.subviews.count)")
         #endif
 
-        // ── 중복 생성 방지: 이미 설정되어 있으면 스킵 ──
-        if settingsLinkHostingController != nil {
+        // ── static 인스턴스가 없으면 최초 1회 생성 ──
+        if Self.sharedSettingsHC == nil {
+            let hc = UIHostingController(rootView: SettingsLinkView())
+            hc.view.translatesAutoresizingMaskIntoConstraints = false
+            hc.view.backgroundColor = .clear
+            Self.sharedSettingsHC = hc
             #if DEBUG
-            kbLogger.info("🔗 setupSettingsLink SKIPPED — already exists")
+            kbLogger.info("🔗 UIHostingController 최초 생성 (프로세스 수명 동안 재사용)")
             #endif
-            return
         }
 
-        let hostingController = UIHostingController(rootView: SettingsLinkView())
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-        hostingController.view.backgroundColor = .clear
+        guard let hc = Self.sharedSettingsHC else { return }
 
-        // UIHostingController를 child로 추가
-        addChild(hostingController)
-        toolbarView.settingsLinkContainer.addSubview(hostingController.view)
-        hostingController.didMove(toParent: self)
+        // ── 이전 VC에서 detach (re-parent 준비) ──
+        if hc.parent != nil {
+            hc.willMove(toParent: nil)
+            hc.view.removeFromSuperview()
+            hc.removeFromParent()
+        }
 
-        // 컨테이너에 꽉 채움
-        NSLayoutConstraint.activate([
-            hostingController.view.topAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.topAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.bottomAnchor),
-            hostingController.view.leadingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.trailingAnchor),
-        ])
+        // ── 현재 VC에 attach ──
+        addChild(hc)
+        hc.view.translatesAutoresizingMaskIntoConstraints = false
+        toolbarView.settingsLinkContainer.addSubview(hc.view)
+        hc.didMove(toParent: self)
 
-        // UIHostingController 참조 보관 (메모리 해제 방지)
-        self.settingsLinkHostingController = hostingController
+        // 컨테이너에 꽉 채움 — constraint를 변수에 보관하여 re-parent 시 명시적 정리 가능
+        let constraints = [
+            hc.view.topAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.topAnchor),
+            hc.view.bottomAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.bottomAnchor),
+            hc.view.leadingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.leadingAnchor),
+            hc.view.trailingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.trailingAnchor),
+        ]
+        NSLayoutConstraint.activate(constraints)
+        self.settingsHCConstraints = constraints
+
+        // weak 참조 보관
+        self.settingsLinkHostingController = hc
 
         #if DEBUG
         kbLogger.info("🔗 setupSettingsLink END — container.subviews.count AFTER = \(self.toolbarView.settingsLinkContainer.subviews.count)")
         kbLogger.info("🔗 Memory after setupSettingsLink: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("🔗 children.count = \(self.children.count)")
         #endif
+    }
+
+    // MARK: - System Cache Cleanup
+
+    /// 시스템 프레임워크(CoreText, CoreAnimation, UIKit)의 내부 캐시를
+    /// 메모리 경고 notification을 통해 자체 purge하도록 유도.
+    /// CoreText의 NSCache는 이 notification에 반응하여 글리프 캐시를 해제한다.
+    /// Release 빌드에서도 동작해야 하므로 #if DEBUG 밖에 위치.
+    private func triggerSystemCacheCleanup() {
+        // 1) 추적된 CoreText 캐시 직접 클리어 (기존 로직)
+        CoreTextCacheManager.shared.clearGlyphCaches()
+
+        // 2) 시스템 프레임워크 캐시 purge 유도
+        //    CoreText, UIKit, CoreAnimation 등이 이 notification에 반응하여
+        //    내부 NSCache, CABackingStore, 이미지 캐시 등을 자체 정리한다.
+        NotificationCenter.default.post(
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+
+        // 3) URL 캐시 정리
+        URLCache.shared.removeAllCachedResponses()
+
+        // 4) hidden 뷰의 CALayer backing store 해제
+        for subview in view.subviews where subview.isHidden || subview.alpha == 0 {
+            subview.layer.contents = nil
+        }
     }
 
     // MARK: - Debug: Memory Measurement
@@ -1052,6 +1116,34 @@ class KeyboardViewController: UIInputViewController {
         let released = malloc_zone_pressure_relief(nil, 0)
         let after = measurePhysFootprint()
         staticLogger.info("🔬 [malloc_pressure_relief] before: \(before, format: .fixed(precision: 2)) MB → after: \(after, format: .fixed(precision: 2)) MB (delta: \(after - before, format: .fixed(precision: 2)) MB, bytes_released: \(released))")
+    }
+
+    /// [DEBUG] VM 메모리 상세 분석 — iOS에서 사용 가능한 필드만 사용
+    private static func diagnoseMemoryBreakdown() {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else {
+            staticLogger.error("📊 [vm_info] task_info 호출 실패")
+            return
+        }
+
+        let physFP = Double(info.phys_footprint) / (1024 * 1024)
+        let internalMem = Double(info.`internal`) / (1024 * 1024)
+        let compressed = Double(info.compressed) / (1024 * 1024)
+        let resident = Double(info.resident_size) / (1024 * 1024)
+        let virtual = Double(info.virtual_size) / (1024 * 1024)
+
+        staticLogger.info("📊 [vm_info] phys_footprint: \(physFP, format: .fixed(precision: 2)) MB")
+        staticLogger.info("📊 [vm_info]   internal (dirty): \(internalMem, format: .fixed(precision: 2)) MB")
+        staticLogger.info("📊 [vm_info]   compressed: \(compressed, format: .fixed(precision: 2)) MB")
+        staticLogger.info("📊 [vm_info]   resident_size: \(resident, format: .fixed(precision: 2)) MB")
+        staticLogger.info("📊 [vm_info]   virtual_size: \(virtual, format: .fixed(precision: 2)) MB")
+        staticLogger.info("📊 [vm_info]   non-malloc dirty (internal - phys): \(internalMem - physFP, format: .fixed(precision: 2)) MB")
     }
     #endif
 
@@ -1623,9 +1715,12 @@ class KeyboardViewController: UIInputViewController {
         emojiKeyboardView?.isHidden = true
         keyboardLayoutView.isHidden = false
 
+        // 시스템 프레임워크 캐시 purge (CoreText 글리프, CALayer backing store 등)
+        triggerSystemCacheCleanup()
+
         #if DEBUG
         let afterClear = currentMemoryMB()
-        kbLogger.info("🧹 hideEmojiKeyboard — clearGlyphCaches 효과:")
+        kbLogger.info("🧹 hideEmojiKeyboard — 시스템 캐시 cleanup 효과:")
         kbLogger.info("🧹   before: \(beforeClear, format: .fixed(precision: 2)) MB → after: \(afterClear, format: .fixed(precision: 2)) MB (delta: \(afterClear - beforeClear, format: .fixed(precision: 2)) MB)")
         kbLogger.info("🧹   tracked caches: \(cacheCountBefore), cached objects before clear: \(cacheObjectsBefore)")
         Self.logMallocZoneStats()
