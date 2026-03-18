@@ -46,7 +46,7 @@ final class SnowfallView: UIView {
         createSnowflakes()
 
         displayLink?.invalidate()
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {

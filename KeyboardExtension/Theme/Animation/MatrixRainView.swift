@@ -135,6 +135,14 @@ final class MatrixRainView: UIView {
         contentScaleFactor = 1.0
         isUserInteractionEnabled = false
         clearsContextBeforeDrawing = true
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MatrixRainView.clearCharacterImageCache()
+        }
     }
 
     // MARK: - Lifecycle
@@ -152,7 +160,7 @@ final class MatrixRainView: UIView {
         isAnimating = true
         initializeColumns()
 
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 8, maximum: 15, preferred: 12)
         } else {
@@ -203,7 +211,7 @@ final class MatrixRainView: UIView {
         needsStop = false
         lastTimestamp = 0
 
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 8, maximum: 15, preferred: 12)
         } else {
@@ -407,6 +415,7 @@ final class MatrixRainView: UIView {
     // MARK: - Cleanup
 
     deinit {
+        NotificationCenter.default.removeObserver(self)
         rainDisplayLink?.invalidate()
         rainDisplayLink = nil
     }

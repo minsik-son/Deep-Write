@@ -58,6 +58,14 @@ final class StardustView: UIView {
         backgroundColor = .clear
         contentScaleFactor = 1.0
         isUserInteractionEnabled = false
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            StardustView.clearSparkImageCache()
+        }
     }
 
     // MARK: - Spark Image Cache
@@ -79,6 +87,11 @@ final class StardustView: UIView {
                 sparkImages.append(cgImage)
             }
         }
+    }
+
+    /// Phase 5: static 캐시 메모리 해제
+    static func clearSparkImageCache() {
+        sparkImages.removeAll()
     }
 
     // MARK: - Public API
@@ -131,7 +144,7 @@ final class StardustView: UIView {
         lastTimestamp = 0
         particles.removeAll()
 
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {
@@ -164,7 +177,7 @@ final class StardustView: UIView {
         isAnimating = true
         lastTimestamp = 0
 
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {
@@ -264,6 +277,7 @@ final class StardustView: UIView {
 
     // MARK: - Cleanup
     deinit {
+        NotificationCenter.default.removeObserver(self)
         displayLink?.invalidate()
         displayLink = nil
     }

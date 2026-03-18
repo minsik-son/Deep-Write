@@ -134,7 +134,7 @@ final class CherryBlossomView: UIView {
         createPetals()
 
         displayLink?.invalidate()
-        let dl = CADisplayLink(target: self, selector: #selector(animationTick))
+        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(
                 minimum: 12, maximum: 24, preferred: Float(Self.targetFPS)

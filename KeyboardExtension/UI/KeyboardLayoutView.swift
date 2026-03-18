@@ -1722,6 +1722,12 @@ class KeyboardLayoutView: UIView {
     func updateAppearance(isDark: Bool) {
         self.isDark = isDark
 
+        // Phase 7: 메모리 경고 후 영구 차단 방지
+        // handleMemoryWarning()의 asyncAfter 복구가 키보드 확장에서 실행되지 않으므로
+        // updateAppearance 진입 시 강제 리셋하여 애니메이션 재생성을 보장한다.
+        // 진짜 메모리 위기 시에는 SafetyNet(22MB soft cleanup) / Graceful Restart(40MB exit(0))가 처리.
+        isMemoryConstrained = false
+
         if let theme = customTheme {
             // 그라데이션 배경 처리
             if theme.hasGradient, let colors = theme.gradientColors {
@@ -2553,9 +2559,9 @@ class KeyboardLayoutView: UIView {
             stopEdgeGlowAnimation()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { [weak self] in
-            self?.isMemoryConstrained = false
-        }
+        // Phase 7: asyncAfter 복구 제거
+        // 키보드 확장은 dismiss 후 RunLoop가 정지되어 asyncAfter가 실행되지 않음.
+        // isMemoryConstrained 리셋은 updateAppearance() 진입 시 처리됨 (변경 2 참조).
     }
 
     // MARK: - Early Teardown (키보드 dismiss 시 호출)

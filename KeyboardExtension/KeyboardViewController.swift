@@ -284,6 +284,11 @@ class KeyboardViewController: UIInputViewController {
         setupHeightConstraint()
         loadCachedSettings()
 
+        // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
+        // viewDidLoad/switchMode(.defaultMode)에서는 호출되지 않으므로
+        // 여기서 호출하여 customTheme 설정 + 애니메이션 뷰 생성 + buildKeyboard 보장
+        updateKeyboardAppearance()
+
         // ── 나머지는 다음 런루프에서 실행 (키보드 UI 먼저 표시) ──
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -303,6 +308,11 @@ class KeyboardViewController: UIInputViewController {
         }
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        checkMemorySafetyNet()  // Phase 5: 메모리 안전망
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -428,6 +438,19 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("🔬 [malloc_pressure_relief] viewWillDisappear 후 → \(memAfterRelief, format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
         #endif
+
+        // ═══ Graceful Restart — Phase 6 ═══
+        // 메모리 누적이 임계치를 넘으면 프로세스를 깨끗하게 종료.
+        // 키보드가 닫히는 시점이므로 유저 입력 손실 없음.
+        // 다음 키보드 열기 시 iOS가 fresh 프로세스를 생성하여 baseline ~13MB로 리셋.
+        // 애니메이션, 모든 기능이 처음부터 완벽하게 동작.
+        let finalMemoryForRestart = currentMemoryMB()
+        if finalMemoryForRestart > Self.memoryGracefulExitMB {
+            #if DEBUG
+            kbLogger.warning("🔄 [GracefulRestart] phys_footprint: \(finalMemoryForRestart, format: .fixed(precision: 1)) MB > \(Self.memoryGracefulExitMB, format: .fixed(precision: 1)) MB — 프로세스 리스타트")
+            #endif
+            exit(0)
+        }
     }
 
     private func reloadLocalizedStrings() {
@@ -1024,32 +1047,68 @@ class KeyboardViewController: UIInputViewController {
     /// 시스템 프레임워크(CoreText, CoreAnimation, UIKit)의 내부 캐시를
     /// 메모리 경고 notification을 통해 자체 purge하도록 유도.
     /// CoreText의 NSCache는 이 notification에 반응하여 글리프 캐시를 해제한다.
+    /// 시스템 프레임워크 캐시를 직접 정리.
     /// Release 빌드에서도 동작해야 하므로 #if DEBUG 밖에 위치.
+    ///
+    /// Phase 6 v2: didReceiveMemoryWarningNotification post 제거.
+    /// 이유:
+    /// 1. 모든 테스트에서 메모리 회수 효과 = 0.0000 MB (무효)
+    /// 2. KeyboardLayoutView.handleMemoryWarning()가 이 notification에 반응하여
+    ///    isMemoryConstrained=true + 모든 애니메이션 뷰 제거하는 치명적 부작용 발생
+    /// 3. 키보드 dismiss 후 asyncAfter 미실행으로 isMemoryConstrained가 영구 true
+    /// 4. 결과: 애니메이션이 처음부터 작동하지 않는 버그
     private func triggerSystemCacheCleanup() {
-        // 1) 추적된 CoreText 캐시 직접 클리어 (기존 로직)
+        // 1) 추적된 CoreText 캐시 직접 클리어
         CoreTextCacheManager.shared.clearGlyphCaches()
 
-        // 2) 시스템 프레임워크 캐시 purge 유도
-        //    CoreText, UIKit, CoreAnimation 등이 이 notification에 반응하여
-        //    내부 NSCache, CABackingStore, 이미지 캐시 등을 자체 정리한다.
-        NotificationCenter.default.post(
-            name: UIApplication.didReceiveMemoryWarningNotification,
-            object: nil
-        )
-
-        // 3) URL 캐시 정리
+        // 2) URL 캐시 정리
         URLCache.shared.removeAllCachedResponses()
 
-        // 4) hidden 뷰의 CALayer backing store 해제
+        // 3) hidden 뷰의 CALayer backing store 해제
         for subview in view.subviews where subview.isHidden || subview.alpha == 0 {
             subview.layer.contents = nil
         }
     }
 
-    // MARK: - Debug: Memory Measurement
+    // MARK: - Memory Safety Net (Phase 5)
 
-    #if DEBUG
+    /// 메모리 안전망 — phys_footprint 기반
+    ///
+    /// Phase 6: CRITICAL 단계를 제거하고 Graceful Restart로 대체.
+    /// 애니메이션 캐시, CALayer backing store 등을 건드리지 않는다.
+    /// 고메모리 상태에서 cleanup은 delta=0으로 무효하므로, exit(0)으로 프로세스 리스타트가 유일한 해법.
+    private func checkMemorySafetyNet() {
+        let currentMB = currentMemoryMB()
+
+        if currentMB > Self.memoryEmergencyExitMB {
+            // ═══ EMERGENCY EXIT ═══
+            // viewDidAppear에서 호출됨 — 키보드가 막 열렸는데 이미 위험 수준.
+            // 이 상태에서는 어떤 cleanup도 효과 없음 (delta=0 확인됨).
+            // 유저 입력은 이미 text field에 commit된 상태이므로 손실 없음.
+            #if DEBUG
+            kbLogger.error("🚨 [SafetyNet] EMERGENCY EXIT — phys_footprint: \(currentMB, format: .fixed(precision: 1)) MB > \(Self.memoryEmergencyExitMB, format: .fixed(precision: 1)) MB, 프로세스 리스타트")
+            #endif
+            exit(0)
+
+        } else if currentMB > Self.memoryWarningThresholdMB {
+            // ═══ WARNING: 소프트 캐시만 정리 ═══
+            // CoreText 글리프 캐시, FontPool, URLCache만 정리.
+            // ⚠️ 애니메이션 캐시(MatrixRain, Stardust), sublayer.contents,
+            //    이모지 뷰 등은 절대 건드리지 않는다.
+            CoreTextCacheManager.shared.clearGlyphCaches()
+            FontPool.clearIfNeeded()
+            URLCache.shared.removeAllCachedResponses()
+
+            #if DEBUG
+            kbLogger.warning("⚠️ [SafetyNet] WARNING — phys_footprint: \(currentMB, format: .fixed(precision: 1)) MB, 소프트 캐시 정리")
+            #endif
+        }
+    }
+
+    // MARK: - Memory Measurement
+
     /// Jetsam이 실제로 보는 phys_footprint (MB)
+    /// Phase 6: Release에서도 SafetyNet이 사용하므로 #if DEBUG 밖에 위치.
     private func currentMemoryMB() -> Double {
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size / MemoryLayout<integer_t>.size)
@@ -1064,6 +1123,7 @@ class KeyboardViewController: UIInputViewController {
         return 0
     }
 
+    #if DEBUG
     /// resident_size (비교용, 기존 측정값)
     private func currentResidentMB() -> Double {
         var info = mach_task_basic_info()
@@ -1078,6 +1138,19 @@ class KeyboardViewController: UIInputViewController {
         }
         return 0
     }
+
+    /// 메모리 안전망 임계치 (phys_footprint MB 기준)
+    ///
+    /// 설계 근거:
+    /// - 22MB WARNING: 이모지 피크 후 소프트 캐시 정리. 애니메이션은 절대 안 건드림.
+    /// - 40MB GRACEFUL: 기본 테마 ~54사이클, 애니메이션 테마 ~29사이클 후 도달.
+    ///   키보드 닫는 시점(viewWillDisappear)에서만 exit(0) 호출.
+    ///   유저 입장에서 다음 키보드 열기 시 fresh 프로세스로 13MB baseline 시작.
+    /// - 55MB EMERGENCY: viewWillDisappear 없이 메모리가 폭증한 극단적 상황.
+    ///   viewDidAppear에서 즉시 exit(0). (실제 발생 확률 매우 낮음)
+    private static let memoryWarningThresholdMB: Double = 22.0     // WARNING: 소프트 캐시만 정리
+    private static let memoryGracefulExitMB: Double = 40.0         // GRACEFUL: 키보드 닫을 때 exit(0)
+    private static let memoryEmergencyExitMB: Double = 55.0        // EMERGENCY: 즉시 exit(0)
 
     /// 사이클 간 메모리 추적용 static 변수
     private static var lastDeinitMemory: Double = 0
@@ -1698,6 +1771,9 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("🔬 showEmojiKeyboard END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
         kbLogger.info("🔬 CoreText tracked caches: \(CoreTextCacheManager.shared.trackedCacheCount)")
         #endif
+
+        // Phase 6: 이모지 열기 시 메모리 안전망 체크
+        checkMemorySafetyNet()
     }
 
     private func hideEmojiKeyboard() {
@@ -1717,6 +1793,9 @@ class KeyboardViewController: UIInputViewController {
 
         // 시스템 프레임워크 캐시 purge (CoreText 글리프, CALayer backing store 등)
         triggerSystemCacheCleanup()
+
+        // Phase 6: 이모지 닫기 시 메모리 안전망 체크
+        checkMemorySafetyNet()
 
         #if DEBUG
         let afterClear = currentMemoryMB()

@@ -18,6 +18,8 @@
 		35ABC70391C60A9068DF38AD /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2CDFC8B502F230107E052E7 /* Constants.swift */; };
 		3948B0F72D89CB1FFE6ADA48 /* MatrixRainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C21417E39394CA9BB9353695 /* MatrixRainView.swift */; };
 		3B8365522F689C6E00E27AF8 /* CoreTextCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */; };
+		3B8365552F68F46500E27AF8 /* WeakProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365542F68F46500E27AF8 /* WeakProxy.swift */; };
+		3B8365562F68F46500E27AF8 /* FontPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365532F68F46500E27AF8 /* FontPool.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -167,6 +169,8 @@
 		33DDEB1B46819A80FA123ADC /* AdManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdManager.swift; sourceTree = "<group>"; };
 		3A3E183622B665F86569655B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreTextCacheManager.swift; sourceTree = "<group>"; };
+		3B8365532F68F46500E27AF8 /* FontPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontPool.swift; sourceTree = "<group>"; };
+		3B8365542F68F46500E27AF8 /* WeakProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeakProxy.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -382,6 +386,8 @@
 		8D733AA9C8A306DC2EF99AFE /* KeyboardExtension */ = {
 			isa = PBXGroup;
 			children = (
+				3B8365532F68F46500E27AF8 /* FontPool.swift */,
+				3B8365542F68F46500E27AF8 /* WeakProxy.swift */,
 				3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */,
 				WD01AA11BB22CC33DD550001 /* Assets.xcassets */,
 				E56C026C05D186CC2E5F2172 /* KeyboardExtension.entitlements */,
@@ -669,6 +675,8 @@
 				545C2A702F9E19061154ABC7 /* TranslationInputView.swift in Sources */,
 				E0355878559563542D5E3439 /* TranslationLanguageBar.swift in Sources */,
 				DD11EE22FF33001100220002 /* ToneStyle.swift in Sources */,
+				3B8365552F68F46500E27AF8 /* WeakProxy.swift in Sources */,
+				3B8365562F68F46500E27AF8 /* FontPool.swift in Sources */,
 				DD11EE22FF33001100220004 /* TonePickerView.swift in Sources */,
 				6D10997C60C7B3EFDE9AA9AC /* TranslationManager.swift in Sources */,
 				AA00BB11CC22DD33EE33000A /* AppColors.swift in Sources */,
