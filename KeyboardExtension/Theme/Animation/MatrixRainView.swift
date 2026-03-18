@@ -359,9 +359,10 @@ final class MatrixRainView: UIView {
         guard !charImages.isEmpty else { return }
 
         for (colIdx, col) in columns.enumerated() {
-            let x = CGFloat(colIdx) * Self.columnWidth + 1
+            autoreleasepool {  // Phase 9: 매 프레임 수백 CGContext 연산의 transient spike 방지
+                let x = CGFloat(colIdx) * Self.columnWidth + 1
 
-            for trail in col.trails {
+                for trail in col.trails {
                 let headCharRow = Int(trail.headY / charH)
                 let tailY = trail.headY - col.trailLength
                 let tailCharRow = max(0, Int(tailY / charH))
@@ -396,6 +397,7 @@ final class MatrixRainView: UIView {
                     ctx.fill(drawRect)
                     ctx.restoreGState()
                 }
+            }
             }
         }
     }

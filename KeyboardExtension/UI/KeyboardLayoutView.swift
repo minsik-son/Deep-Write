@@ -2662,6 +2662,38 @@ class KeyboardLayoutView: UIView {
             #endif
         }
 
+        // Phase 9: patternImageView backing store 해제
+        if let pv = patternImageView {
+            pv.backgroundColor = nil  // UIColor(patternImage:) 해제 — CGImage backing 즉시 free
+            pv.removeFromSuperview()
+            patternImageView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [C1] patternImageView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+
+        // Phase 9: woodTileImageView backing store 해제
+        if let wv = woodTileImageView {
+            wv.backgroundColor = nil  // UIColor(patternImage: tileImg) 해제
+            wv.removeFromSuperview()
+            woodTileImageView = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [C2] woodTileImageView 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+
+        // Phase 9: gradientLayer backing store 해제
+        if let gl = gradientLayer {
+            gl.removeFromSuperlayer()
+            gradientLayer = nil
+            #if DEBUG
+            let m = diagnosticMemoryMB()
+            print("🔬 [C3] gradientLayer 해제 — Memory: \(String(format: "%.2f", m)) MB")
+            #endif
+        }
+
         #if DEBUG
         let memEnd = diagnosticMemoryMB()
         print("🔬 prepareForDismiss END — Memory: \(String(format: "%.2f", memEnd)) MB (총 delta: \(String(format: "%.2f", memEnd - mem0)) MB)")

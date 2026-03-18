@@ -90,15 +90,17 @@ final class ThemePatternRenderer {
         let step: CGFloat = 4
         var ix = 0
         for x in stride(from: CGFloat(0), to: rect.width, by: step) {
-            var iy = 0
-            for y in stride(from: CGFloat(0), to: rect.height, by: step) {
-                let hash = ((ix &* 7) &+ (iy &* 13)) % 17
-                let a = opacity * CGFloat(hash) / 17.0
-                ctx.setFillColor(tint.withAlphaComponent(a).cgColor)
-                ctx.fill(CGRect(x: x, y: y, width: step, height: step))
-                iy += 1
+            autoreleasepool {  // Phase 9: 1024회 반복 fill의 UIColor autorelease 지연 방지
+                var iy = 0
+                for y in stride(from: CGFloat(0), to: rect.height, by: step) {
+                    let hash = ((ix &* 7) &+ (iy &* 13)) % 17
+                    let a = opacity * CGFloat(hash) / 17.0
+                    ctx.setFillColor(tint.withAlphaComponent(a).cgColor)
+                    ctx.fill(CGRect(x: x, y: y, width: step, height: step))
+                    iy += 1
+                }
+                ix += 1
             }
-            ix += 1
         }
     }
 
@@ -175,33 +177,37 @@ final class ThemePatternRenderer {
 
         // 1. Horizontal grain lines (sin wave)
         for y in 0..<h {
-            let wave = sin(Double(y) * 0.15) * 0.3 + sin(Double(y) * 0.07) * 0.5
-            let grainIntensity = (wave + 1.0) / 2.0
-            let alpha = CGFloat(grainIntensity) * opacity * 0.6
+            autoreleasepool {  // Phase 9: UIColor autorelease 누적 방지
+                let wave = sin(Double(y) * 0.15) * 0.3 + sin(Double(y) * 0.07) * 0.5
+                let grainIntensity = (wave + 1.0) / 2.0
+                let alpha = CGFloat(grainIntensity) * opacity * 0.6
 
-            ctx.setStrokeColor(UIColor(red: r, green: g, blue: b, alpha: alpha).cgColor)
-            ctx.setLineWidth(0.5)
-            ctx.move(to: CGPoint(x: rect.origin.x, y: rect.origin.y + CGFloat(y)))
-            ctx.addLine(to: CGPoint(x: rect.origin.x + rect.width, y: rect.origin.y + CGFloat(y)))
-            ctx.strokePath()
+                ctx.setStrokeColor(UIColor(red: r, green: g, blue: b, alpha: alpha).cgColor)
+                ctx.setLineWidth(0.5)
+                ctx.move(to: CGPoint(x: rect.origin.x, y: rect.origin.y + CGFloat(y)))
+                ctx.addLine(to: CGPoint(x: rect.origin.x + rect.width, y: rect.origin.y + CGFloat(y)))
+                ctx.strokePath()
+            }
         }
 
         // 2. Fine pore noise (deterministic hash)
         let step: CGFloat = 3
         var ix = 0
         for x in stride(from: CGFloat(0), to: CGFloat(w), by: step) {
-            var iy = 0
-            for y in stride(from: CGFloat(0), to: CGFloat(h), by: step) {
-                let hash = ((ix &* 7) &+ (iy &* 13)) % 17
-                let noiseAlpha = opacity * CGFloat(hash) / 17.0 * 0.2
+            autoreleasepool {  // Phase 9: pore noise UIColor autorelease 방지
+                var iy = 0
+                for y in stride(from: CGFloat(0), to: CGFloat(h), by: step) {
+                    let hash = ((ix &* 7) &+ (iy &* 13)) % 17
+                    let noiseAlpha = opacity * CGFloat(hash) / 17.0 * 0.2
 
-                if noiseAlpha > 0.02 {
-                    ctx.setFillColor(UIColor(red: r * 0.6, green: g * 0.6, blue: b * 0.6, alpha: noiseAlpha).cgColor)
-                    ctx.fill(CGRect(x: rect.origin.x + x, y: rect.origin.y + CGFloat(y), width: 1, height: 1))
+                    if noiseAlpha > 0.02 {
+                        ctx.setFillColor(UIColor(red: r * 0.6, green: g * 0.6, blue: b * 0.6, alpha: noiseAlpha).cgColor)
+                        ctx.fill(CGRect(x: rect.origin.x + x, y: rect.origin.y + CGFloat(y), width: 1, height: 1))
+                    }
+                    iy += 1
                 }
-                iy += 1
+                ix += 1
             }
-            ix += 1
         }
     }
 

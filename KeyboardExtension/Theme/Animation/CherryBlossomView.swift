@@ -289,26 +289,28 @@ final class CherryBlossomView: UIView {
         let frontPath = UIBezierPath()
 
         for (i, spec) in specs.enumerated() {
-            let targetPath: UIBezierPath
-            if i < 20 {
-                targetPath = backPath
-            } else if i < 65 {
-                targetPath = midPath
-            } else {
-                targetPath = frontPath
-            }
+            autoreleasepool {  // Phase 9: 500개 UIBezierPath 생성 시 transient spike 방지
+                let targetPath: UIBezierPath
+                if i < 20 {
+                    targetPath = backPath
+                } else if i < 65 {
+                    targetPath = midPath
+                } else {
+                    targetPath = frontPath
+                }
 
-            let baseAngle = CGFloat.random(in: 0...(CGFloat.pi * 2 / 5))
-            for j in 0..<5 {
-                let angle = baseAngle + CGFloat(j) * (CGFloat.pi * 2.0 / 5.0)
-                let petal = singlePetalPath(scale: spec.scale)
+                let baseAngle = CGFloat.random(in: 0...(CGFloat.pi * 2 / 5))
+                for j in 0..<5 {
+                    let angle = baseAngle + CGFloat(j) * (CGFloat.pi * 2.0 / 5.0)
+                    let petal = singlePetalPath(scale: spec.scale)
 
-                var transform = CGAffineTransform.identity
-                transform = transform.translatedBy(x: spec.cx, y: spec.cy)
-                transform = transform.rotated(by: angle)
-                petal.apply(transform)
+                    var transform = CGAffineTransform.identity
+                    transform = transform.translatedBy(x: spec.cx, y: spec.cy)
+                    transform = transform.rotated(by: angle)
+                    petal.apply(transform)
 
-                targetPath.append(petal)
+                    targetPath.append(petal)
+                }
             }
         }
 
