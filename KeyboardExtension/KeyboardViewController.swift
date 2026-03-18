@@ -1777,6 +1777,11 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func hideEmojiKeyboard() {
+        // Phase 8: 이모지 모드가 아니면 즉시 리턴 (중복 호출 방지)
+        // switchMode()가 매번 무조건 호출하므로, guard 없으면 매 모드 전환마다
+        // triggerSystemCacheCleanup + checkMemorySafetyNet이 불필요하게 실행됨
+        guard isEmojiMode else { return }
+
         isEmojiMode = false
 
         #if DEBUG
@@ -1785,10 +1790,13 @@ class KeyboardViewController: UIInputViewController {
         let cacheObjectsBefore = CoreTextCacheManager.shared.totalCachedObjectCount
         #endif
 
-        // 이모지 뷰 dismiss 시 CoreText 글리프 캐시 전체 클리어
+        // Phase 8: 이모지 뷰 완전 파괴 (isHidden 대신 nil)
+        // viewWillDisappear와 동일한 teardown 패턴 적용
+        // 이모지 뷰의 CALayer backing store + UIView 계층 메모리 즉시 회수
         emojiKeyboardView?.prepareForDismiss()
+        emojiKeyboardView?.removeFromSuperview()
+        emojiKeyboardView = nil
 
-        emojiKeyboardView?.isHidden = true
         keyboardLayoutView.isHidden = false
 
         // 시스템 프레임워크 캐시 purge (CoreText 글리프, CALayer backing store 등)
