@@ -113,8 +113,8 @@ class ToolbarView: UIView {
 
         NSLayoutConstraint.activate([
             toolbarStack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-            toolbarStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            toolbarStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            toolbarStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            toolbarStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
             toolbarStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
 
             statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
