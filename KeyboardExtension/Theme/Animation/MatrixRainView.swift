@@ -149,9 +149,6 @@ final class MatrixRainView: UIView {
     // MARK: - Lifecycle
 
     func startAnimation() {
-        #if DEBUG
-        NSLog("🔬 [RAIN] startAnimation() ENTER — isAnimating=\(isAnimating), bounds=\(bounds), frame=\(frame), superview=\(superview != nil), window=\(window != nil)")
-        #endif
         guard !isAnimating else { return }
 
         Self.ensureCharacterImages()
@@ -163,10 +160,6 @@ final class MatrixRainView: UIView {
 
         isAnimating = true
         initializeColumns()
-
-        #if DEBUG
-        NSLog("🔬 [RAIN] startAnimation() columns=\(columns.count), bounds=\(bounds)")
-        #endif
 
         let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
         displayLinkProxy = proxy
@@ -302,13 +295,6 @@ final class MatrixRainView: UIView {
     // MARK: - Animation Tick
 
     @objc private func animationTick(_ displayLink: CADisplayLink) {
-        #if DEBUG
-        struct TickCounter { static var count = 0 }
-        TickCounter.count += 1
-        if TickCounter.count <= 5 || TickCounter.count % 100 == 0 {
-            NSLog("🔬 [RAIN] animationTick #\(TickCounter.count) — isAnimating=\(isAnimating), bounds=\(bounds), rainDisplayLink=\(rainDisplayLink != nil)")
-        }
-        #endif
         if needsStop {
             stopAnimation()
             return
@@ -369,13 +355,6 @@ final class MatrixRainView: UIView {
     // MARK: - Drawing (v3: UIKit 네이티브 좌표계 — context flip 제거)
 
     override func draw(_ rect: CGRect) {
-        #if DEBUG
-        struct DrawCounter { static var count = 0 }
-        DrawCounter.count += 1
-        if DrawCounter.count <= 3 {
-            NSLog("🔬 [RAIN] draw() #\(DrawCounter.count) — rect=\(rect), bounds=\(bounds), isAnimating=\(isAnimating), columns=\(columns.count)")
-        }
-        #endif
         guard isAnimating, !columns.isEmpty else { return }
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
 
@@ -434,9 +413,6 @@ final class MatrixRainView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        #if DEBUG
-        NSLog("🔬 [RAIN] layoutSubviews — bounds=\(bounds), isAnimating=\(isAnimating), columns=\(columns.count)")
-        #endif
         guard isAnimating, bounds.width > 0, bounds.height > 0 else { return }
         let newColumnCount = max(1, Int(bounds.width / Self.columnWidth))
         if columns.isEmpty || abs(columns.count - newColumnCount) > 1 {

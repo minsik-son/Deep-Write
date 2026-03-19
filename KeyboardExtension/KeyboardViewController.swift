@@ -199,6 +199,9 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NSLog("══════════════════════════════════════")
+        NSLog("═══  Keyboard Loaded  ═══")
+        NSLog("══════════════════════════════════════")
         // CoreTextCacheManager.activate()는 init()으로 이동됨 (Phase 4)
         #if DEBUG
         CoreTextCacheManager.resetInterceptCounters()

@@ -427,12 +427,6 @@ class KeyboardLayoutView: UIView {
             stopWaveAnimation()
         }
 
-        #if DEBUG
-        NSLog("🔬 [BUILD-ANIM] rain: wasAnimating=\(wasRainAnimating), matrixRainView=\(matrixRainView != nil), isMemoryConstrained=\(isMemoryConstrained), needsRain=\(customTheme?.needsRainAnimation ?? false), isActive=\(matrixRainView?.isActive ?? false), lowPower=\(ProcessInfo.processInfo.isLowPowerModeEnabled)")
-        NSLog("🔬 [BUILD-ANIM] snow: wasAnimating=\(wasSnowfallAnimating), snowfallView=\(snowfallView != nil), needsSnow=\(customTheme?.needsSnowfallAnimation ?? false), isActive=\(snowfallView?.isActive ?? false)")
-        NSLog("🔬 [BUILD-ANIM] cherry: wasAnimating=\(wasCherryBlossomAnimating), cherryBlossomView=\(cherryBlossomView != nil), needsCherry=\(customTheme?.needsCherryBlossomAnimation ?? false), isActive=\(cherryBlossomView?.isActive ?? false)")
-        #endif
-
         // Rain animation: 빌드 완료 후 레인 재개
         if wasRainAnimating {
             matrixRainView?.resumeAnimation()
@@ -441,9 +435,6 @@ class KeyboardLayoutView: UIView {
                   let rv = matrixRainView, !rv.isActive,
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             rv.startAnimation()
-            #if DEBUG
-            NSLog("🔬 [BUILD-ANIM] ✅ Rain startAnimation() CALLED")
-            #endif
         }
 
         // Resume ripple animation
@@ -491,9 +482,6 @@ class KeyboardLayoutView: UIView {
                   !isMemoryConstrained, let sv = snowfallView, !sv.isActive,
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             sv.startAnimation()
-            #if DEBUG
-            NSLog("🔬 [BUILD-ANIM] ✅ Snowfall startAnimation() CALLED")
-            #endif
         }
 
         // Resume cherry blossom animation + keyFrames 업데이트
@@ -508,9 +496,6 @@ class KeyboardLayoutView: UIView {
                   !isMemoryConstrained, let cv = cherryBlossomView, !cv.isActive,
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             cv.startAnimation()
-            #if DEBUG
-            NSLog("🔬 [BUILD-ANIM] ✅ Cherry startAnimation() CALLED")
-            #endif
         }
     }
 
@@ -2602,13 +2587,6 @@ class KeyboardLayoutView: UIView {
     /// 무거운 애니메이션 뷰와 CADisplayLink를 즉시 정리하여 오버랩 구간 메모리 피크 억제.
     /// 멱등성(Idempotent) 보장 — 여러 번 호출해도 안전.
     func prepareForDismiss() {
-        #if DEBUG
-        let mem0 = diagnosticMemoryMB()
-        NSLog("🔬 prepareForDismiss START — Memory: \(String(format: "%.2f", mem0)) MB")
-        NSLog("🔬 DisplayLinks — wave:\(waveDisplayLink != nil) lens:\(lensDisplayLink != nil) edgeGlow:\(edgeGlowDisplayLink != nil) trackpad:\(displayLink != nil)")
-        NSLog("🔬 AnimViews — matrix:\(matrixRainView != nil) mercury:\(mercuryRippleView != nil) stardust:\(stardustView != nil) snowfall:\(snowfallView != nil) cherry:\(cherryBlossomView != nil)")
-        #endif
-
         // CADisplayLink 전부 정지 + 해제
         stopWaveAnimation()
         waveDisplayLink?.invalidate()
@@ -2625,56 +2603,31 @@ class KeyboardLayoutView: UIView {
         displayLink?.invalidate()
         displayLink = nil
 
-        #if DEBUG
-        let mem1 = diagnosticMemoryMB()
-        NSLog("🔬 [A] CADisplayLink 해제 후 — Memory: \(String(format: "%.2f", mem1)) MB (delta: \(String(format: "%.2f", mem1 - mem0)) MB)")
-        #endif
-
         // 애니메이션 뷰 정지 + 제거 + nil
         if let rv = matrixRainView {
             rv.stopAnimation()
             rv.removeFromSuperview()
             matrixRainView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [B1] matrixRainView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
         if let rv = mercuryRippleView {
             rv.stopAnimation()
             rv.removeFromSuperview()
             mercuryRippleView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [B2] mercuryRippleView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
         if let sv = stardustView {
             sv.stopAnimation()
             sv.removeFromSuperview()
             stardustView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [B3] stardustView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
         if let sv = snowfallView {
             sv.stopAnimation()
             sv.removeFromSuperview()
             snowfallView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [B4] snowfallView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
         if let cv = cherryBlossomView {
             cv.stopAnimation()
             cv.removeFromSuperview()
             cherryBlossomView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [B5] cherryBlossomView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
 
         // Phase 9: patternImageView backing store 해제
@@ -2682,10 +2635,6 @@ class KeyboardLayoutView: UIView {
             pv.backgroundColor = nil  // UIColor(patternImage:) 해제 — CGImage backing 즉시 free
             pv.removeFromSuperview()
             patternImageView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [C1] patternImageView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
 
         // Phase 9: woodTileImageView backing store 해제
@@ -2693,26 +2642,13 @@ class KeyboardLayoutView: UIView {
             wv.backgroundColor = nil  // UIColor(patternImage: tileImg) 해제
             wv.removeFromSuperview()
             woodTileImageView = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [C2] woodTileImageView 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
 
         // Phase 9: gradientLayer backing store 해제
         if let gl = gradientLayer {
             gl.removeFromSuperlayer()
             gradientLayer = nil
-            #if DEBUG
-            let m = diagnosticMemoryMB()
-            NSLog("🔬 [C3] gradientLayer 해제 — Memory: \(String(format: "%.2f", m)) MB")
-            #endif
         }
-
-        #if DEBUG
-        let memEnd = diagnosticMemoryMB()
-        NSLog("🔬 prepareForDismiss END — Memory: \(String(format: "%.2f", memEnd)) MB (총 delta: \(String(format: "%.2f", memEnd - mem0)) MB)")
-        #endif
     }
 
     deinit {

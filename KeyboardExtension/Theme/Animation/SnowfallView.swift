@@ -40,9 +40,6 @@ final class SnowfallView: UIView {
     // MARK: - Public API
 
     func startAnimation() {
-        #if DEBUG
-        NSLog("🔬 [SNOW] startAnimation() ENTER — isActive=\(isActive), bounds=\(bounds), superview=\(superview != nil), window=\(window != nil)")
-        #endif
         guard !isActive else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         isActive = true
@@ -128,13 +125,6 @@ final class SnowfallView: UIView {
     // MARK: - Animation Tick
 
     @objc private func animationTick(_ displayLink: CADisplayLink) {
-        #if DEBUG
-        struct TickCounter { static var count = 0 }
-        TickCounter.count += 1
-        if TickCounter.count <= 5 || TickCounter.count % 100 == 0 {
-            NSLog("🔬 [SNOW] animationTick #\(TickCounter.count) — isActive=\(isActive), bounds=\(bounds), snowflakes=\(snowflakes.count)")
-        }
-        #endif
         guard isActive else { return }
 
         if ProcessInfo.processInfo.isLowPowerModeEnabled {

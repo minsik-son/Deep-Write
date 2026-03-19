@@ -127,9 +127,6 @@ final class CherryBlossomView: UIView {
     // MARK: - Public API
 
     func startAnimation() {
-        #if DEBUG
-        NSLog("🔬 [CHERRY] startAnimation() ENTER — isAnimating=\(isAnimating), bounds=\(bounds), superview=\(superview != nil), window=\(window != nil)")
-        #endif
         guard !isAnimating else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         isAnimating = true
@@ -154,9 +151,6 @@ final class CherryBlossomView: UIView {
     }
 
     func stopAnimation() {
-        #if DEBUG
-        NSLog("🔬 CherryBlossom stopAnimation — petals:\(petals.count) flowerLayers:\(flowerLayers.count) sublayers:\(layer.sublayers?.count ?? 0)")
-        #endif
         isAnimating = false
         displayLink?.invalidate()
         displayLink = nil
@@ -364,9 +358,6 @@ final class CherryBlossomView: UIView {
         stamenLayer.strokeColor = nil
         layer.addSublayer(stamenLayer)
         flowerLayers.append(stamenLayer)
-        #if DEBUG
-        NSLog("🔬 CherryBlossom — flowerCluster created: layers=\(flowerLayers.count), total sublayers: \(layer.sublayers?.count ?? 0)")
-        #endif
     }
 
     private func removeFlowerCluster() {
@@ -386,9 +377,6 @@ final class CherryBlossomView: UIView {
             let petal = makePetal(viewW: viewW, viewH: viewH, randomizeY: true)
             petals.append(petal)
         }
-        #if DEBUG
-        NSLog("🔬 CherryBlossom — petals created: \(petals.count), sublayers: \(layer.sublayers?.count ?? 0)")
-        #endif
     }
 
     private func makePetal(viewW: CGFloat, viewH: CGFloat, randomizeY: Bool) -> Petal {
@@ -458,13 +446,6 @@ final class CherryBlossomView: UIView {
     // MARK: - Animation Tick
 
     @objc private func animationTick(_ displayLink: CADisplayLink) {
-        #if DEBUG
-        struct TickCounter { static var count = 0 }
-        TickCounter.count += 1
-        if TickCounter.count <= 5 || TickCounter.count % 100 == 0 {
-            NSLog("🔬 [CHERRY] animationTick #\(TickCounter.count) — isAnimating=\(isAnimating), bounds=\(bounds)")
-        }
-        #endif
         guard isAnimating else { return }
 
         if ProcessInfo.processInfo.isLowPowerModeEnabled {
