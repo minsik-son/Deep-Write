@@ -28,6 +28,7 @@ final class StardustView: UIView {
 
     private var particles: [Particle] = []
     private var displayLink: CADisplayLink?
+    private var displayLinkProxy: DisplayLinkProxy?
     private(set) var isAnimating = false
     private var lastTimestamp: CFTimeInterval = 0
 
@@ -144,7 +145,9 @@ final class StardustView: UIView {
         lastTimestamp = 0
         particles.removeAll()
 
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {
@@ -159,6 +162,7 @@ final class StardustView: UIView {
         isAnimating = false
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         particles.removeAll()
         setNeedsDisplay()
     }
@@ -167,6 +171,7 @@ final class StardustView: UIView {
         guard isAnimating else { return }
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         isAnimating = false
     }
 
@@ -177,7 +182,9 @@ final class StardustView: UIView {
         isAnimating = true
         lastTimestamp = 0
 
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {

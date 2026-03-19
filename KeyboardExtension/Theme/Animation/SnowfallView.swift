@@ -21,6 +21,7 @@ final class SnowfallView: UIView {
     // MARK: - State
     private var snowflakes: [Snowflake] = []
     private var displayLink: CADisplayLink?
+    private var displayLinkProxy: DisplayLinkProxy?
     private var lastTimestamp: CFTimeInterval = 0
     private(set) var isActive = false
 
@@ -39,6 +40,9 @@ final class SnowfallView: UIView {
     // MARK: - Public API
 
     func startAnimation() {
+        #if DEBUG
+        NSLog("🔬 [SNOW] startAnimation() ENTER — isActive=\(isActive), bounds=\(bounds), superview=\(superview != nil), window=\(window != nil)")
+        #endif
         guard !isActive else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         isActive = true
@@ -46,7 +50,9 @@ final class SnowfallView: UIView {
         createSnowflakes()
 
         displayLink?.invalidate()
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {
@@ -61,6 +67,7 @@ final class SnowfallView: UIView {
         isActive = false
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         removeAllSnowflakes()
     }
 
@@ -120,7 +127,14 @@ final class SnowfallView: UIView {
 
     // MARK: - Animation Tick
 
-    @objc private func animationTick() {
+    @objc private func animationTick(_ displayLink: CADisplayLink) {
+        #if DEBUG
+        struct TickCounter { static var count = 0 }
+        TickCounter.count += 1
+        if TickCounter.count <= 5 || TickCounter.count % 100 == 0 {
+            NSLog("🔬 [SNOW] animationTick #\(TickCounter.count) — isActive=\(isActive), bounds=\(bounds), snowflakes=\(snowflakes.count)")
+        }
+        #endif
         guard isActive else { return }
 
         if ProcessInfo.processInfo.isLowPowerModeEnabled {
@@ -191,6 +205,24 @@ final class SnowfallView: UIView {
         }
 
         flake.layer.opacity = finalOpacity
+    }
+
+    // MARK: - Layout
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard isActive, bounds.width > 0, bounds.height > 0 else { return }
+        let viewW = bounds.width
+        let viewH = bounds.height
+        for i in snowflakes.indices {
+            if snowflakes[i].x > viewW {
+                snowflakes[i].x = CGFloat.random(in: 0...viewW)
+            }
+            if snowflakes[i].y > viewH {
+                snowflakes[i].y = CGFloat.random(in: -viewH * 0.3...0)
+            }
+            snowflakes[i].layer.position = CGPoint(x: snowflakes[i].x, y: snowflakes[i].y)
+        }
     }
 
     // MARK: - Cleanup

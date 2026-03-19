@@ -20,6 +20,7 @@
 		3B8365522F689C6E00E27AF8 /* CoreTextCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */; };
 		3B8365552F68F46500E27AF8 /* WeakProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365542F68F46500E27AF8 /* WeakProxy.swift */; };
 		3B8365562F68F46500E27AF8 /* FontPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365532F68F46500E27AF8 /* FontPool.swift */; };
+		3B8365582F6B8BF300E27AF8 /* DisplayLinkProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -171,6 +172,7 @@
 		3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreTextCacheManager.swift; sourceTree = "<group>"; };
 		3B8365532F68F46500E27AF8 /* FontPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontPool.swift; sourceTree = "<group>"; };
 		3B8365542F68F46500E27AF8 /* WeakProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeakProxy.swift; sourceTree = "<group>"; };
+		3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkProxy.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -386,6 +388,7 @@
 		8D733AA9C8A306DC2EF99AFE /* KeyboardExtension */ = {
 			isa = PBXGroup;
 			children = (
+				3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */,
 				3B8365532F68F46500E27AF8 /* FontPool.swift */,
 				3B8365542F68F46500E27AF8 /* WeakProxy.swift */,
 				3B8365512F689C6E00E27AF8 /* CoreTextCacheManager.swift */,
@@ -634,6 +637,7 @@
 				CB01AA11BB22CC33DD440001 /* ClipboardItem.swift in Sources */,
 				CB01AA11BB22CC33DD440003 /* ClipboardHistoryManager.swift in Sources */,
 				CB01AA11BB22CC33DD440004 /* ClipboardHistoryView.swift in Sources */,
+				3B8365582F6B8BF300E27AF8 /* DisplayLinkProxy.swift in Sources */,
 				1D98277DFBD46B145B1AEA14 /* AppGroupManager.swift in Sources */,
 				88DD1D3326500D609D9E2862 /* AutocorrectEngine.swift in Sources */,
 				13E2BA2EAF38109D37866AEE /* Constants.swift in Sources */,

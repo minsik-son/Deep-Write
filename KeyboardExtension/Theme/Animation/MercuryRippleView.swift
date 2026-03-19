@@ -31,6 +31,7 @@ final class MercuryRippleView: UIView {
 
     private var ripples: [Ripple] = []
     private var displayLink: CADisplayLink?
+    private var displayLinkProxy: DisplayLinkProxy?
     private(set) var isAnimating = false
     private var lastTimestamp: CFTimeInterval = 0
 
@@ -88,7 +89,9 @@ final class MercuryRippleView: UIView {
         lastTimestamp = 0
         ripples.removeAll()
 
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {
@@ -103,6 +106,7 @@ final class MercuryRippleView: UIView {
         isAnimating = false
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         ripples.removeAll()
         setNeedsDisplay()
     }
@@ -111,6 +115,7 @@ final class MercuryRippleView: UIView {
         guard isAnimating else { return }
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         isAnimating = false
     }
 
@@ -121,7 +126,9 @@ final class MercuryRippleView: UIView {
         isAnimating = true
         lastTimestamp = 0
 
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: Float(Self.targetFPS))
         } else {

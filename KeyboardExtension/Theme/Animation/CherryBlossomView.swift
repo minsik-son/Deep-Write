@@ -30,6 +30,7 @@ final class CherryBlossomView: UIView {
     private var petals: [Petal] = []
     private var flowerLayers: [CALayer] = []
     private var displayLink: CADisplayLink?
+    private var displayLinkProxy: DisplayLinkProxy?
     private var lastTimestamp: CFTimeInterval = 0
     private(set) var isAnimating = false
     var isActive: Bool { isAnimating }
@@ -126,6 +127,9 @@ final class CherryBlossomView: UIView {
     // MARK: - Public API
 
     func startAnimation() {
+        #if DEBUG
+        NSLog("🔬 [CHERRY] startAnimation() ENTER — isAnimating=\(isAnimating), bounds=\(bounds), superview=\(superview != nil), window=\(window != nil)")
+        #endif
         guard !isAnimating else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         isAnimating = true
@@ -134,7 +138,9 @@ final class CherryBlossomView: UIView {
         createPetals()
 
         displayLink?.invalidate()
-        let dl = CADisplayLink(target: WeakProxy(target: self), selector: #selector(animationTick))
+        let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
+        displayLinkProxy = proxy
+        let dl = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.proxyTick(_:)))
         if #available(iOS 15.0, *) {
             dl.preferredFrameRateRange = CAFrameRateRange(
                 minimum: 12, maximum: 24, preferred: Float(Self.targetFPS)
@@ -149,11 +155,12 @@ final class CherryBlossomView: UIView {
 
     func stopAnimation() {
         #if DEBUG
-        print("🔬 CherryBlossom stopAnimation — petals:\(petals.count) flowerLayers:\(flowerLayers.count) sublayers:\(layer.sublayers?.count ?? 0)")
+        NSLog("🔬 CherryBlossom stopAnimation — petals:\(petals.count) flowerLayers:\(flowerLayers.count) sublayers:\(layer.sublayers?.count ?? 0)")
         #endif
         isAnimating = false
         displayLink?.invalidate()
         displayLink = nil
+        displayLinkProxy = nil
         removeAllPetals()
         removeFlowerCluster()
     }
@@ -358,7 +365,7 @@ final class CherryBlossomView: UIView {
         layer.addSublayer(stamenLayer)
         flowerLayers.append(stamenLayer)
         #if DEBUG
-        print("🔬 CherryBlossom — flowerCluster created: layers=\(flowerLayers.count), total sublayers: \(layer.sublayers?.count ?? 0)")
+        NSLog("🔬 CherryBlossom — flowerCluster created: layers=\(flowerLayers.count), total sublayers: \(layer.sublayers?.count ?? 0)")
         #endif
     }
 
@@ -380,7 +387,7 @@ final class CherryBlossomView: UIView {
             petals.append(petal)
         }
         #if DEBUG
-        print("🔬 CherryBlossom — petals created: \(petals.count), sublayers: \(layer.sublayers?.count ?? 0)")
+        NSLog("🔬 CherryBlossom — petals created: \(petals.count), sublayers: \(layer.sublayers?.count ?? 0)")
         #endif
     }
 
@@ -450,7 +457,14 @@ final class CherryBlossomView: UIView {
 
     // MARK: - Animation Tick
 
-    @objc private func animationTick() {
+    @objc private func animationTick(_ displayLink: CADisplayLink) {
+        #if DEBUG
+        struct TickCounter { static var count = 0 }
+        TickCounter.count += 1
+        if TickCounter.count <= 5 || TickCounter.count % 100 == 0 {
+            NSLog("🔬 [CHERRY] animationTick #\(TickCounter.count) — isAnimating=\(isAnimating), bounds=\(bounds)")
+        }
+        #endif
         guard isAnimating else { return }
 
         if ProcessInfo.processInfo.isLowPowerModeEnabled {
@@ -540,6 +554,24 @@ final class CherryBlossomView: UIView {
         } else {
             petal.horizontalSpeed = CGFloat.random(in: -8...3)
             petal.speed = CGFloat.random(in: 25...45)
+        }
+    }
+
+    // MARK: - Layout
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard isAnimating, bounds.width > 0, bounds.height > 0 else { return }
+        let viewW = bounds.width
+        let viewH = bounds.height
+        for i in petals.indices {
+            if petals[i].x > viewW {
+                petals[i].x = CGFloat.random(in: 0...viewW)
+            }
+            if petals[i].y > viewH {
+                petals[i].y = CGFloat.random(in: -viewH * 0.3...0)
+            }
+            petals[i].layer.position = CGPoint(x: petals[i].x, y: petals[i].y)
         }
     }
 
