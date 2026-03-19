@@ -158,12 +158,12 @@ class ToolbarView: UIView {
         // index 1-6: UIButton (기존 기능)
 
         let buttonItems: [(icon: String, action: Selector, tag: Int)] = [
-            ("face.smiling",      #selector(emojiButtonTapped),       1),
-            ("doc.on.clipboard",  #selector(clipboardHistoryTapped),  2),
-            ("bookmark",          #selector(savedPhrasesTapped),      3),
-            ("note.text",         #selector(noteTapped),              4),
-            ("checkmark.circle",  #selector(correctionButtonTapped),  5),
-            ("globe",             #selector(translationButtonTapped), 6),
+            ("icon_toolbar_emoji",        #selector(emojiButtonTapped),       1),
+            ("icon_toolbar_clipboard",    #selector(clipboardHistoryTapped),  2),
+            ("icon_toolbar_savedphrases", #selector(savedPhrasesTapped),      3),
+            ("icon_toolbar_quicknote",    #selector(noteTapped),              4),
+            ("icon_toolbar_correction",   #selector(correctionButtonTapped),  5),
+            ("icon_toolbar_translation",  #selector(translationButtonTapped), 6),
         ]
 
         // CC-6: 반응형 spacing (iPhone SE 등 좁은 화면 대응)
@@ -178,11 +178,30 @@ class ToolbarView: UIView {
         ])
         toolbarStack.addArrangedSubview(settingsLinkContainer)
 
-        // 1-6번: 일반 UIButton
+        // 1-6번: 일반 UIButton (커스텀 SVG 아이콘)
+        let iconRenderSize: CGFloat = 20
+
         for item in buttonItems {
             let btn = UIButton(type: .system)
-            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .light)
-            btn.setImage(UIImage(systemName: item.icon, withConfiguration: config), for: .normal)
+
+            // Asset Catalog에서 SVG 로드 → aspectFit으로 20×20pt 안에 렌더링
+            // 비정사각형 SVG(clipboard 222×290, bookmark 211×317 등)도 비율 유지
+            if let original = UIImage(named: item.icon)?.withRenderingMode(.alwaysTemplate) {
+                let targetSize = CGSize(width: iconRenderSize, height: iconRenderSize)
+                let renderer = UIGraphicsImageRenderer(size: targetSize)
+                let resized = renderer.image { _ in
+                    let widthRatio = targetSize.width / original.size.width
+                    let heightRatio = targetSize.height / original.size.height
+                    let scale = min(widthRatio, heightRatio)
+                    let drawWidth = original.size.width * scale
+                    let drawHeight = original.size.height * scale
+                    let drawX = (targetSize.width - drawWidth) / 2
+                    let drawY = (targetSize.height - drawHeight) / 2
+                    original.draw(in: CGRect(x: drawX, y: drawY, width: drawWidth, height: drawHeight))
+                }
+                btn.setImage(resized.withRenderingMode(.alwaysTemplate), for: .normal)
+            }
+
             btn.tintColor = .label
             btn.tag = item.tag
             btn.addTarget(self, action: item.action, for: .touchUpInside)

@@ -3025,8 +3025,11 @@ struct SettingsLinkView: View {
 
     var body: some View {
         Link(destination: URL(string: "translatorkeyboard://settings")!) {
-            Image(systemName: "gearshape")
-                .font(.system(size: 18, weight: .light))
+            Image("icon_toolbar_settings")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
                 .foregroundColor(Color(tintColor))
                 .frame(width: 36, height: 34)
                 .contentShape(Rectangle())
