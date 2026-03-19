@@ -842,7 +842,9 @@ class KeyboardViewController: UIInputViewController {
 
     private func setupTranslationCallbacks() {
         translationInputView.onClearText = { [weak self] in
-            self?.translationManager.cancelPending()
+            guard let self = self else { return }
+            self.modeTextInputHandler.clear()
+            self.translationManager.cancelPending()
         }
         translationInputView.onHeightChanged = { [weak self] newHeight in
             self?.updateInputHeight(newHeight, isTranslation: true)
@@ -864,7 +866,9 @@ class KeyboardViewController: UIInputViewController {
     private func setupCorrectionCallbacks() {
         correctionInputView.setPlaceholder(L("correction.placeholder"))
         correctionInputView.onClearText = { [weak self] in
-            self?.exitCorrectionMode()
+            guard let self = self else { return }
+            self.modeTextInputHandler.clear()
+            self.correctionManager.reset()
         }
         correctionInputView.onHeightChanged = { [weak self] newHeight in
             self?.updateInputHeight(newHeight, isTranslation: false)
@@ -2437,8 +2441,21 @@ class KeyboardViewController: UIInputViewController {
         }
         tonePickerView?.applyTheme(theme)
         tonePickerView?.updateAppearance(isDark: isDark)
+        savedPhrasesView?.applyTheme(theme)
         savedPhrasesView?.updateAppearance(isDark: isDark)
+        clipboardHistoryView?.applyTheme(theme)
         clipboardHistoryView?.updateAppearance(isDark: isDark)
+
+        // settingsLink 아이콘 색상 업데이트
+        if let hc = settingsLinkHostingController {
+            let textColor: UIColor
+            if let theme = theme {
+                textColor = theme.keyTextColor
+            } else {
+                textColor = isDark ? .white : .label
+            }
+            hc.rootView = SettingsLinkView(tintColor: textColor)
+        }
         if isPhraseViewsSetUp {
             phraseInputHeaderView.applyTheme(theme)
             phraseInputHeaderView.updateAppearance(isDark: isDark)
@@ -2992,11 +3009,13 @@ extension KeyboardViewController {
 // MARK: - SwiftUI Settings Link
 
 struct SettingsLinkView: View {
+    var tintColor: UIColor = .label
+
     var body: some View {
         Link(destination: URL(string: "translatorkeyboard://settings")!) {
-            Image(systemName: "plus.circle")
+            Image(systemName: "gearshape")
                 .font(.system(size: 18, weight: .light))
-                .foregroundColor(Color(UIColor.label))
+                .foregroundColor(Color(tintColor))
                 .frame(width: 36, height: 34)
                 .contentShape(Rectangle())
         }

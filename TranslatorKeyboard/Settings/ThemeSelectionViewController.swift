@@ -570,6 +570,11 @@ private class ThemeCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        // 스케일 애니메이션 잔여 transform 초기화
+        transform = .identity
+        contentView.transform = .identity
+        layer.removeAllAnimations()
+        contentView.layer.removeAllAnimations()
         lockOverlay.isHidden = true
         checkmark.isHidden = true
         cardView.layer.borderColor = UIColor.clear.cgColor
@@ -903,6 +908,13 @@ private class PremiumThemeCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        // 스케일 애니메이션 잔여 transform 초기화
+        transform = .identity
+        contentView.transform = .identity
+        layer.removeAllAnimations()
+        contentView.layer.removeAllAnimations()
+        // 래스터화 상태 리셋 — 변환된 상태로 캡처 방지
+        cardView.layer.shouldRasterize = false
         lockOverlay.isHidden = true
         checkmark.isHidden = true
         previewGradientLayer?.removeFromSuperlayer()
@@ -944,9 +956,6 @@ private class PremiumThemeCell: UICollectionViewCell {
 
         // 캐시된 스냅샷 UIImageView 제거
         animationEffectView?.viewWithTag(9999)?.removeFromSuperview()
-
-        // 래스터화 해제
-        cardView.layer.shouldRasterize = false
 
         // 캐시 관련 리셋
         cachedPreviewImage = nil

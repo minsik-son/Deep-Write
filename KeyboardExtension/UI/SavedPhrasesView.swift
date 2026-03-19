@@ -7,6 +7,8 @@ class SavedPhrasesView: UIView {
     var onDismiss: (() -> Void)?
 
     private var phrases: [String] = []
+    private var isDark = false
+    private var customTheme: KeyboardTheme?
 
     // MARK: - Views
 
@@ -165,15 +167,33 @@ class SavedPhrasesView: UIView {
         updateEmptyState()
     }
 
+    func applyTheme(_ theme: KeyboardTheme?) {
+        customTheme = theme
+    }
+
     func updateAppearance(isDark: Bool) {
-        let bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+        self.isDark = isDark
+        let bg: UIColor
+        let textColor: UIColor
+        let mutedColor: UIColor
+
+        if let theme = customTheme {
+            bg = theme.keyboardBackground
+            textColor = theme.keyTextColor
+            mutedColor = theme.keyTextColor.withAlphaComponent(0.5)
+        } else {
+            bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            textColor = isDark ? .white : .label
+            mutedColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
+        }
+
         backgroundColor = bg
         headerView.backgroundColor = bg
         tableView.backgroundColor = bg
-        titleLabel.textColor = isDark ? .white : .label
-        closeButton.tintColor = isDark ? .white : .label
-        addButton.tintColor = isDark ? .white : .label
-        emptyLabel.textColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
+        titleLabel.textColor = textColor
+        closeButton.tintColor = textColor
+        addButton.tintColor = textColor
+        emptyLabel.textColor = mutedColor
         tableView.reloadData()
     }
 
@@ -200,8 +220,18 @@ extension SavedPhrasesView: UITableViewDataSource {
         cell.textLabel?.font = .systemFont(ofSize: 15)
         cell.textLabel?.numberOfLines = 2
         cell.textLabel?.lineBreakMode = .byTruncatingTail
-        cell.backgroundColor = .clear
         cell.selectionStyle = .default
+        if let theme = customTheme {
+            cell.backgroundColor = theme.keyboardBackground
+            cell.textLabel?.textColor = theme.keyTextColor
+            let selectedBg = UIView()
+            selectedBg.backgroundColor = theme.keyTextColor.withAlphaComponent(0.1)
+            cell.selectedBackgroundView = selectedBg
+        } else {
+            cell.backgroundColor = .clear
+            cell.textLabel?.textColor = isDark ? .white : .label
+            cell.selectedBackgroundView = nil
+        }
         return cell
     }
 }

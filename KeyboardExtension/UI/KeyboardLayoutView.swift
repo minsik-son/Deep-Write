@@ -78,6 +78,8 @@ class KeyboardLayoutView: UIView {
     private var isShifted = false
     private var isDark = false
     private var pendingBuildWork: DispatchWorkItem?
+    /// 현재 활성화된 flash 복원 작업들 — buildKeyboard 시 일괄 취소
+    private var pendingFlashWorkItems: [DispatchWorkItem] = []
     private var customTheme: KeyboardTheme?
     private var gradientLayer: CAGradientLayer?
     private var patternImageView: UIImageView?
@@ -369,6 +371,9 @@ class KeyboardLayoutView: UIView {
         // 예약된 build가 있으면 취소 (직접 호출 시 중복 방지)
         pendingBuildWork?.cancel()
         pendingBuildWork = nil
+        // 모든 pending flash 복원 콜백 취소 — 키 재생성 시 stale 참조 방지
+        for item in pendingFlashWorkItems { item.cancel() }
+        pendingFlashWorkItems.removeAll()
         isRebuilding = true
 
         // 웨이브 projection 캐시 즉시 정리 — 버튼 제거 전에 stale 참조 방지
@@ -1433,9 +1438,11 @@ class KeyboardLayoutView: UIView {
             flashView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             button.addSubview(flashView)
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration) {
-                flashView.removeFromSuperview()
+            let workItem = DispatchWorkItem { [weak flashView] in
+                flashView?.removeFromSuperview()
             }
+            pendingFlashWorkItems.append(workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration, execute: workItem)
         } else {
             // 기본 테마 (customTheme == nil)
             let original = button.backgroundColor ?? .clear
@@ -1444,12 +1451,15 @@ class KeyboardLayoutView: UIView {
             button.backgroundColor = flashColor
             CATransaction.commit()
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration) {
+            let workItem = DispatchWorkItem { [weak button] in
+                guard let button = button else { return }
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
                 button.backgroundColor = original
                 CATransaction.commit()
             }
+            pendingFlashWorkItems.append(workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration, execute: workItem)
         }
     }
 

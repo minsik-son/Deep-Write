@@ -7,6 +7,7 @@ class ClipboardHistoryView: UIView {
 
     private var items: [ClipboardItem] = []
     private var isDark = false
+    private var customTheme: KeyboardTheme?
 
     // MARK: - Views
 
@@ -293,22 +294,39 @@ class ClipboardHistoryView: UIView {
         checkOnboarding()
     }
 
+    func applyTheme(_ theme: KeyboardTheme?) {
+        customTheme = theme
+    }
+
     func updateAppearance(isDark: Bool) {
         self.isDark = isDark
-        let bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+        let bg: UIColor
+        let textColor: UIColor
+        let mutedColor: UIColor
+
+        if let theme = customTheme {
+            bg = theme.keyboardBackground
+            textColor = theme.keyTextColor
+            mutedColor = theme.keyTextColor.withAlphaComponent(0.5)
+        } else {
+            bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            textColor = isDark ? .white : .label
+            mutedColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
+        }
+
         backgroundColor = bg
         headerView.backgroundColor = bg
         tableView.backgroundColor = bg
-        titleLabel.textColor = isDark ? .white : .label
-        closeButton.tintColor = isDark ? .white : .label
-        deleteAllButton.setTitleColor(isDark ? UIColor(white: 0.6, alpha: 1) : .systemRed, for: .normal)
-        emptyIconView.tintColor = isDark ? UIColor(white: 0.4, alpha: 1) : .secondaryLabel
-        emptyTitleLabel.textColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
-        emptySubtitleLabel.textColor = isDark ? UIColor(white: 0.4, alpha: 1) : .tertiaryLabel
-        onboardingCard.backgroundColor = isDark ? UIColor(white: 0.18, alpha: 1) : .white
-        onboardingTitleLabel.textColor = isDark ? .white : .label
-        onboardingBodyLabel.textColor = isDark ? UIColor(white: 0.7, alpha: 1) : .secondaryLabel
-        onboardingPasteLabel.textColor = isDark ? UIColor(white: 0.5, alpha: 1) : .tertiaryLabel
+        titleLabel.textColor = textColor
+        closeButton.tintColor = textColor
+        deleteAllButton.setTitleColor(customTheme != nil ? mutedColor : (isDark ? UIColor(white: 0.6, alpha: 1) : .systemRed), for: .normal)
+        emptyIconView.tintColor = mutedColor
+        emptyTitleLabel.textColor = mutedColor
+        emptySubtitleLabel.textColor = mutedColor.withAlphaComponent(0.7)
+        onboardingCard.backgroundColor = customTheme != nil ? bg : (isDark ? UIColor(white: 0.18, alpha: 1) : .white)
+        onboardingTitleLabel.textColor = textColor
+        onboardingBodyLabel.textColor = mutedColor
+        onboardingPasteLabel.textColor = mutedColor.withAlphaComponent(0.7)
         tableView.reloadData()
     }
 
@@ -367,7 +385,8 @@ extension ClipboardHistoryView: UITableViewDataSource {
         cell.configure(
             text: item.preview,
             time: relativeTimeString(from: item.copiedAt),
-            isDark: isDark
+            isDark: isDark,
+            theme: customTheme
         )
         cell.onDelete = { [weak self] in
             guard let self = self else { return }
@@ -475,11 +494,17 @@ private class ClipboardCell: UITableViewCell {
         onDelete?()
     }
 
-    func configure(text: String, time: String, isDark: Bool) {
+    func configure(text: String, time: String, isDark: Bool, theme: KeyboardTheme? = nil) {
         previewLabel.text = text
         timeLabel.text = time
-        cardView.backgroundColor = isDark ? .systemGray5 : .systemGray6
-        previewLabel.textColor = isDark ? .white : .label
-        timeLabel.textColor = .secondaryLabel
+        if let theme = theme {
+            cardView.backgroundColor = theme.keyboardBackground
+            previewLabel.textColor = theme.keyTextColor
+            timeLabel.textColor = theme.keyTextColor.withAlphaComponent(0.5)
+        } else {
+            cardView.backgroundColor = isDark ? .systemGray5 : .systemGray6
+            previewLabel.textColor = isDark ? .white : .label
+            timeLabel.textColor = .secondaryLabel
+        }
     }
 }
