@@ -301,29 +301,32 @@ class ClipboardHistoryView: UIView {
     func updateAppearance(isDark: Bool) {
         self.isDark = isDark
         let bg: UIColor
+        let bodyBg: UIColor
         let textColor: UIColor
         let mutedColor: UIColor
 
         if let theme = customTheme {
             bg = theme.keyboardBackground
+            bodyBg = theme.keyBackground
             textColor = theme.keyTextColor
             mutedColor = theme.keyTextColor.withAlphaComponent(0.5)
         } else {
             bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            bodyBg = isDark ? UIColor(white: 0.18, alpha: 1) : .white
             textColor = isDark ? .white : .label
             mutedColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
         }
 
         backgroundColor = bg
         headerView.backgroundColor = bg
-        tableView.backgroundColor = bg
+        tableView.backgroundColor = bodyBg
         titleLabel.textColor = textColor
         closeButton.tintColor = textColor
         deleteAllButton.setTitleColor(customTheme != nil ? mutedColor : (isDark ? UIColor(white: 0.6, alpha: 1) : .systemRed), for: .normal)
         emptyIconView.tintColor = mutedColor
         emptyTitleLabel.textColor = mutedColor
         emptySubtitleLabel.textColor = mutedColor.withAlphaComponent(0.7)
-        onboardingCard.backgroundColor = customTheme != nil ? bg : (isDark ? UIColor(white: 0.18, alpha: 1) : .white)
+        onboardingCard.backgroundColor = bodyBg
         onboardingTitleLabel.textColor = textColor
         onboardingBodyLabel.textColor = mutedColor
         onboardingPasteLabel.textColor = mutedColor.withAlphaComponent(0.7)
@@ -498,11 +501,11 @@ private class ClipboardCell: UITableViewCell {
         previewLabel.text = text
         timeLabel.text = time
         if let theme = theme {
-            cardView.backgroundColor = theme.keyboardBackground
+            cardView.backgroundColor = theme.keyBackground
             previewLabel.textColor = theme.keyTextColor
             timeLabel.textColor = theme.keyTextColor.withAlphaComponent(0.5)
         } else {
-            cardView.backgroundColor = isDark ? .systemGray5 : .systemGray6
+            cardView.backgroundColor = isDark ? UIColor(white: 0.22, alpha: 1) : .white
             previewLabel.textColor = isDark ? .white : .label
             timeLabel.textColor = .secondaryLabel
         }

@@ -1412,9 +1412,14 @@ private class PremiumThemeCell: UICollectionViewCell {
             accessibilityHint = L("accessibility.theme_select_hint")
         }
 
-        // 셀 전체를 래스터화하여 스크롤 시 GPU 캐시 활용
-        cardView.layer.shouldRasterize = true
-        cardView.layer.rasterizationScale = UIScreen.main.scale
+        // ★ 래스터화를 다음 RunLoop으로 지연 — configure + layout 완료 후 설정
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard self.cardView.bounds.width > 0,
+                  self.cardView.bounds.height > 0 else { return }
+            self.cardView.layer.shouldRasterize = true
+            self.cardView.layer.rasterizationScale = UIScreen.main.scale
+        }
     }
 
     // MARK: - Animation Preview Effects
@@ -1743,5 +1748,6 @@ private class PremiumThemeCell: UICollectionViewCell {
                 ).cgPath
             }
         }
+
     }
 }

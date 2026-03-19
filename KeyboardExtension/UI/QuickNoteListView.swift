@@ -155,21 +155,25 @@ class QuickNoteListView: UIView {
         self.isDark = isDark
         let textColor: UIColor
         let mutedColor: UIColor
+        let bodyBg: UIColor
 
         if let theme = customTheme {
             backgroundColor = theme.keyboardBackground
+            bodyBg = theme.keyBackground
             textColor = theme.keyTextColor
             mutedColor = theme.keyTextColor.withAlphaComponent(0.5)
             addButton.tintColor = theme.keyTextColor
             closeButton.tintColor = theme.keyTextColor
         } else {
             backgroundColor = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            bodyBg = isDark ? UIColor(white: 0.18, alpha: 1) : .white
             textColor = isDark ? .white : .label
             mutedColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
             addButton.tintColor = textColor
             closeButton.tintColor = textColor
         }
 
+        tableView.backgroundColor = bodyBg
         titleLabel.textColor = textColor
         emptyTitleLabel.textColor = mutedColor
         emptySubtitleLabel.textColor = mutedColor

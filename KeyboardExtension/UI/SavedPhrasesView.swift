@@ -174,22 +174,25 @@ class SavedPhrasesView: UIView {
     func updateAppearance(isDark: Bool) {
         self.isDark = isDark
         let bg: UIColor
+        let bodyBg: UIColor
         let textColor: UIColor
         let mutedColor: UIColor
 
         if let theme = customTheme {
             bg = theme.keyboardBackground
+            bodyBg = theme.keyBackground
             textColor = theme.keyTextColor
             mutedColor = theme.keyTextColor.withAlphaComponent(0.5)
         } else {
             bg = isDark ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            bodyBg = isDark ? UIColor(white: 0.18, alpha: 1) : .white
             textColor = isDark ? .white : .label
             mutedColor = isDark ? UIColor(white: 0.5, alpha: 1) : .secondaryLabel
         }
 
         backgroundColor = bg
         headerView.backgroundColor = bg
-        tableView.backgroundColor = bg
+        tableView.backgroundColor = bodyBg
         titleLabel.textColor = textColor
         closeButton.tintColor = textColor
         addButton.tintColor = textColor
@@ -222,13 +225,13 @@ extension SavedPhrasesView: UITableViewDataSource {
         cell.textLabel?.lineBreakMode = .byTruncatingTail
         cell.selectionStyle = .default
         if let theme = customTheme {
-            cell.backgroundColor = theme.keyboardBackground
+            cell.backgroundColor = theme.keyBackground
             cell.textLabel?.textColor = theme.keyTextColor
             let selectedBg = UIView()
             selectedBg.backgroundColor = theme.keyTextColor.withAlphaComponent(0.1)
             cell.selectedBackgroundView = selectedBg
         } else {
-            cell.backgroundColor = .clear
+            cell.backgroundColor = isDark ? UIColor(white: 0.18, alpha: 1) : .white
             cell.textLabel?.textColor = isDark ? .white : .label
             cell.selectedBackgroundView = nil
         }

@@ -78,8 +78,10 @@ class KeyboardLayoutView: UIView {
     private var isShifted = false
     private var isDark = false
     private var pendingBuildWork: DispatchWorkItem?
-    /// 현재 활성화된 flash 복원 작업들 — buildKeyboard 시 일괄 취소
-    private var pendingFlashWorkItems: [DispatchWorkItem] = []
+    /// 터치별 하이라이트된 버튼 추적 (멀티터치 지원)
+    private var highlightedButtons: [UITouch: UIButton] = [:]
+    /// 기본 테마에서 하이라이트 전 원래 배경색 저장
+    private var originalButtonColors: [UIButton: UIColor] = [:]
     private var customTheme: KeyboardTheme?
     private var gradientLayer: CAGradientLayer?
     private var patternImageView: UIImageView?
@@ -337,7 +339,7 @@ class KeyboardLayoutView: UIView {
 
     // MARK: - Build Keyboard
 
-    private func scheduleBuildKeyboard(delay: TimeInterval = KeyboardLayoutView.buildDelayAfterFlash) {
+    private func scheduleBuildKeyboard(delay: TimeInterval = 0.03) {
         pendingBuildWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
             self?.buildKeyboard()
@@ -371,9 +373,9 @@ class KeyboardLayoutView: UIView {
         // 예약된 build가 있으면 취소 (직접 호출 시 중복 방지)
         pendingBuildWork?.cancel()
         pendingBuildWork = nil
-        // 모든 pending flash 복원 콜백 취소 — 키 재생성 시 stale 참조 방지
-        for item in pendingFlashWorkItems { item.cancel() }
-        pendingFlashWorkItems.removeAll()
+        // 터치 하이라이트 상태 전체 정리 — 키 재생성 전
+        highlightedButtons.removeAll()
+        originalButtonColors.removeAll()
         isRebuilding = true
 
         // 웨이브 projection 캐시 즉시 정리 — 버튼 제거 전에 stale 참조 방지
@@ -1068,7 +1070,7 @@ class KeyboardLayoutView: UIView {
                     self.lockedAxis = .none
                     self.enterTrackpadMode()
                 }
-                flashButton(button)
+                applyHighlight(to: button, for: touch)
                 if isEdgeGlowAnimationActive { edgeGlowKeyPressed(button) }
                 if let rv = mercuryRippleView, rv.isActive {
                     let rippleLoc = button.superview?.convert(button.center, to: rv) ?? loc
@@ -1085,7 +1087,7 @@ class KeyboardLayoutView: UIView {
             if key == Self.backKey {
                 backspaceTrackingTouch = touch
                 onKeyTap?(Self.backKey)
-                flashButton(button)
+                applyHighlight(to: button, for: touch)
                 if isEdgeGlowAnimationActive { edgeGlowKeyPressed(button) }
                 if let rv = mercuryRippleView, rv.isActive {
                     let rippleLoc = button.superview?.convert(button.center, to: rv) ?? loc
@@ -1112,7 +1114,7 @@ class KeyboardLayoutView: UIView {
                 accentTrackingTouch = touch
                 accentBaseKey = key
                 accentSourceButton = button
-                flashButton(button)
+                applyHighlight(to: button, for: touch)
                 if isEdgeGlowAnimationActive { edgeGlowKeyPressed(button) }
                 if let rv = mercuryRippleView, rv.isActive {
                     let rippleLoc = button.superview?.convert(button.center, to: rv) ?? loc
@@ -1131,7 +1133,7 @@ class KeyboardLayoutView: UIView {
             }
 
             // ── All other keys: handle immediately ──
-            flashButton(button)
+            applyHighlight(to: button, for: touch)
             if isEdgeGlowAnimationActive { edgeGlowKeyPressed(button) }
             if let rv = mercuryRippleView, rv.isActive {
                 let rippleLoc = button.superview?.convert(button.center, to: rv) ?? loc
@@ -1202,6 +1204,9 @@ class KeyboardLayoutView: UIView {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
+            // ★ 모든 터치에 대해 즉시 하이라이트 해제
+            removeHighlight(for: touch)
+
             // Accent popup
             if touch === accentTrackingTouch {
                 accentLongPressTimer?.invalidate()
@@ -1240,6 +1245,9 @@ class KeyboardLayoutView: UIView {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
+            // ★ 모든 터치에 대해 즉시 하이라이트 해제
+            removeHighlight(for: touch)
+
             if touch === accentTrackingTouch {
                 accentLongPressTimer?.invalidate()
                 accentLongPressTimer = nil
@@ -1400,11 +1408,16 @@ class KeyboardLayoutView: UIView {
         hapticGenerator.impactOccurred()
     }
 
-    /// Brief background color flash — no transform, no animation delay, no coordinate disruption
-    private func flashButton(_ button: UIButton) {
-        let flashColor: UIColor
+    // MARK: - Touch-based Key Highlight
+
+    /// 터치 시작 시 호출 — 버튼에 하이라이트 적용
+    private func applyHighlight(to button: UIButton, for touch: UITouch) {
+        // 이미 같은 버튼에 하이라이트가 있으면 먼저 제거
+        removeHighlight(from: button)
+        highlightedButtons[touch] = button
 
         if let theme = customTheme {
+            let flashColor: UIColor
             if theme.hasWoodTexture {
                 flashColor = UIColor(white: 1.0, alpha: 0.15)
             } else if theme.needsWaveAnimation {
@@ -1414,21 +1427,13 @@ class KeyboardLayoutView: UIView {
             } else if theme.needsStardustAnimation {
                 flashColor = UIColor(hex: "#8060D0").withAlphaComponent(0.30)
             } else {
-                // 키 배경 밝기 기준으로 자동 판단
                 var brightness: CGFloat = 0
                 theme.keyBackground.getHue(nil, saturation: nil, brightness: &brightness, alpha: nil)
-                if brightness > 0.5 {
-                    flashColor = UIColor(white: 0.0, alpha: 0.12)  // 밝은 키 → 어두운 플래시
-                } else {
-                    flashColor = UIColor(white: 1.0, alpha: 0.25)  // 어두운 키 → 밝은 플래시
-                }
+                flashColor = brightness > 0.5
+                    ? UIColor(white: 0.0, alpha: 0.12)
+                    : UIColor(white: 1.0, alpha: 0.25)
             }
-        } else {
-            flashColor = isDark ? UIColor(white: 0.5, alpha: 1) : UIColor(white: 0.65, alpha: 1)
-        }
-
-        if customTheme != nil {
-            // 프리미엄/나무 테마: 오버레이 UIView 방식 통일
+            // 오버레이 방식
             let flashView = UIView(frame: button.bounds)
             flashView.backgroundColor = flashColor
             flashView.layer.cornerRadius = Layout.cornerRadius
@@ -1437,29 +1442,36 @@ class KeyboardLayoutView: UIView {
             flashView.tag = 9999
             flashView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             button.addSubview(flashView)
-
-            let workItem = DispatchWorkItem { [weak flashView] in
-                flashView?.removeFromSuperview()
-            }
-            pendingFlashWorkItems.append(workItem)
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration, execute: workItem)
         } else {
-            // 기본 테마 (customTheme == nil)
-            let original = button.backgroundColor ?? .clear
+            // 기본 테마: 배경색 직접 변경
+            let flashColor = isDark
+                ? UIColor(white: 0.5, alpha: 1)
+                : UIColor(white: 0.65, alpha: 1)
+            originalButtonColors[button] = button.backgroundColor ?? .clear
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             button.backgroundColor = flashColor
             CATransaction.commit()
+        }
+    }
 
-            let workItem = DispatchWorkItem { [weak button] in
-                guard let button = button else { return }
+    /// 터치 종료/취소 시 호출 — 해당 터치의 하이라이트 해제
+    private func removeHighlight(for touch: UITouch) {
+        guard let button = highlightedButtons.removeValue(forKey: touch) else { return }
+        removeHighlight(from: button)
+    }
+
+    /// 특정 버튼의 하이라이트 직접 해제 (buildKeyboard 정리용)
+    private func removeHighlight(from button: UIButton) {
+        if customTheme != nil {
+            button.viewWithTag(9999)?.removeFromSuperview()
+        } else {
+            if let original = originalButtonColors.removeValue(forKey: button) {
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
                 button.backgroundColor = original
                 CATransaction.commit()
             }
-            pendingFlashWorkItems.append(workItem)
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.keyFlashDuration, execute: workItem)
         }
     }
 
@@ -2162,11 +2174,6 @@ class KeyboardLayoutView: UIView {
     private static let edgeGlowFlashShadowRadius: CGFloat = 8.0
     private static let edgeGlowFlashDuration: CFTimeInterval = 0.15
 
-    /// 키 누름 flash 애니메이션 표시 시간
-    private static let keyFlashDuration: TimeInterval = 0.15
-
-    /// flash 완료 후 keyboard rebuild까지 여유 시간
-    private static let buildDelayAfterFlash: TimeInterval = keyFlashDuration + 0.03
 
     private func restartEdgeGlowAfterBuild() {
         guard let theme = customTheme, theme.needsEdgeGlowAnimation else {

@@ -1495,6 +1495,12 @@ class KeyboardViewController: UIInputViewController {
                 sv.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
             ])
             savedPhrasesView = sv
+
+            // ★ 생성 직후 현재 테마 적용
+            let theme = loadTheme()
+            let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+            sv.applyTheme(theme)
+            sv.updateAppearance(isDark: isDarkMode)
         }
         savedPhrasesView?.reloadData()
         savedPhrasesView?.isHidden = false
@@ -1558,6 +1564,12 @@ class KeyboardViewController: UIInputViewController {
                 cv.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
             ])
             clipboardHistoryView = cv
+
+            // ★ 생성 직후 현재 테마 적용
+            let theme = loadTheme()
+            let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+            cv.applyTheme(theme)
+            cv.updateAppearance(isDark: isDarkMode)
         }
         clipboardHistoryView?.reloadData()
         clipboardHistoryView?.isHidden = false
