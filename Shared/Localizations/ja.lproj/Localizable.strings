@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AIメッセージ作成";
-"ai_writer.subtitle" = "AIがお好みのトーンで作成します";
+"ai_writer.subtitle" = "どの言語でも入力、選択した言語で結果を取得";
 "ai_writer.placeholder" = "どんなメッセージを作成しますか？";
 "ai_writer.generate" = "作成する";
 "ai_writer.generating" = "生成中...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "韓国語";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "共感的";
+"tone.confident" = "自信に満ちた";
+"tone.witty" = "ウィットに富んだ";
+"tone.persuasive" = "説得力のある";
+"tone.enthusiastic" = "熱意のある";
+"tone.apologetic" = "お詫びの";
+"tone.social" = "ソーシャル";
+"tone.professional" = "プロフェッショナル";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "短く";
+"ai_writer.length.medium" = "普通";
+"ai_writer.length.long" = "長く";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "自動 (端末設定)";
+"ai_writer.lang.section_title" = "出力言語";
+"ai_writer.lang.select_title" = "出力言語を選択";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "メッセージに返信";
+"ai_writer.reply_close" = "返信を閉じる";
+"ai_writer.reply_label" = "受信したメッセージを貼り付け";
+"ai_writer.reply_privacy" = "このメッセージはAI処理のため送信されます。データは保存されません。";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "クイックテンプレート";
+"template.job_reply" = "求職返信";
+"template.job_reply.prompt" = "求人/面接メールへの返信。要点: [要点]";
+"template.meeting_reschedule" = "日程変更";
+"template.meeting_reschedule.prompt" = "会議の日程変更。元の時間: [時間]。新しい時間: [時間]。理由: [理由]";
+"template.apology" = "お詫び";
+"template.apology.prompt" = "[出来事]についてのお詫び。伝えたいこと: [内容]";
+"template.thank_you" = "感謝";
+"template.thank_you.prompt" = "[してくれたこと]への感謝メッセージ。言及: [具体的な内容]";
+"template.birthday" = "誕生日";
+"template.birthday.prompt" = "[人物/関係]への誕生日メッセージ。含める: [個人的な内容]";
+"template.complaint" = "苦情";
+"template.complaint.prompt" = "[会社/人]への[問題]についての苦情。要望: [希望する結果]";
+"template.follow_up" = "フォローアップ";
+"template.follow_up.prompt" = "[話題]に関する[前回のやり取り]のフォローアップ。次のステップ: [必要なこと]";
+"template.cold_outreach" = "アウトリーチ";
+"template.cold_outreach.prompt" = "[人物/役職]への[目的]についてのコールドアウトリーチ。提供価値: [提供するもの]";
+"template.dating" = "デート";
+"template.dating.prompt" = "プロフィールに基づく最初のメッセージ: [プロフィール詳細]。共通の関心: [共通の興味]";
+"template.social_caption" = "キャプション";
+"template.social_caption.prompt" = "[写真/投稿内容]のSNSキャプション。雰囲気: [ムード]。プラットフォーム: [インスタ/Twitter等]";
+"template.rsvp" = "出欠返信";
+"template.rsvp.prompt" = "[イベント]への出欠返信。出席: [はい/いいえ/未定]。追加: [メッセージ]";
+"template.congratulations" = "お祝い";
+"template.congratulations.prompt" = "[人物]の[功績]へのお祝いメッセージ。追加: [個人的なメモ]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d/%d";
+"ai_writer.swipe_hint" = "スワイプして他を表示";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "履歴";
+"ai_writer.history_all" = "すべて";
+"ai_writer.history_favorites" = "お気に入り";
+"ai_writer.history_empty" = "履歴がありません";
+"ai_writer.history_empty_sub" = "生成したメッセージがここに表示";
+"ai_writer.history_clear_title" = "履歴をクリア";
+"ai_writer.history_clear_message" = "すべての履歴が削除されます。";
+"ai_writer.history_clear_confirm" = "すべて削除";
+"ai_writer.history_disable" = "履歴を無効化";
+"ai_writer.history_enable" = "履歴を有効化";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "コピーしたメッセージに返信？";
+"ai_writer.clipboard_use" = "使用";
+"ai_writer.clipboard_dismiss" = "閉じる";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "メッセージの生成に失敗しました。再度お試しください。";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "どんなメッセージを書きますか？";
+"ai_writer.tone_title" = "トーン";
+"ai_writer.length_title" = "長さ";
+"ai_writer.tone_select_title" = "トーンを選択";
+"ai_writer.length_select_title" = "長さを選択";
+"ai_writer.length.short_desc" = "1〜2文、要点のみ";
+"ai_writer.length.medium_desc" = "3〜4文、適度な詳細";
+"ai_writer.length.long_desc" = "1段落、包括的な内容";
+"ai_writer.result_label" = "AIが作成したメッセージ";

@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AI Nachrichtenverfasser";
-"ai_writer.subtitle" = "KI schreibt in Ihrem bevorzugten Ton";
+"ai_writer.subtitle" = "In jeder Sprache schreiben, Ergebnisse in der gewählten Sprache";
 "ai_writer.placeholder" = "Welche Nachricht soll ich schreiben?";
 "ai_writer.generate" = "Generieren";
 "ai_writer.generating" = "Generiere...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "Koreanisch";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "Einfühlsam";
+"tone.confident" = "Selbstbewusst";
+"tone.witty" = "Witzig";
+"tone.persuasive" = "Überzeugend";
+"tone.enthusiastic" = "Begeistert";
+"tone.apologetic" = "Entschuldigend";
+"tone.social" = "Social";
+"tone.professional" = "Professionell";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "Kurz";
+"ai_writer.length.medium" = "Mittel";
+"ai_writer.length.long" = "Lang";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "Auto (Gerät)";
+"ai_writer.lang.section_title" = "Ausgabesprache";
+"ai_writer.lang.select_title" = "Ausgabesprache wählen";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "Auf Nachricht antworten";
+"ai_writer.reply_close" = "Antwort schließen";
+"ai_writer.reply_label" = "Empfangene Nachricht einfügen";
+"ai_writer.reply_privacy" = "Diese Nachricht wird zur AI-Verarbeitung gesendet. Keine Daten werden gespeichert.";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "Schnellvorlagen";
+"template.job_reply" = "Jobantwort";
+"template.job_reply.prompt" = "Antwort auf eine Bewerbung/Interview-E-Mail. Kernpunkte: [Ihre Kernpunkte]";
+"template.meeting_reschedule" = "Umplanen";
+"template.meeting_reschedule.prompt" = "Meeting umplanen. Ursprüngliche Zeit: [Zeit]. Neue Zeit: [Zeit]. Grund: [Grund]";
+"template.apology" = "Entschuldigung";
+"template.apology.prompt" = "Entschuldigung für [was passiert ist]. Ausdrücken: [was Sie vermitteln möchten]";
+"template.thank_you" = "Danke";
+"template.thank_you.prompt" = "Dankesnachricht für [was sie getan haben]. Erwähnen: [konkretes Detail]";
+"template.birthday" = "Geburtstag";
+"template.birthday.prompt" = "Geburtstagsnachricht für [Person/Beziehung]. Einschließen: [persönliche Note]";
+"template.complaint" = "Beschwerde";
+"template.complaint.prompt" = "Beschwerde an [Unternehmen/Person] über [Problem]. Forderung: [gewünschtes Ergebnis]";
+"template.follow_up" = "Nachfassen";
+"template.follow_up.prompt" = "Nachfassen zu [vorherigem Gespräch/E-Mail] über [Thema]. Nächste Schritte: [was Sie brauchen]";
+"template.cold_outreach" = "Kontaktaufnahme";
+"template.cold_outreach.prompt" = "Kaltakquise-Nachricht an [Person/Rolle] über [Zweck]. Wertversprechen: [was Sie bieten]";
+"template.dating" = "Dating";
+"template.dating.prompt" = "Erste Nachricht basierend auf dem Profil: [Profildetail]. Mein Interesse: [gemeinsames Interesse]";
+"template.social_caption" = "Bildtext";
+"template.social_caption.prompt" = "Social-Media-Bildtext für [Foto/Beitrag über]. Stimmung: [Vibe]. Plattform: [Instagram/Twitter/etc]";
+"template.rsvp" = "Zusage";
+"template.rsvp.prompt" = "Zusage zu [Veranstaltung]. Teilnahme: [ja/nein/vielleicht]. Hinzufügen: [Nachricht]";
+"template.congratulations" = "Glückwunsch";
+"template.congratulations.prompt" = "[Person] zu [Leistung] gratulieren. Hinzufügen: [persönliche Notiz]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d von %d";
+"ai_writer.swipe_hint" = "Wischen für mehr";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "Verlauf";
+"ai_writer.history_all" = "Alle";
+"ai_writer.history_favorites" = "Favoriten";
+"ai_writer.history_empty" = "Kein Verlauf";
+"ai_writer.history_empty_sub" = "Generierte Nachrichten erscheinen hier";
+"ai_writer.history_clear_title" = "Verlauf löschen";
+"ai_writer.history_clear_message" = "Der gesamte Verlauf wird gelöscht.";
+"ai_writer.history_clear_confirm" = "Alle löschen";
+"ai_writer.history_disable" = "Verlauf deaktivieren";
+"ai_writer.history_enable" = "Verlauf aktivieren";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "Auf kopierte Nachricht antworten?";
+"ai_writer.clipboard_use" = "Verwenden";
+"ai_writer.clipboard_dismiss" = "Schließen";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "Nachricht konnte nicht generiert werden. Bitte erneut versuchen.";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "Welche Nachricht soll ich schreiben?";
+"ai_writer.tone_title" = "Ton";
+"ai_writer.length_title" = "Länge";
+"ai_writer.tone_select_title" = "Ton auswählen";
+"ai_writer.length_select_title" = "Länge auswählen";
+"ai_writer.length.short_desc" = "1-2 Sätze, nur das Wesentliche";
+"ai_writer.length.medium_desc" = "3-4 Sätze, gute Details";
+"ai_writer.length.long_desc" = "Ganzer Absatz, umfassend";
+"ai_writer.result_label" = "Von KI verfasste Nachricht";

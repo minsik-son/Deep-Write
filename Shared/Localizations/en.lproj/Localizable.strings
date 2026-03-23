@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AI Message Writer";
-"ai_writer.subtitle" = "AI writes in your preferred tone";
+"ai_writer.subtitle" = "Write in any language, get results in your chosen language";
 "ai_writer.placeholder" = "What message should I write?";
 "ai_writer.generate" = "Generate";
 "ai_writer.generating" = "Generating...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "Korean";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "Empathetic";
+"tone.confident" = "Confident";
+"tone.witty" = "Witty";
+"tone.persuasive" = "Persuasive";
+"tone.enthusiastic" = "Enthusiastic";
+"tone.apologetic" = "Apologetic";
+"tone.social" = "Social";
+"tone.professional" = "Professional";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "Short";
+"ai_writer.length.medium" = "Medium";
+"ai_writer.length.long" = "Long";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "Auto (Device)";
+"ai_writer.lang.section_title" = "Output Language";
+"ai_writer.lang.select_title" = "Select output language";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "Reply to a message";
+"ai_writer.reply_close" = "Close reply";
+"ai_writer.reply_label" = "Paste the message you received";
+"ai_writer.reply_privacy" = "This message will be sent to AI for processing. No data is stored.";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "Quick Templates";
+"template.job_reply" = "Job Reply";
+"template.job_reply.prompt" = "Write a reply to a job application/interview email. Key points: [your key points]";
+"template.meeting_reschedule" = "Reschedule";
+"template.meeting_reschedule.prompt" = "Reschedule a meeting. Original time: [time]. New suggested time: [time]. Reason: [reason]";
+"template.apology" = "Apology";
+"template.apology.prompt" = "Write an apology for [what happened]. Express: [what you want to convey]";
+"template.thank_you" = "Thank You";
+"template.thank_you.prompt" = "Write a thank-you message for [what they did]. Mention: [specific detail]";
+"template.birthday" = "Birthday";
+"template.birthday.prompt" = "Write a birthday message for [person/relationship]. Include: [personal touch]";
+"template.complaint" = "Complaint";
+"template.complaint.prompt" = "Write a complaint about [issue] to [company/person]. Request: [desired outcome]";
+"template.follow_up" = "Follow Up";
+"template.follow_up.prompt" = "Follow up on [previous conversation/email] about [topic]. Next steps: [what you need]";
+"template.cold_outreach" = "Outreach";
+"template.cold_outreach.prompt" = "Write a cold outreach message to [person/role] about [purpose]. Value prop: [what you offer]";
+"template.dating" = "Dating";
+"template.dating.prompt" = "Write an opening message based on their profile: [detail from profile]. My interest: [shared interest]";
+"template.social_caption" = "Caption";
+"template.social_caption.prompt" = "Write a social media caption for [photo/post about]. Mood: [vibe]. Platform: [instagram/twitter/etc]";
+"template.rsvp" = "RSVP";
+"template.rsvp.prompt" = "RSVP to [event]. Attending: [yes/no/maybe]. Add: [any message]";
+"template.congratulations" = "Congrats";
+"template.congratulations.prompt" = "Congratulate [person] on [achievement]. Add: [personal note]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d of %d";
+"ai_writer.swipe_hint" = "Swipe to see more";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "History";
+"ai_writer.history_all" = "All";
+"ai_writer.history_favorites" = "Favorites";
+"ai_writer.history_empty" = "No history yet";
+"ai_writer.history_empty_sub" = "Generated messages appear here";
+"ai_writer.history_clear_title" = "Clear History";
+"ai_writer.history_clear_message" = "This will delete all history. Favorites will also be removed.";
+"ai_writer.history_clear_confirm" = "Delete All";
+"ai_writer.history_disable" = "Disable History";
+"ai_writer.history_enable" = "Enable History";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "Reply to copied message?";
+"ai_writer.clipboard_use" = "Use";
+"ai_writer.clipboard_dismiss" = "Dismiss";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "Failed to generate message. Please try again.";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "What message shall I write?";
+"ai_writer.tone_title" = "Tone";
+"ai_writer.length_title" = "Length";
+"ai_writer.tone_select_title" = "Select Tone";
+"ai_writer.length_select_title" = "Select Length";
+"ai_writer.length.short_desc" = "1-2 sentences, just the essentials";
+"ai_writer.length.medium_desc" = "3-4 sentences, good detail";
+"ai_writer.length.long_desc" = "Full paragraph, comprehensive";
+"ai_writer.result_label" = "AI-composed message";

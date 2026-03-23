@@ -42,13 +42,13 @@ class TonePickerView: UIView {
             stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
 
-        for tone in ToneStyle.allCases {
+        for tone in ToneStyle.keyboardCases {
             let btn = UIButton(type: .custom)
             btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
             let locked = FeatureGate.shared.isToneLocked(tone)
             let title = locked ? "\(tone.displayName) \u{1F512}" : tone.displayName
             btn.setTitle(title, for: .normal)
-            btn.tag = ToneStyle.allCases.firstIndex(of: tone) ?? 0
+            btn.tag = ToneStyle.keyboardCases.firstIndex(of: tone) ?? 0
             btn.layer.cornerRadius = 15
             btn.clipsToBounds = true
             btn.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
@@ -65,7 +65,7 @@ class TonePickerView: UIView {
     // MARK: - Actions
 
     @objc private func toneTapped(_ sender: UIButton) {
-        let allCases = ToneStyle.allCases
+        let allCases = ToneStyle.keyboardCases
         guard sender.tag < allCases.count else { return }
         let tone = allCases[sender.tag]
         if FeatureGate.shared.isToneLocked(tone) {
@@ -110,7 +110,7 @@ class TonePickerView: UIView {
     // MARK: - Private
 
     private func updateSelection() {
-        let allCases = ToneStyle.allCases
+        let allCases = ToneStyle.keyboardCases
         for (index, btn) in pillButtons.enumerated() {
             let tone = allCases[index]
             let locked = FeatureGate.shared.isToneLocked(tone)

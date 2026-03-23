@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AI Редактор сообщений";
-"ai_writer.subtitle" = "ИИ пишет в предпочитаемом вами тоне";
+"ai_writer.subtitle" = "Пишите на любом языке, получайте результат на выбранном";
 "ai_writer.placeholder" = "Какое сообщение написать?";
 "ai_writer.generate" = "Создать";
 "ai_writer.generating" = "Генерация...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "Корейский";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "Сочувственный";
+"tone.confident" = "Уверенный";
+"tone.witty" = "Остроумный";
+"tone.persuasive" = "Убедительный";
+"tone.enthusiastic" = "Восторженный";
+"tone.apologetic" = "Извиняющийся";
+"tone.social" = "Социальный";
+"tone.professional" = "Профессиональный";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "Кратко";
+"ai_writer.length.medium" = "Средне";
+"ai_writer.length.long" = "Подробно";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "Авто (Устройство)";
+"ai_writer.lang.section_title" = "Язык вывода";
+"ai_writer.lang.select_title" = "Выбрать язык";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "Ответить на сообщение";
+"ai_writer.reply_close" = "Закрыть ответ";
+"ai_writer.reply_label" = "Вставьте полученное сообщение";
+"ai_writer.reply_privacy" = "Сообщение будет отправлено ИИ для обработки. Данные не сохраняются.";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "Быстрые шаблоны";
+"template.job_reply" = "Ответ на вакансию";
+"template.job_reply.prompt" = "Ответ на письмо о работе/собеседовании. Ключевые моменты: [ваши ключевые моменты]";
+"template.meeting_reschedule" = "Перенос";
+"template.meeting_reschedule.prompt" = "Перенос встречи. Исходное время: [время]. Новое время: [время]. Причина: [причина]";
+"template.apology" = "Извинение";
+"template.apology.prompt" = "Написать извинение за [что произошло]. Выразить: [что хотите донести]";
+"template.thank_you" = "Благодарность";
+"template.thank_you.prompt" = "Написать благодарность за [что они сделали]. Упомянуть: [конкретная деталь]";
+"template.birthday" = "День рождения";
+"template.birthday.prompt" = "Поздравление с днём рождения для [человек/отношения]. Включить: [личный штрих]";
+"template.complaint" = "Жалоба";
+"template.complaint.prompt" = "Написать жалобу в [компания/человек] на [проблема]. Запрос: [желаемый результат]";
+"template.follow_up" = "Напоминание";
+"template.follow_up.prompt" = "Напоминание о [предыдущем разговоре/письме] по теме [тема]. Следующие шаги: [что нужно]";
+"template.cold_outreach" = "Первое письмо";
+"template.cold_outreach.prompt" = "Холодное письмо [человеку/должности] о [цель]. Ценностное предложение: [что предлагаете]";
+"template.dating" = "Знакомство";
+"template.dating.prompt" = "Первое сообщение на основе профиля: [детали профиля]. Мой интерес: [общий интерес]";
+"template.social_caption" = "Подпись";
+"template.social_caption.prompt" = "Подпись в соцсетях для [фото/пост о]. Настроение: [стиль]. Платформа: [инстаграм/твиттер/и т.д.]";
+"template.rsvp" = "Ответ на приглашение";
+"template.rsvp.prompt" = "Ответ на приглашение на [мероприятие]. Участие: [да/нет/возможно]. Добавить: [сообщение]";
+"template.congratulations" = "Поздравление";
+"template.congratulations.prompt" = "Поздравить [человека] с [достижение]. Добавить: [личная заметка]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d из %d";
+"ai_writer.swipe_hint" = "Листайте для просмотра";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "История";
+"ai_writer.history_all" = "Все";
+"ai_writer.history_favorites" = "Избранное";
+"ai_writer.history_empty" = "Нет истории";
+"ai_writer.history_empty_sub" = "Сгенерированные сообщения появятся здесь";
+"ai_writer.history_clear_title" = "Очистить историю";
+"ai_writer.history_clear_message" = "Вся история будет удалена.";
+"ai_writer.history_clear_confirm" = "Удалить все";
+"ai_writer.history_disable" = "Отключить историю";
+"ai_writer.history_enable" = "Включить историю";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "Ответить на скопированное сообщение?";
+"ai_writer.clipboard_use" = "Использовать";
+"ai_writer.clipboard_dismiss" = "Закрыть";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "Не удалось создать сообщение. Попробуйте снова.";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "Какое сообщение написать?";
+"ai_writer.tone_title" = "Тон";
+"ai_writer.length_title" = "Длина";
+"ai_writer.tone_select_title" = "Выбрать тон";
+"ai_writer.length_select_title" = "Выбрать длину";
+"ai_writer.length.short_desc" = "1-2 предложения, только суть";
+"ai_writer.length.medium_desc" = "3-4 предложения, хорошая детализация";
+"ai_writer.length.long_desc" = "Полный абзац, подробно";
+"ai_writer.result_label" = "Сообщение от ИИ";

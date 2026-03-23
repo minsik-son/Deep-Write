@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AI消息写作";
-"ai_writer.subtitle" = "AI以您偏好的语气写作";
+"ai_writer.subtitle" = "用任何语言输入，以所选语言获取结果";
 "ai_writer.placeholder" = "需要写什么消息？";
 "ai_writer.generate" = "生成";
 "ai_writer.generating" = "生成中...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "韩语";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "共情的";
+"tone.confident" = "自信的";
+"tone.witty" = "诙谐的";
+"tone.persuasive" = "有说服力的";
+"tone.enthusiastic" = "热情的";
+"tone.apologetic" = "道歉的";
+"tone.social" = "社交风";
+"tone.professional" = "专业的";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "简短";
+"ai_writer.length.medium" = "适中";
+"ai_writer.length.long" = "详细";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "自动 (设备设置)";
+"ai_writer.lang.section_title" = "输出语言";
+"ai_writer.lang.select_title" = "选择输出语言";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "回复消息";
+"ai_writer.reply_close" = "关闭回复";
+"ai_writer.reply_label" = "粘贴收到的消息";
+"ai_writer.reply_privacy" = "此消息将发送至AI处理，不会存储数据。";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "快速模板";
+"template.job_reply" = "求职回复";
+"template.job_reply.prompt" = "回复求职/面试邮件。要点: [要点]";
+"template.meeting_reschedule" = "改期";
+"template.meeting_reschedule.prompt" = "会议改期。原时间: [时间]。新时间: [时间]。原因: [原因]";
+"template.apology" = "道歉";
+"template.apology.prompt" = "为[事件]写道歉信。表达: [想传达的内容]";
+"template.thank_you" = "感谢";
+"template.thank_you.prompt" = "感谢[对方所做的事]。提及: [具体细节]";
+"template.birthday" = "生日";
+"template.birthday.prompt" = "给[人物/关系]的生日祝福。包含: [个人化内容]";
+"template.complaint" = "投诉";
+"template.complaint.prompt" = "向[公司/人]投诉[问题]。要求: [期望结果]";
+"template.follow_up" = "跟进";
+"template.follow_up.prompt" = "关于[话题]的[之前沟通]跟进。下一步: [需要什么]";
+"template.cold_outreach" = "主动联系";
+"template.cold_outreach.prompt" = "向[人物/职位]发送关于[目的]的消息。价值主张: [提供什么]";
+"template.dating" = "约会";
+"template.dating.prompt" = "根据对方资料写开场消息: [资料细节]。共同兴趣: [共同爱好]";
+"template.social_caption" = "文案";
+"template.social_caption.prompt" = "为[照片/帖子内容]写社交媒体文案。氛围: [风格]。平台: [Instagram/Twitter等]";
+"template.rsvp" = "出席回复";
+"template.rsvp.prompt" = "[活动]出席回复。是否参加: [是/否/待定]。补充: [留言]";
+"template.congratulations" = "祝贺";
+"template.congratulations.prompt" = "祝贺[人物]的[成就]。补充: [个人寄语]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d/%d";
+"ai_writer.swipe_hint" = "滑动查看更多";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "历史记录";
+"ai_writer.history_all" = "全部";
+"ai_writer.history_favorites" = "收藏";
+"ai_writer.history_empty" = "暂无历史记录";
+"ai_writer.history_empty_sub" = "生成的消息将显示在这里";
+"ai_writer.history_clear_title" = "清除历史";
+"ai_writer.history_clear_message" = "所有历史记录将被删除。";
+"ai_writer.history_clear_confirm" = "全部删除";
+"ai_writer.history_disable" = "禁用历史记录";
+"ai_writer.history_enable" = "启用历史记录";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "回复已复制的消息？";
+"ai_writer.clipboard_use" = "使用";
+"ai_writer.clipboard_dismiss" = "关闭";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "生成消息失败，请重试。";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "需要写什么消息？";
+"ai_writer.tone_title" = "语气";
+"ai_writer.length_title" = "长度";
+"ai_writer.tone_select_title" = "选择语气";
+"ai_writer.length_select_title" = "选择长度";
+"ai_writer.length.short_desc" = "1-2句话，简明扼要";
+"ai_writer.length.medium_desc" = "3-4句话，适度详细";
+"ai_writer.length.long_desc" = "完整段落，详细全面";
+"ai_writer.result_label" = "AI生成的消息";

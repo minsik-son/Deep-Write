@@ -202,7 +202,7 @@
 
 // === AI Writer ===
 "ai_writer.title" = "AI 메시지 작성";
-"ai_writer.subtitle" = "AI가 원하는 톤으로 작성합니다";
+"ai_writer.subtitle" = "어떤 언어로든 입력하고, 원하는 언어로 결과를 받으세요";
 "ai_writer.placeholder" = "어떤 메시지를 작성할까요?";
 "ai_writer.generate" = "작성하기";
 "ai_writer.generating" = "생성 중...";
@@ -470,3 +470,91 @@
 
 // MARK: - Language
 "language.korean" = "한국어";
+
+// AI Writer v2 - Tone Expansion
+"tone.empathetic" = "공감하는";
+"tone.confident" = "당당한";
+"tone.witty" = "위트있는";
+"tone.persuasive" = "설득하는";
+"tone.enthusiastic" = "열정적인";
+"tone.apologetic" = "사과하는";
+"tone.social" = "소셜";
+"tone.professional" = "프로페셔널";
+
+// AI Writer v2 - Length Control
+"ai_writer.length.short" = "짧게";
+"ai_writer.length.medium" = "보통";
+"ai_writer.length.long" = "길게";
+
+// AI Writer v2 - Output Language
+"ai_writer.lang.auto" = "자동 (기기 설정)";
+"ai_writer.lang.section_title" = "출력 언어";
+"ai_writer.lang.select_title" = "출력 언어 선택";
+
+// AI Writer v2 - Reply Context
+"ai_writer.reply_toggle" = "메시지에 답장하기";
+"ai_writer.reply_close" = "답장 닫기";
+"ai_writer.reply_label" = "받은 메시지를 붙여넣으세요";
+"ai_writer.reply_privacy" = "이 메시지는 AI 처리를 위해 전송됩니다. 데이터는 저장되지 않습니다.";
+
+// AI Writer v2 - Templates
+"ai_writer.templates_title" = "빠른 템플릿";
+"template.job_reply" = "취업 답장";
+"template.job_reply.prompt" = "취업 지원/면접 이메일에 답장. 핵심: [핵심 내용]";
+"template.meeting_reschedule" = "일정 변경";
+"template.meeting_reschedule.prompt" = "미팅 일정 변경. 원래 시간: [시간]. 새 시간: [시간]. 사유: [사유]";
+"template.apology" = "사과";
+"template.apology.prompt" = "[일어난 일]에 대한 사과문 작성. 전달할 내용: [전달 사항]";
+"template.thank_you" = "감사";
+"template.thank_you.prompt" = "[해준 것]에 대한 감사 메시지. 언급할 내용: [구체적 디테일]";
+"template.birthday" = "생일";
+"template.birthday.prompt" = "[사람/관계]에게 생일 메시지. 포함할 내용: [개인적 터치]";
+"template.complaint" = "불만";
+"template.complaint.prompt" = "[회사/사람]에게 [문제]에 대한 불만 작성. 요청: [원하는 결과]";
+"template.follow_up" = "팔로업";
+"template.follow_up.prompt" = "[주제]에 대한 [이전 대화/이메일] 팔로업. 다음 단계: [필요한 것]";
+"template.cold_outreach" = "아웃리치";
+"template.cold_outreach.prompt" = "[사람/역할]에게 [목적]에 대한 콜드 아웃리치. 제안 가치: [제공할 것]";
+"template.dating" = "데이팅";
+"template.dating.prompt" = "프로필 기반 첫 메시지: [프로필 디테일]. 관심사: [공통 관심사]";
+"template.social_caption" = "캡션";
+"template.social_caption.prompt" = "[사진/포스트 내용]에 대한 SNS 캡션. 분위기: [바이브]. 플랫폼: [인스타/트위터/등]";
+"template.rsvp" = "참석 회신";
+"template.rsvp.prompt" = "[이벤트] 참석 회신. 참석 여부: [예/아니오/미정]. 추가: [메시지]";
+"template.congratulations" = "축하";
+"template.congratulations.prompt" = "[사람]의 [업적]에 대한 축하 메시지. 추가: [개인적 메모]";
+
+// AI Writer v2 - Variations
+"ai_writer.variation" = "%d/%d";
+"ai_writer.swipe_hint" = "스와이프하여 더 보기";
+
+// AI Writer v2 - History
+"ai_writer.history_title" = "히스토리";
+"ai_writer.history_all" = "전체";
+"ai_writer.history_favorites" = "즐겨찾기";
+"ai_writer.history_empty" = "아직 히스토리가 없어요";
+"ai_writer.history_empty_sub" = "생성한 메시지가 여기에 표시됩니다";
+"ai_writer.history_clear_title" = "히스토리 삭제";
+"ai_writer.history_clear_message" = "모든 히스토리가 삭제됩니다. 즐겨찾기도 함께 삭제됩니다.";
+"ai_writer.history_clear_confirm" = "전체 삭제";
+"ai_writer.history_disable" = "히스토리 비활성화";
+"ai_writer.history_enable" = "히스토리 활성화";
+
+// AI Writer v2 - Clipboard
+"ai_writer.clipboard_suggest" = "복사한 메시지에 답장할까요?";
+"ai_writer.clipboard_use" = "사용";
+"ai_writer.clipboard_dismiss" = "닫기";
+
+// AI Writer v3 - Error
+"ai_writer.error_generate" = "메시지 생성에 실패했습니다. 다시 시도해주세요.";
+
+// AI Writer Toss Redesign
+"ai_writer.input_label" = "어떤 메시지를 쓸까요?";
+"ai_writer.tone_title" = "톤";
+"ai_writer.length_title" = "길이";
+"ai_writer.tone_select_title" = "톤 선택";
+"ai_writer.length_select_title" = "길이 선택";
+"ai_writer.length.short_desc" = "1~2문장, 핵심만";
+"ai_writer.length.medium_desc" = "3~4문장, 적당한 디테일";
+"ai_writer.length.long_desc" = "한 문단, 상세한 내용";
+"ai_writer.result_label" = "AI가 작성한 메시지";
