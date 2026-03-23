@@ -26,6 +26,22 @@ final class StardustView: UIView {
         let brightness: CGFloat        // 0.6 ~ 1.0
     }
 
+    // MARK: - Shooting Star
+    private struct ShootingStar {
+        var x: CGFloat
+        var y: CGFloat
+        let vx: CGFloat
+        let vy: CGFloat
+        let startTime: CFTimeInterval
+        let lifetime: CGFloat
+        let length: CGFloat
+        let brightness: CGFloat
+    }
+
+    private var shootingStars: [ShootingStar] = []
+    private var lastShootingStarTime: CFTimeInterval = 0
+    private static let shootingStarInterval: CFTimeInterval = 5.0
+
     private var particles: [Particle] = []
     private var displayLink: CADisplayLink?
     private var displayLinkProxy: DisplayLinkProxy?
@@ -144,6 +160,7 @@ final class StardustView: UIView {
         isAnimating = true
         lastTimestamp = 0
         particles.removeAll()
+        lastShootingStarTime = CACurrentMediaTime()
 
         let proxy = DisplayLinkProxy(target: self, action: #selector(animationTick(_:)))
         displayLinkProxy = proxy
@@ -164,6 +181,8 @@ final class StardustView: UIView {
         displayLink = nil
         displayLinkProxy = nil
         particles.removeAll()
+        shootingStars.removeAll()
+        lastShootingStarTime = 0
         setNeedsDisplay()
     }
 
@@ -226,8 +245,23 @@ final class StardustView: UIView {
             particles[i].vy *= 0.98
         }
 
+        // 별똥별 생성 체크
+        if now - lastShootingStarTime > Self.shootingStarInterval + Double.random(in: -1.5...1.5) {
+            lastShootingStarTime = now
+            spawnShootingStar()
+        }
+
+        // 별똥별 수명 초과 제거
+        shootingStars.removeAll { now - $0.startTime > CFTimeInterval($0.lifetime) }
+
+        // 별똥별 위치 업데이트
+        for i in shootingStars.indices {
+            shootingStars[i].x += shootingStars[i].vx * dt
+            shootingStars[i].y += shootingStars[i].vy * dt
+        }
+
         // 파티클이 없으면 draw 스킵
-        if particles.isEmpty {
+        if particles.isEmpty && shootingStars.isEmpty {
             if lastTimestamp != 0 {
                 lastTimestamp = 0
                 setNeedsDisplay()
@@ -236,6 +270,29 @@ final class StardustView: UIView {
         }
 
         setNeedsDisplay()
+    }
+
+    private func spawnShootingStar() {
+        let viewW = bounds.width > 0 ? bounds.width : 390
+        let viewH = bounds.height > 0 ? bounds.height : 340
+
+        let startX = CGFloat.random(in: viewW * 0.1 ... viewW * 0.9)
+        let startY = CGFloat.random(in: -10 ... viewH * 0.15)
+
+        let angle = CGFloat.random(in: 0.5 ... 0.9)
+        let speed = CGFloat.random(in: 350 ... 550)
+
+        let star = ShootingStar(
+            x: startX,
+            y: startY,
+            vx: cos(angle) * speed,
+            vy: sin(angle) * speed,
+            startTime: CACurrentMediaTime(),
+            lifetime: CGFloat.random(in: 0.6 ... 1.0),
+            length: CGFloat.random(in: 40 ... 80),
+            brightness: CGFloat.random(in: 0.7 ... 1.0)
+        )
+        shootingStars.append(star)
     }
 
     // MARK: - Draw
@@ -278,6 +335,58 @@ final class StardustView: UIView {
             ctx.clip(to: drawRect, mask: sparkImg)
             ctx.setFillColor(CGColor(red: color.r, green: color.g, blue: color.b, alpha: alpha))
             ctx.fill(drawRect)
+            ctx.restoreGState()
+        }
+
+        // 별똥별 렌더링
+        let nowForStar = CACurrentMediaTime()
+        for star in shootingStars {
+            let age = CGFloat(nowForStar - star.startTime)
+            let progress = age / star.lifetime
+            guard progress >= 0, progress <= 1.0 else { continue }
+
+            let starAlpha: CGFloat
+            if progress < 0.2 {
+                starAlpha = star.brightness * (progress / 0.2)
+            } else if progress < 0.6 {
+                starAlpha = star.brightness
+            } else {
+                starAlpha = star.brightness * (1.0 - (progress - 0.6) / 0.4)
+            }
+            guard starAlpha > 0.01 else { continue }
+
+            let speed = sqrt(star.vx * star.vx + star.vy * star.vy)
+            guard speed > 0 else { continue }
+            let dirX = -star.vx / speed
+            let dirY = -star.vy / speed
+
+            let tailX = star.x + dirX * star.length
+            let tailY = star.y + dirY * star.length
+
+            ctx.saveGState()
+            ctx.setLineWidth(2.0)
+            ctx.setLineCap(.round)
+
+            let segments = 8
+            for s in 0..<segments {
+                let t0 = CGFloat(s) / CGFloat(segments)
+                let t1 = CGFloat(s + 1) / CGFloat(segments)
+                let x0 = star.x + (tailX - star.x) * t0
+                let y0 = star.y + (tailY - star.y) * t0
+                let x1 = star.x + (tailX - star.x) * t1
+                let y1 = star.y + (tailY - star.y) * t1
+                let segAlpha = starAlpha * (1.0 - t0)
+
+                ctx.setStrokeColor(CGColor(red: 0.95, green: 0.95, blue: 1.0, alpha: segAlpha))
+                ctx.move(to: CGPoint(x: x0, y: y0))
+                ctx.addLine(to: CGPoint(x: x1, y: y1))
+                ctx.strokePath()
+            }
+
+            let headSize: CGFloat = 3.0
+            ctx.setFillColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: starAlpha))
+            ctx.fillEllipse(in: CGRect(x: star.x - headSize/2, y: star.y - headSize/2, width: headSize, height: headSize))
+
             ctx.restoreGState()
         }
     }

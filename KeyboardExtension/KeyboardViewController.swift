@@ -45,6 +45,8 @@ class KeyboardViewController: UIInputViewController {
     private lazy var phraseInputHeaderView = PhraseInputHeaderView()
     private lazy var phraseInputView = TranslationInputView()
     private var isEmojiMode = false
+    private var clipboardCheckTimer: Timer?
+    private var lastKnownClipboardChangeCount: Int = 0
 
     // MARK: - QuickNote (CC-2: Optional + Lazy)
     private var quickNoteListView: QuickNoteListView?
@@ -306,9 +308,9 @@ class KeyboardViewController: UIInputViewController {
         hasUserTypedSinceAppeared = false
         toolbarView.hideSuggestions()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.checkClipboardForNewContent()
-        }
+        lastKnownClipboardChangeCount = UIPasteboard.general.changeCount
+        checkClipboardForNewContent()
+        startClipboardMonitoring()
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
     }
@@ -326,6 +328,8 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
         kbLogger.info("📌 children.count = \(self.children.count)")
         #endif
+
+        stopClipboardMonitoring()
 
         // CC-4: QuickNote 자동 저장 (기존 로직 유지)
         if currentMode == .quickNoteMode {
@@ -1593,6 +1597,40 @@ class KeyboardViewController: UIInputViewController {
         }) { _ in
             self.clipboardHistoryView?.isHidden = true
         }
+    }
+
+    // MARK: - Clipboard Monitoring
+
+    private func startClipboardMonitoring() {
+        clipboardCheckTimer?.invalidate()
+        clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let currentCount = UIPasteboard.general.changeCount
+            if currentCount != self.lastKnownClipboardChangeCount {
+                self.lastKnownClipboardChangeCount = currentCount
+                self.checkClipboardForNewContent()
+
+                if let clipboardView = self.clipboardHistoryView,
+                   !clipboardView.isHidden {
+                    if let tableView = clipboardView.subviews.compactMap({ $0 as? UITableView }).first,
+                       !tableView.isDragging, !tableView.isDecelerating {
+                        clipboardView.reloadData()
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                            guard let self = self,
+                                  let cv = self.clipboardHistoryView,
+                                  !cv.isHidden else { return }
+                            cv.reloadData()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func stopClipboardMonitoring() {
+        clipboardCheckTimer?.invalidate()
+        clipboardCheckTimer = nil
     }
 
     private func checkClipboardForNewContent() {

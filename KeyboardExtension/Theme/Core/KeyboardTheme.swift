@@ -1145,6 +1145,53 @@ extension KeyboardTheme {
         returnKeyAccentTextColor: UIColor(red: 185/255, green: 215/255, blue: 255/255, alpha: 0.90)
     )
 
+    // MARK: - Soft Snowfall Premium Theme
+
+    static let premiumSoftSnowfall = KeyboardTheme(
+        id: "premium_soft_snowfall",
+        displayName: L("theme.premium_soft_snowfall"),
+        keyboardBackground: UIColor(hex: "#0a1220"),
+        keyBackground: UIColor(hex: "#192846").withAlphaComponent(0.18),
+        specialKeyBackground: UIColor(hex: "#14213C").withAlphaComponent(0.22),
+        keyTextColor: UIColor(red: 210/255, green: 225/255, blue: 245/255, alpha: 0.88),
+        toolbarBackground: .clear,
+        gradientColors: [
+            UIColor(hex: "#0d1525"),
+            UIColor(hex: "#121d33"),
+            UIColor(hex: "#0f1a2e"),
+            UIColor(hex: "#0a1220")
+        ],
+        gradientLocations: [0, 0.3, 0.6, 1.0],
+        gradientDirection: .topToBottom,
+        patternStyle: .snowfall,
+        patternOpacity: 0.0,
+        patternTint: UIColor(hex: "#C8DFF5"),
+        keyVisualStyle: .frostedGlass(
+            bgAlpha: 0.18,
+            borderColor: UIColor(red: 150/255, green: 185/255, blue: 230/255, alpha: 0.10),
+            textColor: UIColor(red: 210/255, green: 225/255, blue: 245/255, alpha: 0.88)
+        ),
+        specialKeyVisualStyle: .frostedGlass(
+            bgAlpha: 0.22,
+            borderColor: UIColor(red: 130/255, green: 160/255, blue: 210/255, alpha: 0.10),
+            textColor: UIColor(red: 175/255, green: 200/255, blue: 235/255, alpha: 0.75)
+        ),
+        textShadowColor: UIColor(red: 180/255, green: 200/255, blue: 240/255, alpha: 0.15),
+        textShadowOffset: .zero,
+        textHighlightColor: .clear,
+        textHighlightOffset: .zero,
+        woodTileImageName: nil,
+        hasWaveAnimation: false,
+        hasRainAnimation: false,
+        hasRippleAnimation: false,
+        hasStardustAnimation: false,
+        hasEdgeGlowAnimation: false,
+        hasSnowfallAnimation: true,
+        hasCherryBlossomAnimation: false,
+        returnKeyAccentColor: UIColor(hex: "#375A96").withAlphaComponent(0.18),
+        returnKeyAccentTextColor: UIColor(red: 185/255, green: 215/255, blue: 255/255, alpha: 0.90)
+    )
+
     // MARK: - Cherry Blossom Premium Theme
 
     static let premiumCherryBlossom = KeyboardTheme(
@@ -1289,6 +1336,7 @@ extension KeyboardTheme {
         .premiumStaticNeonYellow,
         .premiumStaticNeonPurple,
         .premiumMidnightSnowfall,
+        .premiumSoftSnowfall,
         .premiumCherryBlossom
     ]
 

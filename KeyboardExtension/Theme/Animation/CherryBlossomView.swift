@@ -270,6 +270,48 @@ final class CherryBlossomView: UIView {
             ))
         }
 
+        // ====== 추가 나무: 중앙-우측 (기존 나무보다 약간 왼쪽) ======
+
+        // 추가 나무 뒤 레이어 — 15개
+        for _ in 0..<15 {
+            specs.append(FlowerSpec(
+                cx: CGFloat.random(in: viewW * 0.50...viewW * 0.72),
+                cy: CGFloat.random(in: clusterMinY...viewH * 0.25),
+                scale: CGFloat.random(in: 0.5...1.0),
+                opacity: Float.random(in: 0.25...0.50)
+            ))
+        }
+
+        // 추가 나무 핵심부 — 20개
+        for _ in 0..<20 {
+            specs.append(FlowerSpec(
+                cx: CGFloat.random(in: viewW * 0.53...viewW * 0.70),
+                cy: CGFloat.random(in: clusterMinY...viewH * 0.18),
+                scale: CGFloat.random(in: 0.9...1.3),
+                opacity: Float.random(in: 0.75...0.95)
+            ))
+        }
+
+        // 추가 나무 가장자리 — 10개
+        for _ in 0..<10 {
+            specs.append(FlowerSpec(
+                cx: CGFloat.random(in: viewW * 0.48...viewW * 0.68),
+                cy: CGFloat.random(in: viewH * 0.12...viewH * 0.28),
+                scale: CGFloat.random(in: 0.5...0.85),
+                opacity: Float.random(in: 0.55...0.80)
+            ))
+        }
+
+        // 두 나무 사이 연결부 — 8개
+        for _ in 0..<8 {
+            specs.append(FlowerSpec(
+                cx: CGFloat.random(in: viewW * 0.68...viewW * 0.76),
+                cy: CGFloat.random(in: clusterMinY + 5...viewH * 0.20),
+                scale: CGFloat.random(in: 0.7...1.1),
+                opacity: Float.random(in: 0.65...0.90)
+            ))
+        }
+
         // 앞 오버랩 — 10개
         for _ in 0..<10 {
             specs.append(FlowerSpec(
@@ -292,9 +334,9 @@ final class CherryBlossomView: UIView {
         for (i, spec) in specs.enumerated() {
             autoreleasepool {  // Phase 9: 500개 UIBezierPath 생성 시 transient spike 방지
                 let targetPath: UIBezierPath
-                if i < 20 {
+                if i < 35 {
                     targetPath = backPath
-                } else if i < 65 {
+                } else if i < 100 {
                     targetPath = midPath
                 } else {
                     targetPath = frontPath
@@ -318,25 +360,19 @@ final class CherryBlossomView: UIView {
         backLayer.path = backPath.cgPath
         backLayer.fillColor = UIColor(red: 1.0, green: 0.85, blue: 0.89, alpha: 0.45).cgColor
         backLayer.strokeColor = nil
-        layer.addSublayer(backLayer)
-        flowerLayers.append(backLayer)
 
         midLayer.path = midPath.cgPath
         midLayer.fillColor = UIColor(red: 1.0, green: 0.80, blue: 0.85, alpha: 0.75).cgColor
         midLayer.strokeColor = nil
-        layer.addSublayer(midLayer)
-        flowerLayers.append(midLayer)
 
         frontLayer.path = frontPath.cgPath
         frontLayer.fillColor = UIColor(red: 1.0, green: 0.78, blue: 0.84, alpha: 0.88).cgColor
         frontLayer.strokeColor = nil
-        layer.addSublayer(frontLayer)
-        flowerLayers.append(frontLayer)
 
         // 꽃술 점 레이어 (작은 노란 점들)
         let stamenLayer = CAShapeLayer()
         let stamenPath = UIBezierPath()
-        for i in 20..<min(45, specs.count) {
+        for i in 35..<min(70, specs.count) {
             let spec = specs[i]
             let dotCount = Int.random(in: 3...5)
             for _ in 0..<dotCount {
@@ -356,8 +392,23 @@ final class CherryBlossomView: UIView {
         stamenLayer.path = stamenPath.cgPath
         stamenLayer.fillColor = UIColor(red: 1.0, green: 0.92, blue: 0.63, alpha: 0.6).cgColor
         stamenLayer.strokeColor = nil
-        layer.addSublayer(stamenLayer)
-        flowerLayers.append(stamenLayer)
+
+        // 클러스터 컨테이너 + 툴바 클리핑 마스크
+        let clusterContainer = CALayer()
+        clusterContainer.frame = self.bounds
+        clusterContainer.addSublayer(backLayer)
+        clusterContainer.addSublayer(midLayer)
+        clusterContainer.addSublayer(frontLayer)
+        clusterContainer.addSublayer(stamenLayer)
+
+        let toolbarHeight: CGFloat = 44
+        let maskLayer = CAShapeLayer()
+        let maskRect = CGRect(x: 0, y: toolbarHeight, width: bounds.width * 1.1, height: bounds.height)
+        maskLayer.path = UIBezierPath(rect: maskRect).cgPath
+        clusterContainer.mask = maskLayer
+
+        layer.addSublayer(clusterContainer)
+        flowerLayers.append(clusterContainer)
     }
 
     private func removeFlowerCluster() {
@@ -542,6 +593,17 @@ final class CherryBlossomView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+
+        // 클러스터 컨테이너 및 mask 크기 갱신
+        for sublayer in layer.sublayers ?? [] {
+            if sublayer.mask != nil {
+                sublayer.frame = self.bounds
+                let toolbarHeight: CGFloat = 44
+                let maskRect = CGRect(x: 0, y: toolbarHeight, width: bounds.width * 1.1, height: bounds.height)
+                (sublayer.mask as? CAShapeLayer)?.path = UIBezierPath(rect: maskRect).cgPath
+            }
+        }
+
         guard isAnimating, bounds.width > 0, bounds.height > 0 else { return }
         let viewW = bounds.width
         let viewH = bounds.height

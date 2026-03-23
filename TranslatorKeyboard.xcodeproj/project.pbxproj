@@ -21,6 +21,7 @@
 		3B8365552F68F46500E27AF8 /* WeakProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365542F68F46500E27AF8 /* WeakProxy.swift */; };
 		3B8365562F68F46500E27AF8 /* FontPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365532F68F46500E27AF8 /* FontPool.swift */; };
 		3B8365582F6B8BF300E27AF8 /* DisplayLinkProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */; };
+		3B89DA192F6F1FFD00D2D4F9 /* SnowfallSoftView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA182F6F1FFD00D2D4F9 /* SnowfallSoftView.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -173,6 +174,7 @@
 		3B8365532F68F46500E27AF8 /* FontPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontPool.swift; sourceTree = "<group>"; };
 		3B8365542F68F46500E27AF8 /* WeakProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeakProxy.swift; sourceTree = "<group>"; };
 		3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkProxy.swift; sourceTree = "<group>"; };
+		3B89DA182F6F1FFD00D2D4F9 /* SnowfallSoftView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowfallSoftView.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -406,6 +408,7 @@
 		8DA69973A47E48CD82E08D8F /* Animation */ = {
 			isa = PBXGroup;
 			children = (
+				3B89DA182F6F1FFD00D2D4F9 /* SnowfallSoftView.swift */,
 				C21417E39394CA9BB9353695 /* MatrixRainView.swift */,
 				MR01AA11BB22CC33DD440001 /* MercuryRippleView.swift */,
 				SD01AA11BB22CC33DD440001 /* StardustView.swift */,
@@ -644,6 +647,7 @@
 				A1B2C3D4E5F607081920ABCD /* CorrectionLanguageBar.swift in Sources */,
 				B2C3D4E5F6070819203BCDEF /* CorrectionManager.swift in Sources */,
 				B6F01ECAFA76E2B6D82900AB /* ContextBuffer.swift in Sources */,
+				3B89DA192F6F1FFD00D2D4F9 /* SnowfallSoftView.swift in Sources */,
 				51F14E345F7257B1DF84C896 /* EmojiKeyboardView.swift in Sources */,
 				48EB6B73C377FAC506F6929F /* HangulComposer.swift in Sources */,
 				F027BB91EC2EC981A6DD95A9 /* KeyboardLayoutView.swift in Sources */,

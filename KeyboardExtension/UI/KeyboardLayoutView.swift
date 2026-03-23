@@ -90,6 +90,7 @@ class KeyboardLayoutView: UIView {
     private var mercuryRippleView: MercuryRippleView?
     private var stardustView: StardustView?
     private var snowfallView: SnowfallView?
+    private var snowfallSoftView: SnowfallSoftView?
     private var cherryBlossomView: CherryBlossomView?
     private var isMemoryConstrained = false
 
@@ -367,6 +368,8 @@ class KeyboardLayoutView: UIView {
         if wasStardustAnimating { stardustView?.pauseAnimation() }
         let wasSnowfallAnimating = snowfallView?.isActive ?? false
         if wasSnowfallAnimating { snowfallView?.pauseAnimation() }
+        let wasSoftSnowfallAnimating = snowfallSoftView?.isActive ?? false
+        if wasSoftSnowfallAnimating { snowfallSoftView?.pauseAnimation() }
         let wasCherryBlossomAnimating = cherryBlossomView?.isActive ?? false
         if wasCherryBlossomAnimating { cherryBlossomView?.pauseAnimation() }
 
@@ -487,6 +490,14 @@ class KeyboardLayoutView: UIView {
             snowfallView?.resumeAnimation()
         } else if let theme = customTheme, theme.needsSnowfallAnimation,
                   !isMemoryConstrained, let sv = snowfallView, !sv.isActive,
+                  !ProcessInfo.processInfo.isLowPowerModeEnabled {
+            sv.startAnimation()
+        }
+        if wasSoftSnowfallAnimating {
+            snowfallSoftView?.resumeAnimation()
+        } else if let theme = customTheme, theme.needsSnowfallAnimation,
+                  theme.id == "premium_soft_snowfall",
+                  !isMemoryConstrained, let sv = snowfallSoftView, !sv.isActive,
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             sv.startAnimation()
         }
@@ -1646,6 +1657,9 @@ class KeyboardLayoutView: UIView {
         stopLensAnimation()
         stardustView?.stopAnimation()
         snowfallView?.stopAnimation()
+        snowfallSoftView?.stopAnimation()
+        snowfallSoftView?.removeFromSuperview()
+        snowfallSoftView = nil
         cherryBlossomView?.stopAnimation()
         stopEdgeGlowAnimation()
         isTrackpadMode = true
@@ -1907,27 +1921,57 @@ class KeyboardLayoutView: UIView {
             stardustView?.isHidden = true
         }
 
-        // ── Midnight Snowfall ──
+        // ── Snowfall (Original + Soft) ──
         if let theme = customTheme, theme.needsSnowfallAnimation {
             if !isMemoryConstrained {
-                if snowfallView == nil {
-                    let sv = SnowfallView()
-                    sv.translatesAutoresizingMaskIntoConstraints = false
-                    sv.isUserInteractionEnabled = false
-                    insertSubview(sv, belowSubview: keyboardContainer)
-                    NSLayoutConstraint.activate([
-                        sv.topAnchor.constraint(equalTo: topAnchor),
-                        sv.bottomAnchor.constraint(equalTo: bottomAnchor),
-                        sv.leadingAnchor.constraint(equalTo: leadingAnchor),
-                        sv.trailingAnchor.constraint(equalTo: trailingAnchor),
-                    ])
-                    snowfallView = sv
+                if theme.id == "premium_soft_snowfall" {
+                    // Soft Snowfall — 항상 반투명
+                    snowfallView?.stopAnimation()
+                    snowfallView?.isHidden = true
+
+                    if snowfallSoftView == nil {
+                        let sv = SnowfallSoftView()
+                        sv.translatesAutoresizingMaskIntoConstraints = false
+                        sv.isUserInteractionEnabled = false
+                        insertSubview(sv, belowSubview: keyboardContainer)
+                        NSLayoutConstraint.activate([
+                            sv.topAnchor.constraint(equalTo: topAnchor),
+                            sv.bottomAnchor.constraint(equalTo: bottomAnchor),
+                            sv.leadingAnchor.constraint(equalTo: leadingAnchor),
+                            sv.trailingAnchor.constraint(equalTo: trailingAnchor),
+                        ])
+                        snowfallSoftView = sv
+                    }
+                    snowfallSoftView?.isHidden = false
+                    if !(snowfallSoftView?.isActive ?? true) {
+                        snowfallSoftView?.startAnimation()
+                    }
+                } else {
+                    // Original Midnight Snowfall
+                    snowfallSoftView?.stopAnimation()
+                    snowfallSoftView?.isHidden = true
+
+                    if snowfallView == nil {
+                        let sv = SnowfallView()
+                        sv.translatesAutoresizingMaskIntoConstraints = false
+                        sv.isUserInteractionEnabled = false
+                        insertSubview(sv, belowSubview: keyboardContainer)
+                        NSLayoutConstraint.activate([
+                            sv.topAnchor.constraint(equalTo: topAnchor),
+                            sv.bottomAnchor.constraint(equalTo: bottomAnchor),
+                            sv.leadingAnchor.constraint(equalTo: leadingAnchor),
+                            sv.trailingAnchor.constraint(equalTo: trailingAnchor),
+                        ])
+                        snowfallView = sv
+                    }
+                    snowfallView?.isHidden = false
                 }
-                snowfallView?.isHidden = false
             }
         } else {
             snowfallView?.stopAnimation()
             snowfallView?.isHidden = true
+            snowfallSoftView?.stopAnimation()
+            snowfallSoftView?.isHidden = true
         }
 
         // ── Cherry Blossom ──
@@ -2501,6 +2545,9 @@ class KeyboardLayoutView: UIView {
             stopLensAnimation()
             stardustView?.stopAnimation()
             snowfallView?.stopAnimation()
+            snowfallSoftView?.stopAnimation()
+            snowfallSoftView?.removeFromSuperview()
+            snowfallSoftView = nil
             cherryBlossomView?.stopAnimation()
             stopEdgeGlowAnimation()
         } else {
@@ -2525,7 +2572,11 @@ class KeyboardLayoutView: UIView {
             }
             if let theme = customTheme, theme.needsSnowfallAnimation,
                !isMemoryConstrained {
-                snowfallView?.startAnimation()
+                if theme.id == "premium_soft_snowfall" {
+                    snowfallSoftView?.startAnimation()
+                } else {
+                    snowfallView?.startAnimation()
+                }
             }
             if let theme = customTheme, theme.needsCherryBlossomAnimation,
                !isMemoryConstrained {
@@ -2679,6 +2730,9 @@ class KeyboardLayoutView: UIView {
         mercuryRippleView?.stopAnimation()
         stardustView?.stopAnimation()
         snowfallView?.stopAnimation()
+        snowfallSoftView?.stopAnimation()
+        snowfallSoftView?.removeFromSuperview()
+        snowfallSoftView = nil
         cherryBlossomView?.stopAnimation()
         stopEdgeGlowAnimation()
         edgeGlowDisplayLink?.invalidate()
