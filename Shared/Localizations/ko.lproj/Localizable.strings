@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "어떤 메시지를 쓸까요?";
+"ai_writer.input_placeholder" = "전하고 싶은 내용을 적어보세요";
 "ai_writer.tone_title" = "톤";
 "ai_writer.length_title" = "길이";
 "ai_writer.tone_select_title" = "톤 선택";
 "ai_writer.length_select_title" = "길이 선택";
+"ai_writer.reply_paste" = "메시지에 답장하기";
+"ai_writer.reply_context_placeholder" = "받은 메시지를 여기에 붙여넣으세요";
 "ai_writer.length.short_desc" = "1~2문장, 핵심만";
 "ai_writer.length.medium_desc" = "3~4문장, 적당한 디테일";
 "ai_writer.length.long_desc" = "한 문단, 상세한 내용";
 "ai_writer.result_label" = "AI가 작성한 메시지";
+
+/* Template Form Fields */
+"template.form.clear_template" = "템플릿 해제";
+"template.form.optional" = "(선택)";
+"template.job_reply.field_key_points" = "핵심 내용";
+"template.meeting.field_original_time" = "기존 시간";
+"template.meeting.field_new_time" = "변경 희망 시간";
+"template.meeting.field_reason" = "변경 사유";
+"template.apology.field_what_happened" = "무슨 일이 있었는지";
+"template.apology.field_convey" = "전하고 싶은 말";
+"template.thankyou.field_what_they_did" = "감사한 일";
+"template.thankyou.field_detail" = "구체적인 내용";
+"template.birthday.field_person" = "대상 / 관계";
+"template.birthday.field_personal_touch" = "개인적인 한마디";
+"template.complaint.field_issue" = "문제 사항";
+"template.complaint.field_target" = "대상 회사 / 사람";
+"template.complaint.field_outcome" = "원하는 결과";
+"template.followup.field_previous" = "이전 대화 내용";
+"template.followup.field_topic" = "주제";
+"template.followup.field_next_steps" = "필요한 것";
+"template.outreach.field_person" = "대상 / 직책";
+"template.outreach.field_purpose" = "목적";
+"template.outreach.field_value" = "제안할 가치";
+"template.dating.field_profile" = "프로필에서 본 내용";
+"template.dating.field_interest" = "공통 관심사";
+"template.caption.field_about" = "사진 / 게시물 주제";
+"template.caption.field_mood" = "분위기";
+"template.caption.field_platform" = "플랫폼";
+"template.rsvp.field_event" = "행사";
+"template.rsvp.field_attending" = "참석 여부";
+"template.rsvp.field_message" = "추가 메시지";
+"template.congrats.field_person" = "대상";
+"template.congrats.field_achievement" = "축하할 일";
+"template.congrats.field_note" = "개인적인 한마디";

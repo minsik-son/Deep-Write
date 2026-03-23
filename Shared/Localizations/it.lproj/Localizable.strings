@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "Che messaggio devo scrivere?";
+"ai_writer.input_placeholder" = "Scrivi cosa vuoi dire";
 "ai_writer.tone_title" = "Tono";
 "ai_writer.length_title" = "Lunghezza";
 "ai_writer.tone_select_title" = "Seleziona tono";
 "ai_writer.length_select_title" = "Seleziona lunghezza";
+"ai_writer.reply_paste" = "Rispondi a un messaggio";
+"ai_writer.reply_context_placeholder" = "Incolla qui il messaggio ricevuto";
 "ai_writer.length.short_desc" = "1-2 frasi, solo l'essenziale";
 "ai_writer.length.medium_desc" = "3-4 frasi, buon dettaglio";
 "ai_writer.length.long_desc" = "Paragrafo completo, esaustivo";
 "ai_writer.result_label" = "Messaggio scritto dall'IA";
+
+/* Template Form Fields */
+"template.form.clear_template" = "Rimuovi modello";
+"template.form.optional" = "(facoltativo)";
+"template.job_reply.field_key_points" = "Punti chiave";
+"template.meeting.field_original_time" = "Orario originale";
+"template.meeting.field_new_time" = "Nuovo orario suggerito";
+"template.meeting.field_reason" = "Motivo";
+"template.apology.field_what_happened" = "Cosa è successo";
+"template.apology.field_convey" = "Cosa vuoi esprimere";
+"template.thankyou.field_what_they_did" = "Cosa hanno fatto";
+"template.thankyou.field_detail" = "Dettaglio specifico";
+"template.birthday.field_person" = "Persona / Relazione";
+"template.birthday.field_personal_touch" = "Tocco personale";
+"template.complaint.field_issue" = "Problema";
+"template.complaint.field_target" = "Azienda / Persona";
+"template.complaint.field_outcome" = "Risultato desiderato";
+"template.followup.field_previous" = "Conversazione precedente";
+"template.followup.field_topic" = "Argomento";
+"template.followup.field_next_steps" = "Cosa ti serve";
+"template.outreach.field_person" = "Persona / Ruolo";
+"template.outreach.field_purpose" = "Scopo";
+"template.outreach.field_value" = "Proposta di valore";
+"template.dating.field_profile" = "Dettaglio dal profilo";
+"template.dating.field_interest" = "Interesse comune";
+"template.caption.field_about" = "Foto / Post su";
+"template.caption.field_mood" = "Atmosfera";
+"template.caption.field_platform" = "Piattaforma";
+"template.rsvp.field_event" = "Evento";
+"template.rsvp.field_attending" = "Partecipazione";
+"template.rsvp.field_message" = "Messaggio aggiuntivo";
+"template.congrats.field_person" = "Persona";
+"template.congrats.field_achievement" = "Traguardo";
+"template.congrats.field_note" = "Nota personale";

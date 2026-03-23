@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "What message shall I write?";
+"ai_writer.input_placeholder" = "Describe what you want to say";
 "ai_writer.tone_title" = "Tone";
 "ai_writer.length_title" = "Length";
 "ai_writer.tone_select_title" = "Select Tone";
 "ai_writer.length_select_title" = "Select Length";
+"ai_writer.reply_paste" = "Reply to a message";
+"ai_writer.reply_context_placeholder" = "Paste the message you received here";
 "ai_writer.length.short_desc" = "1-2 sentences, just the essentials";
 "ai_writer.length.medium_desc" = "3-4 sentences, good detail";
 "ai_writer.length.long_desc" = "Full paragraph, comprehensive";
 "ai_writer.result_label" = "AI-composed message";
+
+/* Template Form Fields */
+"template.form.clear_template" = "Clear template";
+"template.form.optional" = "(optional)";
+"template.job_reply.field_key_points" = "Key points";
+"template.meeting.field_original_time" = "Original time";
+"template.meeting.field_new_time" = "New suggested time";
+"template.meeting.field_reason" = "Reason";
+"template.apology.field_what_happened" = "What happened";
+"template.apology.field_convey" = "What you want to convey";
+"template.thankyou.field_what_they_did" = "What they did";
+"template.thankyou.field_detail" = "Specific detail";
+"template.birthday.field_person" = "Person / Relationship";
+"template.birthday.field_personal_touch" = "Personal touch";
+"template.complaint.field_issue" = "Issue";
+"template.complaint.field_target" = "Company / Person";
+"template.complaint.field_outcome" = "Desired outcome";
+"template.followup.field_previous" = "Previous conversation";
+"template.followup.field_topic" = "Topic";
+"template.followup.field_next_steps" = "What you need";
+"template.outreach.field_person" = "Person / Role";
+"template.outreach.field_purpose" = "Purpose";
+"template.outreach.field_value" = "Value proposition";
+"template.dating.field_profile" = "Detail from their profile";
+"template.dating.field_interest" = "Shared interest";
+"template.caption.field_about" = "Photo / Post about";
+"template.caption.field_mood" = "Mood / Vibe";
+"template.caption.field_platform" = "Platform";
+"template.rsvp.field_event" = "Event";
+"template.rsvp.field_attending" = "Attending";
+"template.rsvp.field_message" = "Additional message";
+"template.congrats.field_person" = "Person";
+"template.congrats.field_achievement" = "Achievement";
+"template.congrats.field_note" = "Personal note";

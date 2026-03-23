@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "どんなメッセージを書きますか？";
+"ai_writer.input_placeholder" = "伝えたい内容を書いてください";
 "ai_writer.tone_title" = "トーン";
 "ai_writer.length_title" = "長さ";
 "ai_writer.tone_select_title" = "トーンを選択";
 "ai_writer.length_select_title" = "長さを選択";
+"ai_writer.reply_paste" = "メッセージに返信する";
+"ai_writer.reply_context_placeholder" = "受け取ったメッセージをここに貼り付けてください";
 "ai_writer.length.short_desc" = "1〜2文、要点のみ";
 "ai_writer.length.medium_desc" = "3〜4文、適度な詳細";
 "ai_writer.length.long_desc" = "1段落、包括的な内容";
 "ai_writer.result_label" = "AIが作成したメッセージ";
+
+/* Template Form Fields */
+"template.form.clear_template" = "テンプレートを解除";
+"template.form.optional" = "(任意)";
+"template.job_reply.field_key_points" = "要点";
+"template.meeting.field_original_time" = "元の時間";
+"template.meeting.field_new_time" = "希望する新しい時間";
+"template.meeting.field_reason" = "理由";
+"template.apology.field_what_happened" = "何があったか";
+"template.apology.field_convey" = "伝えたいこと";
+"template.thankyou.field_what_they_did" = "感謝していること";
+"template.thankyou.field_detail" = "具体的な内容";
+"template.birthday.field_person" = "相手 / 関係";
+"template.birthday.field_personal_touch" = "一言メッセージ";
+"template.complaint.field_issue" = "問題点";
+"template.complaint.field_target" = "会社 / 担当者";
+"template.complaint.field_outcome" = "希望する対応";
+"template.followup.field_previous" = "前回のやり取り";
+"template.followup.field_topic" = "トピック";
+"template.followup.field_next_steps" = "必要なこと";
+"template.outreach.field_person" = "相手 / 役職";
+"template.outreach.field_purpose" = "目的";
+"template.outreach.field_value" = "提供できる価値";
+"template.dating.field_profile" = "プロフィールの気になる点";
+"template.dating.field_interest" = "共通の趣味";
+"template.caption.field_about" = "写真 / 投稿の内容";
+"template.caption.field_mood" = "雰囲気";
+"template.caption.field_platform" = "プラットフォーム";
+"template.rsvp.field_event" = "イベント";
+"template.rsvp.field_attending" = "出欠";
+"template.rsvp.field_message" = "追加メッセージ";
+"template.congrats.field_person" = "相手";
+"template.congrats.field_achievement" = "お祝いの内容";
+"template.congrats.field_note" = "一言メッセージ";

@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "¿Qué mensaje debo escribir?";
+"ai_writer.input_placeholder" = "Escribe lo que quieres decir";
 "ai_writer.tone_title" = "Tono";
 "ai_writer.length_title" = "Longitud";
 "ai_writer.tone_select_title" = "Seleccionar tono";
 "ai_writer.length_select_title" = "Seleccionar longitud";
+"ai_writer.reply_paste" = "Responder a un mensaje";
+"ai_writer.reply_context_placeholder" = "Pega aquí el mensaje que recibiste";
 "ai_writer.length.short_desc" = "1-2 frases, solo lo esencial";
 "ai_writer.length.medium_desc" = "3-4 frases, buen nivel de detalle";
 "ai_writer.length.long_desc" = "Párrafo completo, exhaustivo";
 "ai_writer.result_label" = "Mensaje redactado por IA";
+
+/* Template Form Fields */
+"template.form.clear_template" = "Eliminar plantilla";
+"template.form.optional" = "(opcional)";
+"template.job_reply.field_key_points" = "Puntos clave";
+"template.meeting.field_original_time" = "Hora original";
+"template.meeting.field_new_time" = "Nueva hora sugerida";
+"template.meeting.field_reason" = "Motivo";
+"template.apology.field_what_happened" = "Qué pasó";
+"template.apology.field_convey" = "Qué quieres expresar";
+"template.thankyou.field_what_they_did" = "Qué hicieron";
+"template.thankyou.field_detail" = "Detalle específico";
+"template.birthday.field_person" = "Persona / Relación";
+"template.birthday.field_personal_touch" = "Toque personal";
+"template.complaint.field_issue" = "Problema";
+"template.complaint.field_target" = "Empresa / Persona";
+"template.complaint.field_outcome" = "Resultado deseado";
+"template.followup.field_previous" = "Conversación anterior";
+"template.followup.field_topic" = "Tema";
+"template.followup.field_next_steps" = "Lo que necesitas";
+"template.outreach.field_person" = "Persona / Cargo";
+"template.outreach.field_purpose" = "Propósito";
+"template.outreach.field_value" = "Propuesta de valor";
+"template.dating.field_profile" = "Detalle de su perfil";
+"template.dating.field_interest" = "Interés en común";
+"template.caption.field_about" = "Foto / Publicación sobre";
+"template.caption.field_mood" = "Ambiente";
+"template.caption.field_platform" = "Plataforma";
+"template.rsvp.field_event" = "Evento";
+"template.rsvp.field_attending" = "Asistencia";
+"template.rsvp.field_message" = "Mensaje adicional";
+"template.congrats.field_person" = "Persona";
+"template.congrats.field_achievement" = "Logro";
+"template.congrats.field_note" = "Nota personal";

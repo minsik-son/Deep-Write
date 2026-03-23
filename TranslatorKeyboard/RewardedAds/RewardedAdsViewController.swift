@@ -4,6 +4,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
 
     // MARK: - Properties
 
+    var onDismiss: (() -> Void)?
     private let mode: RewardMode
     private var maxAds: Int {
         mode == .compose ? FeatureGate.shared.maxDailyComposeAds : FeatureGate.shared.maxDailyRewardedAds
@@ -134,6 +135,11 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         updateUI()
         AdManager.shared.delegate = self
         AdManager.shared.loadRewardedAd()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        onDismiss?()
     }
 
     // MARK: - Layout

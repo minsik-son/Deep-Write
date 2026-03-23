@@ -53,6 +53,10 @@ class AIWriterViewController: UIViewController {
     private var toggleBottomConstraint: NSLayoutConstraint!
     private var containerBottomConstraint: NSLayoutConstraint!
 
+    // Dynamic Height Properties (v6)
+    private var inputTextViewHeightConstraint: NSLayoutConstraint!
+    private var contextTextViewHeightConstraint: NSLayoutConstraint!
+
     // Option card value labels
     private let langValueLabel = UILabel()
     private let toneValueLabel = UILabel()
@@ -66,6 +70,19 @@ class AIWriterViewController: UIViewController {
     private let generateButton = UIButton(type: .system)
     private let loadingIndicator = UIActivityIndicatorView(style: .medium)
     private var inputContainer: UIView!
+
+    // Clear buttons for text views
+    private weak var inputClearButton: UIButton?
+    private weak var contextClearButton: UIButton?
+
+    // Template Form Properties
+    private var activeTemplate: AIWriterTemplate?
+    private var templateFormContainer: UIView?
+    private var templateFieldTextFields: [UITextField] = []
+
+    // ★ v7: 폼 카드 활성 시 contextToggle 연결용 제약
+    private var contextToggleToInputBottomConstraint: NSLayoutConstraint?
+    private var contextToggleToFormCardBottomConstraint: NSLayoutConstraint?
 
     // Output language data (Feature 5)
     private struct OutputLanguageItem {
@@ -143,12 +160,18 @@ class AIWriterViewController: UIViewController {
 
     // Result carousel
     private let resultScrollView = UIScrollView()
+    private var resultScrollViewHeightConstraint: NSLayoutConstraint?
     private var resultCards: [UIView] = []
     private var resultLabels: [UILabel] = []
     private let pageControl = UIPageControl()
 
     // Bottom bar
     private let bottomBar = UIView()
+
+    // Clipboard banner localized controls
+    private let clipboardBannerTextLabel = UILabel()
+    private let clipboardBannerUseButton = UIButton(type: .system)
+    private let clipboardBannerDismissButton = UIButton(type: .system)
 
     // Clipboard banner
     private lazy var clipboardBanner: UIView = {
@@ -163,40 +186,37 @@ class AIWriterViewController: UIViewController {
         icon.font = .systemFont(ofSize: 16)
         icon.translatesAutoresizingMaskIntoConstraints = false
 
-        let label = UILabel()
-        label.text = L("ai_writer.clipboard_suggest")
-        label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.textColor = AppColors.text
-        label.translatesAutoresizingMaskIntoConstraints = false
+        clipboardBannerTextLabel.text = L("ai_writer.clipboard_suggest")
+        clipboardBannerTextLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        clipboardBannerTextLabel.textColor = AppColors.text
+        clipboardBannerTextLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        let useBtn = UIButton(type: .system)
-        useBtn.setTitle(L("ai_writer.clipboard_use"), for: .normal)
-        useBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        useBtn.setTitleColor(AppColors.accent, for: .normal)
-        useBtn.addTarget(self, action: #selector(acceptClipboard), for: .touchUpInside)
-        useBtn.translatesAutoresizingMaskIntoConstraints = false
+        clipboardBannerUseButton.setTitle(L("ai_writer.clipboard_use"), for: .normal)
+        clipboardBannerUseButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        clipboardBannerUseButton.setTitleColor(AppColors.accent, for: .normal)
+        clipboardBannerUseButton.addTarget(self, action: #selector(acceptClipboard), for: .touchUpInside)
+        clipboardBannerUseButton.translatesAutoresizingMaskIntoConstraints = false
 
-        let dismissBtn = UIButton(type: .system)
-        dismissBtn.setTitle(L("ai_writer.clipboard_dismiss"), for: .normal)
-        dismissBtn.titleLabel?.font = .systemFont(ofSize: 13)
-        dismissBtn.setTitleColor(AppColors.textMuted, for: .normal)
-        dismissBtn.addTarget(self, action: #selector(dismissClipboard), for: .touchUpInside)
-        dismissBtn.translatesAutoresizingMaskIntoConstraints = false
+        clipboardBannerDismissButton.setTitle(L("ai_writer.clipboard_dismiss"), for: .normal)
+        clipboardBannerDismissButton.titleLabel?.font = .systemFont(ofSize: 13)
+        clipboardBannerDismissButton.setTitleColor(AppColors.textMuted, for: .normal)
+        clipboardBannerDismissButton.addTarget(self, action: #selector(dismissClipboard), for: .touchUpInside)
+        clipboardBannerDismissButton.translatesAutoresizingMaskIntoConstraints = false
 
         banner.addSubview(icon)
-        banner.addSubview(label)
-        banner.addSubview(useBtn)
-        banner.addSubview(dismissBtn)
+        banner.addSubview(clipboardBannerTextLabel)
+        banner.addSubview(clipboardBannerUseButton)
+        banner.addSubview(clipboardBannerDismissButton)
 
         NSLayoutConstraint.activate([
             icon.leadingAnchor.constraint(equalTo: banner.leadingAnchor, constant: 12),
             icon.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
-            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 8),
-            label.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
-            dismissBtn.trailingAnchor.constraint(equalTo: banner.trailingAnchor, constant: -12),
-            dismissBtn.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
-            useBtn.trailingAnchor.constraint(equalTo: dismissBtn.leadingAnchor, constant: -12),
-            useBtn.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
+            clipboardBannerTextLabel.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 8),
+            clipboardBannerTextLabel.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
+            clipboardBannerDismissButton.trailingAnchor.constraint(equalTo: banner.trailingAnchor, constant: -12),
+            clipboardBannerDismissButton.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
+            clipboardBannerUseButton.trailingAnchor.constraint(equalTo: clipboardBannerDismissButton.leadingAnchor, constant: -12),
+            clipboardBannerUseButton.centerYAnchor.constraint(equalTo: banner.centerYAnchor),
             banner.heightAnchor.constraint(equalToConstant: 44),
         ])
 
@@ -212,10 +232,12 @@ class AIWriterViewController: UIViewController {
         setupNavigation()
         setupUI()
         updateGenerateButton()
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        LocalizationManager.shared.reload()
         updateGenerateButton()
         checkClipboardForReply()
 
@@ -237,6 +259,10 @@ class AIWriterViewController: UIViewController {
         super.viewWillDisappear(animated)
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
     }
 
     // MARK: - Setup
@@ -309,7 +335,150 @@ class AIWriterViewController: UIViewController {
         view.endEditing(true)
     }
 
+    @objc private func handleLanguageChange() {
+        LocalizationManager.shared.reload()
+        rebuildLocalizedUI()
+    }
+
+    private func localizedToneDisplayName(for toneId: String) -> String {
+        if let item = toneItems.first(where: { $0.id == toneId }) {
+            return "\(item.emoji) \(L(item.nameKey))"
+        }
+        return toneId
+    }
+
+    private func localizedLengthDisplayName(for lengthId: String) -> String {
+        let lengths = [
+            "short": L("ai_writer.length.short"),
+            "medium": L("ai_writer.length.medium"),
+            "long": L("ai_writer.length.long")
+        ]
+        return lengths[lengthId] ?? lengthId
+    }
+
+    private func localizedOutputLanguageDisplayName(for code: String) -> String {
+        guard let lang = outputLanguages.first(where: { $0.code == code }) else { return code }
+        return lang.code == "auto" ? L("ai_writer.lang.auto") : lang.nativeName
+    }
+
+    private func applySelectedOutputLanguage(_ code: String) {
+        outputLanguage = code
+        langValueLabel.text = localizedOutputLanguageDisplayName(for: code)
+    }
+
+    private func updateLocalizedDynamicValues() {
+        navigationItem.title = L("ai_writer.title")
+        inputPlaceholderLabel.text = L("ai_writer.input_placeholder")
+        contextPlaceholderLabel.text = L("ai_writer.reply_context_placeholder")
+        clipboardBannerTextLabel.text = L("ai_writer.clipboard_suggest")
+        clipboardBannerUseButton.setTitle(L("ai_writer.clipboard_use"), for: .normal)
+        clipboardBannerDismissButton.setTitle(L("ai_writer.clipboard_dismiss"), for: .normal)
+
+        toneValueLabel.text = localizedToneDisplayName(for: selectedTone)
+        lengthValueLabel.text = localizedLengthDisplayName(for: selectedLength)
+        langValueLabel.text = localizedOutputLanguageDisplayName(for: outputLanguage)
+
+        if isContextExpanded {
+            let closeIcon = UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .medium))
+            contextToggleButton.setImage(closeIcon, for: .normal)
+            contextToggleButton.setTitle(" " + L("ai_writer.reply_close"), for: .normal)
+        } else {
+            let chatIcon = UIImage(systemName: "bubble.left", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .medium))
+            contextToggleButton.setImage(chatIcon, for: .normal)
+            contextToggleButton.setTitle(" " + L("ai_writer.reply_paste"), for: .normal)
+        }
+
+        updateGenerateButton()
+    }
+
+    private func rebuildLocalizedUI() {
+        let currentInputText = inputTextView.text
+        let currentContextText = contextTextView.text
+        let currentResults = resultLabels.compactMap { $0.text }
+        let currentPage = pageControl.currentPage
+
+        contentStack.arrangedSubviews.forEach {
+            contentStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+
+        resultCards.removeAll()
+        resultLabels.removeAll()
+        resultScrollView.subviews.forEach { $0.removeFromSuperview() }
+        resultScrollView.isHidden = true
+        pageControl.isHidden = true
+
+        setupInputSection()
+        setupTemplateSection()
+        setupOptionsCard()
+        setupResultArea()
+
+        inputTextView.text = currentInputText
+        contextTextView.text = currentContextText
+        inputPlaceholderLabel.isHidden = !(currentInputText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        contextPlaceholderLabel.isHidden = !(currentContextText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+
+        if isContextExpanded {
+            toggleBottomConstraint.isActive = false
+            containerBottomConstraint.isActive = true
+            contextContainer.isHidden = false
+        } else {
+            containerBottomConstraint.isActive = false
+            toggleBottomConstraint.isActive = true
+            contextContainer.isHidden = true
+        }
+
+        updateLocalizedDynamicValues()
+        updateCharacterCounter()
+        updateGenerateButtonState()
+        view.layoutIfNeeded()
+
+        if !currentResults.isEmpty {
+            displayResults(currentResults)
+            let page = min(currentPage, max(0, currentResults.count - 1))
+            let cardWidth = view.bounds.width - 56
+            pageControl.currentPage = page
+            resultScrollView.contentOffset = CGPoint(x: CGFloat(page) * (cardWidth + 8), y: 0)
+        }
+
+        checkClipboardForReply()
+        updateClearButtonVisibility()
+    }
+
     // MARK: - Keyboard Avoidance
+
+    // MARK: - Smart Scroll (v6)
+    private func scrollToCaretInTextView(_ textView: UITextView) {
+        guard scrollView.contentInset.bottom > 0 else { return }
+
+        guard let selectedRange = textView.selectedTextRange,
+              let end = Optional(selectedRange.end) else { return }
+        let caretRect = textView.caretRect(for: end)
+        guard !caretRect.isNull && !caretRect.isInfinite else { return }
+
+        let caretInScroll = textView.convert(caretRect, to: scrollView)
+
+        if let card = inputContainer {
+            let cardTopInScroll = card.convert(CGPoint.zero, to: scrollView).y
+            let visibleTop = scrollView.contentOffset.y
+            let visibleBottom = visibleTop + scrollView.bounds.height - scrollView.contentInset.bottom
+
+            if caretInScroll.maxY > visibleBottom - 20 || caretInScroll.minY < visibleTop + 10 {
+                let targetRect = caretInScroll.insetBy(dx: 0, dy: -30)
+                let maxAllowedOffset = cardTopInScroll - 10
+                let idealOffset = targetRect.minY - 60
+
+                if idealOffset > maxAllowedOffset {
+                    scrollView.setContentOffset(CGPoint(x: 0, y: maxAllowedOffset), animated: true)
+                } else {
+                    scrollView.scrollRectToVisible(targetRect, animated: true)
+                }
+            }
+        } else {
+            let targetRect = caretInScroll.insetBy(dx: 0, dy: -30)
+            scrollView.scrollRectToVisible(targetRect, animated: true)
+        }
+    }
 
     @objc private func keyboardWillShow(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
@@ -337,9 +506,8 @@ class AIWriterViewController: UIViewController {
                 activeTextView = nil
             }
 
-            if let textView = activeTextView, let container = textView.superview {
-                let rect = container.convert(container.bounds, to: self.scrollView)
-                self.scrollView.scrollRectToVisible(rect.insetBy(dx: 0, dy: -20), animated: true)
+            if let textView = activeTextView {
+                self.scrollToCaretInTextView(textView)
             }
         }
     }
@@ -391,6 +559,8 @@ class AIWriterViewController: UIViewController {
         inputTextView.textColor = AppColors.text
         inputTextView.tintColor = AppColors.accent
         inputTextView.delegate = self
+        inputTextView.isScrollEnabled = false
+        inputTextView.textContainer.lineFragmentPadding = 0
         inputTextView.translatesAutoresizingMaskIntoConstraints = false
 
         // Reply toggle button (Fix 2: SF Symbol + new text)
@@ -407,9 +577,22 @@ class AIWriterViewController: UIViewController {
         // Reply context container
         setupContextContainer()
 
+        // ★ 본문 전체 삭제 버튼 (우측 상단)
+        let inputClearButton = UIButton(type: .system)
+        inputClearButton.setImage(
+            UIImage(systemName: "xmark.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)),
+            for: .normal
+        )
+        inputClearButton.tintColor = AppColors.textMuted
+        inputClearButton.alpha = 0
+        inputClearButton.addTarget(self, action: #selector(clearInputText), for: .touchUpInside)
+        inputClearButton.translatesAutoresizingMaskIntoConstraints = false
+        self.inputClearButton = inputClearButton
+
         card.addSubview(headerStack)
         card.addSubview(inputTextView)
         card.addSubview(inputPlaceholderLabel)
+        card.addSubview(inputClearButton)
         card.addSubview(contextToggleButton)
         card.addSubview(contextContainer)
 
@@ -428,13 +611,26 @@ class AIWriterViewController: UIViewController {
             inputPlaceholderLabel.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor, constant: 5),
             inputPlaceholderLabel.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor, constant: -5),
 
-            contextToggleButton.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 4),
+            // Input clear button (v3 Fix 1)
+            inputClearButton.topAnchor.constraint(equalTo: inputTextView.topAnchor, constant: 4),
+            inputClearButton.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor, constant: 0),
+            inputClearButton.widthAnchor.constraint(equalToConstant: 28),
+            inputClearButton.heightAnchor.constraint(equalToConstant: 28),
+
             contextToggleButton.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
 
             contextContainer.topAnchor.constraint(equalTo: contextToggleButton.bottomAnchor, constant: 12),
             contextContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
             contextContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -18),
         ])
+
+        // ★ v7: contextToggle의 top을 프로퍼티로 관리 (템플릿 폼 카드 전환용)
+        contextToggleToInputBottomConstraint = contextToggleButton.topAnchor.constraint(equalTo: inputTextView.bottomAnchor, constant: 4)
+        contextToggleToInputBottomConstraint?.isActive = true
+
+        // v6: 명시적 height constraint (초기에는 비활성)
+        inputTextViewHeightConstraint = inputTextView.heightAnchor.constraint(equalToConstant: 300)
+        inputTextViewHeightConstraint.isActive = false
 
         // Fix 3: Constraint toggle for expand/collapse
         toggleBottomConstraint = contextToggleButton.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
@@ -449,6 +645,7 @@ class AIWriterViewController: UIViewController {
     }
 
     private func setupContextContainer() {
+        contextContainer.subviews.forEach { $0.removeFromSuperview() }
         contextContainer.backgroundColor = AppColors.bg
         contextContainer.layer.cornerRadius = 10
         contextContainer.isHidden = true
@@ -465,11 +662,26 @@ class AIWriterViewController: UIViewController {
         contextTextView.textColor = AppColors.text
         contextTextView.tintColor = AppColors.accent
         contextTextView.delegate = self
+        contextTextView.isScrollEnabled = false
+        contextTextView.textContainer.lineFragmentPadding = 0
         contextTextView.translatesAutoresizingMaskIntoConstraints = false
+
+        // ★ 답장 전체 삭제 버튼 (우측 상단)
+        let contextClearButton = UIButton(type: .system)
+        contextClearButton.setImage(
+            UIImage(systemName: "xmark.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)),
+            for: .normal
+        )
+        contextClearButton.tintColor = AppColors.textMuted
+        contextClearButton.alpha = 0
+        contextClearButton.addTarget(self, action: #selector(clearContextText), for: .touchUpInside)
+        contextClearButton.translatesAutoresizingMaskIntoConstraints = false
+        self.contextClearButton = contextClearButton
 
         contextContainer.addSubview(contextLabel)
         contextContainer.addSubview(contextTextView)
         contextContainer.addSubview(contextPlaceholderLabel)
+        contextContainer.addSubview(contextClearButton)
 
         NSLayoutConstraint.activate([
             contextLabel.topAnchor.constraint(equalTo: contextContainer.topAnchor, constant: 12),
@@ -485,7 +697,17 @@ class AIWriterViewController: UIViewController {
             contextPlaceholderLabel.topAnchor.constraint(equalTo: contextTextView.topAnchor, constant: 8),
             contextPlaceholderLabel.leadingAnchor.constraint(equalTo: contextTextView.leadingAnchor, constant: 5),
             contextPlaceholderLabel.trailingAnchor.constraint(equalTo: contextTextView.trailingAnchor, constant: -5),
+
+            // Context clear button (v3 Fix 1)
+            contextClearButton.topAnchor.constraint(equalTo: contextTextView.topAnchor, constant: 4),
+            contextClearButton.trailingAnchor.constraint(equalTo: contextTextView.trailingAnchor, constant: 0),
+            contextClearButton.widthAnchor.constraint(equalToConstant: 28),
+            contextClearButton.heightAnchor.constraint(equalToConstant: 28),
         ])
+
+        // v6: 명시적 height constraint (초기에는 비활성)
+        contextTextViewHeightConstraint = contextTextView.heightAnchor.constraint(equalToConstant: 200)
+        contextTextViewHeightConstraint.isActive = false
     }
 
     // MARK: - Template Section
@@ -554,8 +776,7 @@ class AIWriterViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         let langRow = makeOptionRow(
-            iconEmoji: "\u{1F310}",
-            iconBg: UIColor(red: 0.91, green: 0.95, blue: 1.0, alpha: 1),
+            iconAssetName: "AIWriterOutputLanguageIcon",
             title: L("ai_writer.lang.section_title"),
             valueLabel: langValueLabel,
             defaultValue: L("ai_writer.lang.auto"),
@@ -563,8 +784,7 @@ class AIWriterViewController: UIViewController {
         )
 
         let toneRow = makeOptionRow(
-            iconEmoji: "\u{1F3AD}",
-            iconBg: UIColor(red: 1.0, green: 0.95, blue: 0.91, alpha: 1),
+            iconAssetName: "AIWriterToneIcon",
             title: L("ai_writer.tone_title"),
             valueLabel: toneValueLabel,
             defaultValue: "\u{1F4AC} " + L("tone.casual"),
@@ -572,8 +792,7 @@ class AIWriterViewController: UIViewController {
         )
 
         let lengthRow = makeOptionRow(
-            iconEmoji: "\u{1F4CF}",
-            iconBg: UIColor(red: 0.91, green: 1.0, blue: 0.91, alpha: 1),
+            iconAssetName: "AIWriterLengthIcon",
             title: L("ai_writer.length_title"),
             valueLabel: lengthValueLabel,
             defaultValue: L("ai_writer.length.medium"),
@@ -600,30 +819,42 @@ class AIWriterViewController: UIViewController {
         contentStack.addArrangedSubview(card)
     }
 
-    private func makeOptionRow(iconEmoji: String, iconBg: UIColor, title: String, valueLabel: UILabel, defaultValue: String, action: Selector) -> UIView {
+    private func makeAIWriterOptionIconBackgroundColor() -> UIColor {
+        UIColor { traitCollection in
+            if traitCollection.userInterfaceStyle == .dark {
+                return UIColor(red: 44/255, green: 44/255, blue: 46/255, alpha: 1.0)
+            } else {
+                return UIColor(red: 242/255, green: 243/255, blue: 245/255, alpha: 1.0)
+            }
+        }
+    }
+
+    private func makeOptionRow(iconAssetName: String, title: String, valueLabel: UILabel, defaultValue: String, action: Selector) -> UIView {
         let row = UIView()
         row.translatesAutoresizingMaskIntoConstraints = false
-        row.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        row.heightAnchor.constraint(equalToConstant: 60).isActive = true
 
         let tap = UITapGestureRecognizer(target: self, action: action)
         row.addGestureRecognizer(tap)
 
         let iconContainer = UIView()
-        iconContainer.backgroundColor = iconBg
-        iconContainer.layer.cornerRadius = 10
+        iconContainer.backgroundColor = makeAIWriterOptionIconBackgroundColor()
+        iconContainer.layer.cornerRadius = 12
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
 
-        let iconLabel = UILabel()
-        iconLabel.text = iconEmoji
-        iconLabel.font = .systemFont(ofSize: 18)
-        iconLabel.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.addSubview(iconLabel)
+        let iconImage = UIImageView()
+        iconImage.image = UIImage(named: iconAssetName)?.withRenderingMode(.alwaysOriginal)
+        iconImage.contentMode = .scaleAspectFit
+        iconImage.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.addSubview(iconImage)
 
         NSLayoutConstraint.activate([
-            iconContainer.widthAnchor.constraint(equalToConstant: 36),
-            iconContainer.heightAnchor.constraint(equalToConstant: 36),
-            iconLabel.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            iconLabel.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            iconContainer.widthAnchor.constraint(equalToConstant: 40),
+            iconContainer.heightAnchor.constraint(equalToConstant: 40),
+            iconImage.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            iconImage.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            iconImage.widthAnchor.constraint(equalToConstant: 24),
+            iconImage.heightAnchor.constraint(equalToConstant: 24),
         ])
 
         let titleLabel = UILabel()
@@ -743,9 +974,9 @@ class AIWriterViewController: UIViewController {
         contentStack.addArrangedSubview(resultScrollView)
         contentStack.addArrangedSubview(pageControl)
 
-        NSLayoutConstraint.activate([
-            resultScrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
-        ])
+        // ★ v8: 동적 높이 제약 (displayResults에서 갱신)
+        resultScrollViewHeightConstraint = resultScrollView.heightAnchor.constraint(equalToConstant: 180)
+        resultScrollViewHeightConstraint?.isActive = true
     }
 
     private func displayResults(_ messages: [String]) {
@@ -868,9 +1099,23 @@ class AIWriterViewController: UIViewController {
         pageControl.currentPage = 0
         pageControl.isHidden = messages.count <= 1
         resultScrollView.isHidden = false
+
+        // ★ v8: 카드 intrinsic height 계산 후 scrollView 높이 동적 설정
+        resultScrollView.layoutIfNeeded()
+        var maxCardHeight: CGFloat = 180  // 최소 높이
+        for card in resultCards {
+            let cardHeight = card.systemLayoutSizeFitting(
+                CGSize(width: cardWidth, height: UIView.layoutFittingCompressedSize.height),
+                withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel
+            ).height
+            maxCardHeight = max(maxCardHeight, cardHeight)
+        }
+        resultScrollViewHeightConstraint?.constant = maxCardHeight
+
         resultScrollView.contentSize = CGSize(
             width: CGFloat(messages.count) * (cardWidth + 8),
-            height: resultScrollView.bounds.height
+            height: maxCardHeight
         )
     }
 
@@ -915,6 +1160,7 @@ class AIWriterViewController: UIViewController {
             content.topAnchor.constraint(equalTo: handle.bottomAnchor, constant: 8),
             content.leadingAnchor.constraint(equalTo: sheet.leadingAnchor),
             content.trailingAnchor.constraint(equalTo: sheet.trailingAnchor),
+            content.bottomAnchor.constraint(equalTo: sheet.safeAreaLayoutGuide.bottomAnchor),
         ])
 
         sheet.transform = CGAffineTransform(translationX: 0, y: height + view.safeAreaInsets.bottom)
@@ -951,6 +1197,7 @@ class AIWriterViewController: UIViewController {
     // MARK: - Tone Bottom Sheet (3x4 grid)
 
     @objc private func openToneSheet() {
+        view.endEditing(true)  // ★ v8: 키보드 해제
         let content = UIView()
         content.tag = 100
 
@@ -1010,10 +1257,12 @@ class AIWriterViewController: UIViewController {
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
             title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
+            title.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
 
             grid.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 12),
             grid.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
             grid.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
+            grid.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -24),
         ])
 
         presentBottomSheet(content: content, height: 380)
@@ -1027,7 +1276,24 @@ class AIWriterViewController: UIViewController {
             toneValueLabel.text = "\(item.emoji) \(L(item.nameKey))"
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        // ★ 선택 피드백: 모든 버튼 리셋 후 선택 항목 하이라이트
+        if let grid = sender.superview?.superview { // rowStack → grid
+            for case let rowStack as UIStackView in grid.subviews {
+                for case let btn as UIButton in rowStack.arrangedSubviews {
+                    UIView.animate(withDuration: 0.2) {
+                        btn.backgroundColor = (btn === sender)
+                            ? AppColors.accent.withAlphaComponent(0.08)
+                            : AppColors.bg
+                        btn.layer.borderColor = (btn === sender)
+                            ? AppColors.accent.cgColor
+                            : AppColors.bg.cgColor
+                        btn.setTitleColor((btn === sender) ? AppColors.accent : AppColors.textSub, for: .normal)
+                    }
+                }
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             self.dismissSheet()
         }
     }
@@ -1035,6 +1301,7 @@ class AIWriterViewController: UIViewController {
     // MARK: - Length Bottom Sheet
 
     @objc private func openLengthSheet() {
+        view.endEditing(true)  // ★ v8: 키보드 해제
         let content = UIView()
         content.tag = 200
 
@@ -1070,10 +1337,12 @@ class AIWriterViewController: UIViewController {
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
             title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
+            title.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
 
             stack.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
             stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -24),
         ])
 
         presentBottomSheet(content: content, height: 300)
@@ -1154,7 +1423,8 @@ class AIWriterViewController: UIViewController {
     }
 
     @objc private func lengthSheetSelected(_ sender: UITapGestureRecognizer) {
-        guard let id = sender.view?.accessibilityIdentifier else { return }
+        guard let selectedRow = sender.view,
+              let id = selectedRow.accessibilityIdentifier else { return }
         selectedLength = id
 
         let lengths = ["short": L("ai_writer.length.short"),
@@ -1162,7 +1432,47 @@ class AIWriterViewController: UIViewController {
                        "long": L("ai_writer.length.long")]
         lengthValueLabel.text = lengths[id] ?? id
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        // ★ 선택 피드백: 모든 행 리셋 후 선택 항목 하이라이트
+        if let stack = selectedRow.superview as? UIStackView {
+            for row in stack.arrangedSubviews {
+                let isSelected = (row === selectedRow)
+                UIView.animate(withDuration: 0.2) {
+                    row.backgroundColor = isSelected
+                        ? AppColors.accent.withAlphaComponent(0.08)
+                        : AppColors.bg
+                    row.layer.borderColor = isSelected
+                        ? AppColors.accent.cgColor
+                        : AppColors.bg.cgColor
+                }
+                // 체크마크 업데이트
+                if let checkView = row.subviews.last {
+                    UIView.animate(withDuration: 0.2) {
+                        checkView.backgroundColor = isSelected ? AppColors.accent : .clear
+                        checkView.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+                    }
+                    if isSelected && checkView.subviews.isEmpty {
+                        let checkmark = UIImageView(image: UIImage(systemName: "checkmark"))
+                        checkmark.tintColor = .white
+                        checkmark.translatesAutoresizingMaskIntoConstraints = false
+                        checkView.addSubview(checkmark)
+                        NSLayoutConstraint.activate([
+                            checkmark.centerXAnchor.constraint(equalTo: checkView.centerXAnchor),
+                            checkmark.centerYAnchor.constraint(equalTo: checkView.centerYAnchor),
+                            checkmark.widthAnchor.constraint(equalToConstant: 10),
+                            checkmark.heightAnchor.constraint(equalToConstant: 10),
+                        ])
+                    } else if !isSelected {
+                        checkView.subviews.forEach { $0.removeFromSuperview() }
+                    }
+                }
+                // 이름 라벨 색상 업데이트
+                if let nameLabel = row.subviews.first(where: { ($0 as? UILabel)?.font.pointSize == 15 }) as? UILabel {
+                    nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+                }
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             self.dismissSheet()
         }
     }
@@ -1170,93 +1480,351 @@ class AIWriterViewController: UIViewController {
     // MARK: - Language Bottom Sheet
 
     @objc private func openLangSheet() {
-        let content = UIView()
-        content.tag = 300
+        view.endEditing(true)  // ★ v8: 키보드 해제
+        let selectionViewController = UIViewController()
+        selectionViewController.view.backgroundColor = AppColors.bg
+        selectionViewController.title = L("ai_writer.lang.select_title")
 
-        let title = UILabel()
-        title.text = L("ai_writer.lang.select_title")
-        title.font = .systemFont(ofSize: 17, weight: .bold)
-        title.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(title)
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = AppColors.bg
+        appearance.titleTextAttributes = [.foregroundColor: AppColors.text]
+        appearance.largeTitleTextAttributes = [.foregroundColor: AppColors.text]
+
+        let navigationController = UINavigationController(rootViewController: selectionViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        navigationController.navigationBar.prefersLargeTitles = false
+        navigationController.navigationBar.tintColor = AppColors.accent
+        navigationController.navigationBar.standardAppearance = appearance
+        navigationController.navigationBar.scrollEdgeAppearance = appearance
+
+        selectionViewController.navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: L("common.cancel"),
+            primaryAction: UIAction { [weak navigationController] _ in
+                navigationController?.dismiss(animated: true)
+            }
+        )
+
+        let scrollView = UIScrollView()
+        scrollView.alwaysBounceVertical = true
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        selectionViewController.view.addSubview(scrollView)
+
+        let content = UIView()
+        content.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(content)
 
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 4
+        stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(stack)
 
         for lang in outputLanguages {
-            let displayName = lang.code == "auto"
-                ? L("ai_writer.lang.auto")
-                : lang.nativeName
             let isSelected = lang.code == outputLanguage
-
-            let row = UIView()
+            let displayName = localizedOutputLanguageDisplayName(for: lang.code)
+            let row = UIControl()
+            row.backgroundColor = AppColors.card
+            row.layer.cornerRadius = 18
+            row.layer.borderWidth = 1
+            row.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
             row.translatesAutoresizingMaskIntoConstraints = false
-            row.heightAnchor.constraint(equalToConstant: 48).isActive = true
-            row.accessibilityIdentifier = lang.code
-            let tap = UITapGestureRecognizer(target: self, action: #selector(langSheetSelected(_:)))
-            row.addGestureRecognizer(tap)
+            row.heightAnchor.constraint(equalToConstant: 60).isActive = true
+
+            let rowAction = UIAction { [weak self, weak navigationController] _ in
+                self?.applySelectedOutputLanguage(lang.code)
+                navigationController?.dismiss(animated: true)
+            }
+            row.addAction(rowAction, for: .touchUpInside)
 
             let flagLabel = UILabel()
             flagLabel.text = lang.flag
-            flagLabel.font = .systemFont(ofSize: 20)
+            flagLabel.font = .systemFont(ofSize: 22)
             flagLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let nameLabel = UILabel()
             nameLabel.text = displayName
-            nameLabel.font = .systemFont(ofSize: 15, weight: isSelected ? .semibold : .medium)
+            nameLabel.font = .systemFont(ofSize: 16, weight: isSelected ? .semibold : .medium)
             nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
             nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
+            let checkImage = UIImageView(image: UIImage(systemName: "checkmark"))
+            checkImage.tintColor = AppColors.accent
+            checkImage.isHidden = !isSelected
+            checkImage.translatesAutoresizingMaskIntoConstraints = false
+
             row.addSubview(flagLabel)
             row.addSubview(nameLabel)
-
-            if isSelected {
-                let check = UIImageView(image: UIImage(systemName: "checkmark"))
-                check.tintColor = AppColors.accent
-                check.translatesAutoresizingMaskIntoConstraints = false
-                row.addSubview(check)
-                NSLayoutConstraint.activate([
-                    check.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -20),
-                    check.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-                    check.widthAnchor.constraint(equalToConstant: 16),
-                ])
-            }
+            row.addSubview(checkImage)
 
             NSLayoutConstraint.activate([
                 flagLabel.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 20),
                 flagLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-                nameLabel.leadingAnchor.constraint(equalTo: flagLabel.trailingAnchor, constant: 12),
+
+                nameLabel.leadingAnchor.constraint(equalTo: flagLabel.trailingAnchor, constant: 14),
                 nameLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+                nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: checkImage.leadingAnchor, constant: -12),
+
+                checkImage.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -20),
+                checkImage.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+                checkImage.widthAnchor.constraint(equalToConstant: 18),
+                checkImage.heightAnchor.constraint(equalToConstant: 18),
             ])
 
             stack.addArrangedSubview(row)
         }
 
         NSLayoutConstraint.activate([
-            title.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
-            title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
-            stack.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 8),
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: selectionViewController.view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: selectionViewController.view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: selectionViewController.view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: selectionViewController.view.bottomAnchor),
+
+            content.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            content.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            content.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            content.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 20),
+            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -32),
         ])
 
-        presentBottomSheet(content: content, height: 500)
+        present(navigationController, animated: true)
     }
 
     @objc private func langSheetSelected(_ sender: UITapGestureRecognizer) {
-        guard let code = sender.view?.accessibilityIdentifier else { return }
-        outputLanguage = code
+        guard let selectedRow = sender.view,
+              let code = selectedRow.accessibilityIdentifier else { return }
+        applySelectedOutputLanguage(code)
 
-        if let lang = outputLanguages.first(where: { $0.code == code }) {
-            let displayName = lang.code == "auto" ? L("ai_writer.lang.auto") : lang.nativeName
-            langValueLabel.text = displayName
+        // ★ 선택 피드백: 모든 행 리셋 후 선택 항목 하이라이트
+        if let stack = selectedRow.superview as? UIStackView {
+            for row in stack.arrangedSubviews {
+                let isSelected = (row === selectedRow)
+
+                UIView.animate(withDuration: 0.2) {
+                    row.backgroundColor = isSelected
+                        ? AppColors.accent.withAlphaComponent(0.06)
+                        : .clear
+                }
+
+                row.subviews
+                    .filter { $0 is UIImageView && ($0 as? UIImageView)?.image == UIImage(systemName: "checkmark") }
+                    .forEach { $0.removeFromSuperview() }
+
+                if isSelected {
+                    let check = UIImageView(image: UIImage(systemName: "checkmark"))
+                    check.tintColor = AppColors.accent
+                    check.translatesAutoresizingMaskIntoConstraints = false
+                    row.addSubview(check)
+                    NSLayoutConstraint.activate([
+                        check.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -20),
+                        check.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+                        check.widthAnchor.constraint(equalToConstant: 16),
+                    ])
+                }
+
+                if let nameLabel = row.subviews.compactMap({ $0 as? UILabel }).first(where: { $0.font.pointSize == 15 }) {
+                    nameLabel.font = .systemFont(ofSize: 15, weight: isSelected ? .semibold : .medium)
+                    nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+                }
+            }
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            self.dismissSheet()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            self.dismiss(animated: true)
         }
+    }
+
+    // MARK: - Clear Text Actions
+
+    @objc private func clearInputText() {
+        inputTextView.text = ""
+        inputPlaceholderLabel.isHidden = false
+        updateCharacterCounter()
+        updateGenerateButtonState()
+        updateClearButtonVisibility()
+        // v6: 높이 리셋
+        inputTextView.isScrollEnabled = false
+        inputTextViewHeightConstraint.isActive = false
+    }
+
+    @objc private func clearContextText() {
+        contextTextView.text = ""
+        contextPlaceholderLabel.isHidden = false
+        updateClearButtonVisibility()
+        // v6: 높이 리셋
+        contextTextView.isScrollEnabled = false
+        contextTextViewHeightConstraint.isActive = false
+    }
+
+    private func updateClearButtonVisibility() {
+        let inputHasText = !(inputTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        let contextHasText = !(contextTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+
+        UIView.animate(withDuration: 0.15) {
+            self.inputClearButton?.alpha = inputHasText ? 1.0 : 0
+            self.contextClearButton?.alpha = contextHasText ? 1.0 : 0
+        }
+    }
+
+    // MARK: - Template Form Card
+
+    private func buildTemplateFormCard(for template: AIWriterTemplate) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        // ── 헤더: 이모지 + 템플릿 이름 ──
+        let headerLabel = UILabel()
+        headerLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerLabel.text = "\(template.emoji) \(L(template.nameKey))"
+        headerLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        headerLabel.textColor = AppColors.text
+        container.addSubview(headerLabel)
+
+        // ── 구분선 ──
+        let separator = UIView()
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.backgroundColor = AppColors.border
+        container.addSubview(separator)
+
+        NSLayoutConstraint.activate([
+            headerLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+            headerLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            headerLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+
+            separator.topAnchor.constraint(equalTo: headerLabel.bottomAnchor, constant: 12),
+            separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            separator.heightAnchor.constraint(equalToConstant: 1),
+        ])
+
+        // ── 필드들 ──
+        templateFieldTextFields.removeAll()
+        var previousAnchor = separator.bottomAnchor
+
+        for (index, field) in template.fields.enumerated() {
+            let label = UILabel()
+            label.translatesAutoresizingMaskIntoConstraints = false
+            let labelText = L(field.labelKey)
+            if !field.required {
+                label.text = "\(labelText) \(L("template.form.optional"))"
+            } else {
+                label.text = labelText
+            }
+            label.font = .systemFont(ofSize: 13, weight: .medium)
+            label.textColor = AppColors.textSub
+            container.addSubview(label)
+
+            let textField = UITextField()
+            textField.translatesAutoresizingMaskIntoConstraints = false
+            textField.font = .systemFont(ofSize: 15)
+            textField.textColor = AppColors.text
+            textField.tintColor = AppColors.accent
+            textField.backgroundColor = AppColors.bg
+            textField.layer.cornerRadius = 10
+            textField.layer.borderWidth = 1
+            textField.layer.borderColor = AppColors.border.cgColor
+            textField.tag = index
+            textField.delegate = self
+            textField.returnKeyType = (index < template.fields.count - 1) ? .next : .done
+            textField.addTarget(self, action: #selector(templateFieldChanged), for: .editingChanged)
+
+            let leftPadding = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 44))
+            textField.leftView = leftPadding
+            textField.leftViewMode = .always
+            let rightPadding = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 44))
+            textField.rightView = rightPadding
+            textField.rightViewMode = .always
+
+            textField.attributedPlaceholder = NSAttributedString(
+                string: labelText,
+                attributes: [.foregroundColor: AppColors.textMuted]
+            )
+
+            container.addSubview(textField)
+            templateFieldTextFields.append(textField)
+
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: previousAnchor, constant: 16),
+                label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+
+                textField.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 6),
+                textField.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                textField.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                textField.heightAnchor.constraint(equalToConstant: 44),
+            ])
+
+            previousAnchor = textField.bottomAnchor
+        }
+
+        // ── 템플릿 해제 버튼 ──
+        let clearButton = UIButton(type: .system)
+        clearButton.translatesAutoresizingMaskIntoConstraints = false
+        clearButton.setTitle("\u{2715} \(L("template.form.clear_template"))", for: .normal)
+        clearButton.setTitleColor(AppColors.textMuted, for: .normal)
+        clearButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+        clearButton.addTarget(self, action: #selector(clearTemplateTapped), for: .touchUpInside)
+        container.addSubview(clearButton)
+
+        NSLayoutConstraint.activate([
+            clearButton.topAnchor.constraint(equalTo: previousAnchor, constant: 16),
+            clearButton.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            clearButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4),
+        ])
+
+        return container
+    }
+
+    @objc private func clearTemplateTapped() {
+        activeTemplate = nil
+
+        // 1) 폼 카드 제거
+        templateFormContainer?.removeFromSuperview()
+        templateFormContainer = nil
+        templateFieldTextFields.removeAll()
+
+        // 2) ★ v7: contextToggle의 top 제약을 inputTextView.bottom으로 복원
+        contextToggleToFormCardBottomConstraint?.isActive = false
+        contextToggleToFormCardBottomConstraint = nil
+        contextToggleToInputBottomConstraint?.isActive = true
+
+        // 3) 자유입력 UI 복원
+        inputTextView.isHidden = false
+        inputTextView.text = ""
+        inputPlaceholderLabel.isHidden = false
+
+        // 4) 레이아웃 갱신
+        view.layoutIfNeeded()
+
+        updateGenerateButtonState()
+        updateCharacterCounter()
+        updateClearButtonVisibility()
+    }
+
+    @objc private func templateFieldChanged() {
+        updateGenerateButtonState()
+        updateCharacterCounter()
+    }
+
+    private func assembleTemplatePrompt(template: AIWriterTemplate) -> String {
+        var prompt = L(template.promptKey)
+
+        for (index, _) in template.fields.enumerated() {
+            let value = templateFieldTextFields[safe: index]?.text ?? ""
+            if !value.isEmpty {
+                if let range = prompt.range(of: "\\[.*?\\]", options: .regularExpression) {
+                    prompt = prompt.replacingCharacters(in: range, with: value)
+                }
+            }
+        }
+
+        return prompt
     }
 
     // MARK: - Context Actions
@@ -1293,9 +1861,46 @@ class AIWriterViewController: UIViewController {
 
     @objc private func templateTapped(_ sender: UIButton) {
         let template = aiWriterTemplates[sender.tag]
-        inputTextView.text = L(template.promptKey)
-        inputPlaceholderLabel.isHidden = true
+        activeTemplate = template
 
+        // 1) 기존 자유입력 UI 숨기기
+        inputTextView.isHidden = true
+        inputPlaceholderLabel.isHidden = true
+        inputClearButton?.alpha = 0
+
+        // 2) 기존 폼 카드 제거 및 제약 정리
+        //    (Template A → Template B 직접 전환 시에도 안전)
+        if templateFormContainer != nil {
+            templateFormContainer?.removeFromSuperview()
+            templateFormContainer = nil
+            contextToggleToFormCardBottomConstraint?.isActive = false
+            contextToggleToFormCardBottomConstraint = nil
+            // ★ inputBottom 복원을 건너뜀 — 바로 아래에서 새 formCard 제약으로 전환하므로 불필요
+        }
+
+        // 3) 새 폼 카드 생성
+        let formCard = buildTemplateFormCard(for: template)
+        templateFormContainer = formCard
+
+        // 4) inputTextView의 부모 컨테이너(card)에 추가
+        if let parentView = inputTextView.superview {
+            parentView.addSubview(formCard)
+
+            // formCard 위치: inputTextView와 같은 top/leading/trailing
+            NSLayoutConstraint.activate([
+                formCard.topAnchor.constraint(equalTo: inputTextView.topAnchor),
+                formCard.leadingAnchor.constraint(equalTo: inputTextView.leadingAnchor),
+                formCard.trailingAnchor.constraint(equalTo: inputTextView.trailingAnchor),
+            ])
+
+            // ★ v7 핵심: contextToggle의 top을 formCard.bottom으로 전환
+            //   순서 중요: 반드시 기존 제약 비활성화 → 새 제약 활성화
+            contextToggleToInputBottomConstraint?.isActive = false
+            contextToggleToFormCardBottomConstraint = contextToggleButton.topAnchor.constraint(equalTo: formCard.bottomAnchor, constant: 4)
+            contextToggleToFormCardBottomConstraint?.isActive = true
+        }
+
+        // 5) 톤 자동 설정
         if let toneIndex = toneItems.firstIndex(where: { $0.id == template.suggestedTone }) {
             selectedTone = template.suggestedTone
             if let item = toneItems[safe: toneIndex] {
@@ -1303,6 +1908,11 @@ class AIWriterViewController: UIViewController {
             }
         }
 
+        // 6) 레이아웃 갱신 후 첫 번째 필드에 포커스
+        view.layoutIfNeeded()
+        templateFieldTextFields.first?.becomeFirstResponder()
+
+        // 7) 버튼 상태 갱신
         updateGenerateButtonState()
         updateCharacterCounter()
     }
@@ -1310,7 +1920,18 @@ class AIWriterViewController: UIViewController {
     // MARK: - Generate Actions
 
     private func updateGenerateButtonState() {
-        let hasText = !(inputTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        let hasText: Bool
+
+        if let template = activeTemplate {
+            hasText = template.fields.enumerated().contains { index, field in
+                guard field.required else { return false }
+                let text = templateFieldTextFields[safe: index]?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                return !text.isEmpty
+            }
+        } else {
+            hasText = !(inputTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        }
+
         generateButton.alpha = hasText ? 1.0 : 0.4
         generateButton.isEnabled = hasText
     }
@@ -1355,8 +1976,16 @@ class AIWriterViewController: UIViewController {
     }
 
     @objc private func generateTapped() {
-        guard let prompt = inputTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !prompt.isEmpty else { return }
+        let promptText: String
+
+        if let template = activeTemplate {
+            promptText = assembleTemplatePrompt(template: template)
+        } else {
+            promptText = inputTextView.text ?? ""
+        }
+
+        let prompt = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prompt.isEmpty else { return }
         lastPrompt = prompt
         requestCompose(prompt: prompt)
     }
@@ -1366,6 +1995,9 @@ class AIWriterViewController: UIViewController {
         rewardVC.modalPresentationStyle = .pageSheet
         if let sheet = rewardVC.sheetPresentationController {
             sheet.detents = [.medium()]
+        }
+        rewardVC.onDismiss = { [weak self] in
+            self?.updateGenerateButton()
         }
         present(rewardVC, animated: true)
     }
@@ -1395,12 +2027,19 @@ class AIWriterViewController: UIViewController {
     // MARK: - Character Counter
 
     private func updateCharacterCounter() {
-        let count = inputTextView.text?.count ?? 0
+        let currentLength: Int
+        if let template = activeTemplate {
+            let assembled = assembleTemplatePrompt(template: template)
+            currentLength = assembled.count
+        } else {
+            currentLength = inputTextView.text?.count ?? 0
+        }
+
         let max = AppConstants.Limits.maxCharacters
-        charCountLabel.text = "\(count)/\(max)"
-        if count >= max {
+        charCountLabel.text = "\(currentLength)/\(max)"
+        if currentLength >= max {
             charCountLabel.textColor = .systemRed
-        } else if count >= max - 100 {
+        } else if currentLength >= max - 100 {
             charCountLabel.textColor = .systemOrange
         } else {
             charCountLabel.textColor = AppColors.textMuted
@@ -1446,6 +2085,7 @@ class AIWriterViewController: UIViewController {
             contextToggleButton.setTitle(" " + L("ai_writer.reply_close"), for: .normal)
         }
         dismissClipboard()
+        updateClearButtonVisibility()
     }
 
     @objc private func dismissClipboard() {
@@ -1516,7 +2156,7 @@ class AIWriterViewController: UIViewController {
 
         let langCode: String
         if capturedOutputLanguage == "auto" {
-            langCode = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.appLanguage) ?? "ko"
+            langCode = LocalizationManager.shared.currentLanguage.translationLanguageCode
         } else {
             langCode = capturedOutputLanguage
         }
@@ -1651,25 +2291,85 @@ extension AIWriterViewController: UITextViewDelegate {
             contextPlaceholderLabel.isHidden = !textView.text.isEmpty
         }
 
-        guard scrollView.contentInset.bottom > 0, let container = textView.superview else { return }
-
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let rect = container.convert(container.bounds, to: self.scrollView)
-            self.scrollView.scrollRectToVisible(rect.insetBy(dx: 0, dy: -20), animated: true)
+            self.scrollToCaretInTextView(textView)
         }
     }
 
     func textViewDidChange(_ textView: UITextView) {
         if textView === inputTextView {
+            // ★ v7: 템플릿 폼 활성 시 inputTextView 높이 관리 건너뜀
+            if inputTextView.isHidden { return }
             if let text = textView.text, text.count > AppConstants.Limits.maxCharacters {
                 textView.text = String(text.prefix(AppConstants.Limits.maxCharacters))
             }
             updateGenerateButtonState()
             updateCharacterCounter()
             inputPlaceholderLabel.isHidden = !textView.text.isEmpty
+
+            // v6: 안정적 동적 높이 — 명시적 constraint
+            let maxHeight: CGFloat = 300
+            let measuredWidth = textView.bounds.width > 0 ? textView.bounds.width : textView.frame.width
+            let fittingSize = textView.sizeThatFits(CGSize(width: measuredWidth, height: .greatestFiniteMagnitude))
+
+            if fittingSize.height > maxHeight {
+                if !textView.isScrollEnabled {
+                    textView.isScrollEnabled = true
+                }
+                if !inputTextViewHeightConstraint.isActive {
+                    inputTextViewHeightConstraint.constant = maxHeight
+                    inputTextViewHeightConstraint.isActive = true
+                }
+                DispatchQueue.main.async {
+                    let caretRect = textView.caretRect(for: textView.selectedTextRange?.end ?? textView.endOfDocument)
+                    textView.scrollRectToVisible(caretRect.insetBy(dx: 0, dy: -4), animated: false)
+                }
+            } else {
+                if textView.isScrollEnabled {
+                    textView.isScrollEnabled = false
+                    textView.invalidateIntrinsicContentSize()
+                }
+                if inputTextViewHeightConstraint.isActive {
+                    inputTextViewHeightConstraint.isActive = false
+                }
+            }
+
+            view.layoutIfNeeded()
+
         } else if textView === contextTextView {
             contextPlaceholderLabel.isHidden = !textView.text.isEmpty
+
+            // v6: 안정적 동적 높이 — contextTextView
+            let maxHeight: CGFloat = 200
+            let measuredWidth = textView.bounds.width > 0 ? textView.bounds.width : textView.frame.width
+            let fittingSize = textView.sizeThatFits(CGSize(width: measuredWidth, height: .greatestFiniteMagnitude))
+
+            if fittingSize.height > maxHeight {
+                if !textView.isScrollEnabled {
+                    textView.isScrollEnabled = true
+                }
+                if !contextTextViewHeightConstraint.isActive {
+                    contextTextViewHeightConstraint.constant = maxHeight
+                    contextTextViewHeightConstraint.isActive = true
+                }
+                DispatchQueue.main.async {
+                    let caretRect = textView.caretRect(for: textView.selectedTextRange?.end ?? textView.endOfDocument)
+                    textView.scrollRectToVisible(caretRect.insetBy(dx: 0, dy: -4), animated: false)
+                }
+            } else {
+                if textView.isScrollEnabled {
+                    textView.isScrollEnabled = false
+                    textView.invalidateIntrinsicContentSize()
+                }
+                if contextTextViewHeightConstraint.isActive {
+                    contextTextViewHeightConstraint.isActive = false
+                }
+            }
+
+            view.layoutIfNeeded()
         }
+
+        updateClearButtonVisibility()
     }
 
     func textViewDidEndEditing(_ textView: UITextView) {
@@ -1678,6 +2378,23 @@ extension AIWriterViewController: UITextViewDelegate {
         } else if textView === contextTextView {
             contextPlaceholderLabel.isHidden = !textView.text.isEmpty
         }
+    }
+}
+
+// MARK: - UITextFieldDelegate (Template Form)
+
+extension AIWriterViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if activeTemplate != nil {
+            let currentIndex = textField.tag
+            if currentIndex < templateFieldTextFields.count - 1 {
+                templateFieldTextFields[currentIndex + 1].becomeFirstResponder()
+            } else {
+                textField.resignFirstResponder()
+            }
+            return false
+        }
+        return true
     }
 }
 

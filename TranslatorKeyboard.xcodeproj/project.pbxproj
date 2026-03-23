@@ -23,8 +23,8 @@
 		3B8365582F6B8BF300E27AF8 /* DisplayLinkProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */; };
 		3B89DA192F6F1FFD00D2D4F9 /* SnowfallSoftView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA182F6F1FFD00D2D4F9 /* SnowfallSoftView.swift */; };
 		3B89DA1D2F7116F800D2D4F9 /* ComposeHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA1C2F7116F800D2D4F9 /* ComposeHistoryViewController.swift */; };
-		3B89DA1E2F7116F800D2D4F9 /* AIWriterTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA1A2F7116F800D2D4F9 /* AIWriterTemplates.swift */; };
 		3B89DA1F2F7116F800D2D4F9 /* ComposeHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA1B2F7116F800D2D4F9 /* ComposeHistoryManager.swift */; };
+		3B89DA212F71DB4000D2D4F9 /* AIWriterTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -178,9 +178,9 @@
 		3B8365542F68F46500E27AF8 /* WeakProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeakProxy.swift; sourceTree = "<group>"; };
 		3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkProxy.swift; sourceTree = "<group>"; };
 		3B89DA182F6F1FFD00D2D4F9 /* SnowfallSoftView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowfallSoftView.swift; sourceTree = "<group>"; };
-		3B89DA1A2F7116F800D2D4F9 /* AIWriterTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWriterTemplates.swift; sourceTree = "<group>"; };
 		3B89DA1B2F7116F800D2D4F9 /* ComposeHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeHistoryManager.swift; sourceTree = "<group>"; };
 		3B89DA1C2F7116F800D2D4F9 /* ComposeHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeHistoryViewController.swift; sourceTree = "<group>"; };
+		3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWriterTemplates.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -312,7 +312,7 @@
 		4230CE9937E4FE53729BBD96 /* TranslatorKeyboard */ = {
 			isa = PBXGroup;
 			children = (
-				3B89DA1A2F7116F800D2D4F9 /* AIWriterTemplates.swift */,
+				3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */,
 				3B89DA1B2F7116F800D2D4F9 /* ComposeHistoryManager.swift */,
 				3B89DA1C2F7116F800D2D4F9 /* ComposeHistoryViewController.swift */,
 				9827FE972061CCA1198DF847 /* TranslatorKeyboard.entitlements */,
@@ -721,7 +721,6 @@
 				1F142C55559956B546EB2E1C /* AdManager.swift in Sources */,
 				CB01AA11BB22CC33DD440002 /* ClipboardItem.swift in Sources */,
 				3B89DA1D2F7116F800D2D4F9 /* ComposeHistoryViewController.swift in Sources */,
-				3B89DA1E2F7116F800D2D4F9 /* AIWriterTemplates.swift in Sources */,
 				3B89DA1F2F7116F800D2D4F9 /* ComposeHistoryManager.swift in Sources */,
 				E3E121B856F4EDFFEA9FD6A3 /* AppDelegate.swift in Sources */,
 				A82858BCBAD76DAC46CD2457 /* AppGroupManager.swift in Sources */,
@@ -757,6 +756,7 @@
 				AA00BB11CC22DD33EE22000A /* AppColors.swift in Sources */,
 				AA00BB11CC22DD33EE22000B /* HistoryItem.swift in Sources */,
 				AA00BB11CC22DD33EE22000C /* HistoryManager.swift in Sources */,
+				3B89DA212F71DB4000D2D4F9 /* AIWriterTemplates.swift in Sources */,
 				AA00BB11CC22DD33EE22000D /* StatsManager.swift in Sources */,
 				AA00BB11CC22DD33EE22000E /* CompositionSessionManager.swift in Sources */,
 				66DB83ECA2F043B990BE945B /* FeatureGate.swift in Sources */,

@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "Welche Nachricht soll ich schreiben?";
+"ai_writer.input_placeholder" = "Schreibe, was du sagen möchtest";
 "ai_writer.tone_title" = "Ton";
 "ai_writer.length_title" = "Länge";
 "ai_writer.tone_select_title" = "Ton auswählen";
 "ai_writer.length_select_title" = "Länge auswählen";
+"ai_writer.reply_paste" = "Auf Nachricht antworten";
+"ai_writer.reply_context_placeholder" = "Füge die erhaltene Nachricht hier ein";
 "ai_writer.length.short_desc" = "1-2 Sätze, nur das Wesentliche";
 "ai_writer.length.medium_desc" = "3-4 Sätze, gute Details";
 "ai_writer.length.long_desc" = "Ganzer Absatz, umfassend";
 "ai_writer.result_label" = "Von KI verfasste Nachricht";
+
+/* Template Form Fields */
+"template.form.clear_template" = "Vorlage entfernen";
+"template.form.optional" = "(optional)";
+"template.job_reply.field_key_points" = "Kernpunkte";
+"template.meeting.field_original_time" = "Ursprüngliche Zeit";
+"template.meeting.field_new_time" = "Gewünschte neue Zeit";
+"template.meeting.field_reason" = "Grund";
+"template.apology.field_what_happened" = "Was passiert ist";
+"template.apology.field_convey" = "Was Sie ausdrücken möchten";
+"template.thankyou.field_what_they_did" = "Wofür Sie danken";
+"template.thankyou.field_detail" = "Konkretes Detail";
+"template.birthday.field_person" = "Person / Beziehung";
+"template.birthday.field_personal_touch" = "Persönliche Note";
+"template.complaint.field_issue" = "Problem";
+"template.complaint.field_target" = "Firma / Person";
+"template.complaint.field_outcome" = "Gewünschtes Ergebnis";
+"template.followup.field_previous" = "Vorheriges Gespräch";
+"template.followup.field_topic" = "Thema";
+"template.followup.field_next_steps" = "Was Sie brauchen";
+"template.outreach.field_person" = "Person / Position";
+"template.outreach.field_purpose" = "Zweck";
+"template.outreach.field_value" = "Wertangebot";
+"template.dating.field_profile" = "Detail aus dem Profil";
+"template.dating.field_interest" = "Gemeinsames Interesse";
+"template.caption.field_about" = "Foto / Beitrag über";
+"template.caption.field_mood" = "Stimmung";
+"template.caption.field_platform" = "Plattform";
+"template.rsvp.field_event" = "Veranstaltung";
+"template.rsvp.field_attending" = "Teilnahme";
+"template.rsvp.field_message" = "Zusätzliche Nachricht";
+"template.congrats.field_person" = "Person";
+"template.congrats.field_achievement" = "Leistung";
+"template.congrats.field_note" = "Persönliche Anmerkung";

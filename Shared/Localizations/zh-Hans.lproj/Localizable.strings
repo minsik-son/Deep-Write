@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "需要写什么消息？";
+"ai_writer.input_placeholder" = "输入你想表达的内容";
 "ai_writer.tone_title" = "语气";
 "ai_writer.length_title" = "长度";
 "ai_writer.tone_select_title" = "选择语气";
 "ai_writer.length_select_title" = "选择长度";
+"ai_writer.reply_paste" = "回复消息";
+"ai_writer.reply_context_placeholder" = "将收到的消息粘贴到这里";
 "ai_writer.length.short_desc" = "1-2句话，简明扼要";
 "ai_writer.length.medium_desc" = "3-4句话，适度详细";
 "ai_writer.length.long_desc" = "完整段落，详细全面";
 "ai_writer.result_label" = "AI生成的消息";
+
+/* Template Form Fields */
+"template.form.clear_template" = "取消模板";
+"template.form.optional" = "(选填)";
+"template.job_reply.field_key_points" = "要点";
+"template.meeting.field_original_time" = "原定时间";
+"template.meeting.field_new_time" = "希望调整为";
+"template.meeting.field_reason" = "原因";
+"template.apology.field_what_happened" = "发生了什么";
+"template.apology.field_convey" = "想要表达的";
+"template.thankyou.field_what_they_did" = "感谢的事";
+"template.thankyou.field_detail" = "具体细节";
+"template.birthday.field_person" = "对象 / 关系";
+"template.birthday.field_personal_touch" = "个人寄语";
+"template.complaint.field_issue" = "问题";
+"template.complaint.field_target" = "公司 / 对象";
+"template.complaint.field_outcome" = "期望结果";
+"template.followup.field_previous" = "之前的对话";
+"template.followup.field_topic" = "主题";
+"template.followup.field_next_steps" = "需要的内容";
+"template.outreach.field_person" = "对象 / 职位";
+"template.outreach.field_purpose" = "目的";
+"template.outreach.field_value" = "价值主张";
+"template.dating.field_profile" = "对方资料中的亮点";
+"template.dating.field_interest" = "共同兴趣";
+"template.caption.field_about" = "照片 / 帖子内容";
+"template.caption.field_mood" = "氛围";
+"template.caption.field_platform" = "平台";
+"template.rsvp.field_event" = "活动";
+"template.rsvp.field_attending" = "是否参加";
+"template.rsvp.field_message" = "附言";
+"template.congrats.field_person" = "对象";
+"template.congrats.field_achievement" = "成就";
+"template.congrats.field_note" = "个人寄语";

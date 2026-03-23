@@ -550,11 +550,48 @@
 
 // AI Writer Toss Redesign
 "ai_writer.input_label" = "Какое сообщение написать?";
+"ai_writer.input_placeholder" = "Опишите, что вы хотите сказать";
 "ai_writer.tone_title" = "Тон";
 "ai_writer.length_title" = "Длина";
 "ai_writer.tone_select_title" = "Выбрать тон";
 "ai_writer.length_select_title" = "Выбрать длину";
+"ai_writer.reply_paste" = "Ответить на сообщение";
+"ai_writer.reply_context_placeholder" = "Вставьте сюда полученное сообщение";
 "ai_writer.length.short_desc" = "1-2 предложения, только суть";
 "ai_writer.length.medium_desc" = "3-4 предложения, хорошая детализация";
 "ai_writer.length.long_desc" = "Полный абзац, подробно";
 "ai_writer.result_label" = "Сообщение от ИИ";
+
+/* Template Form Fields */
+"template.form.clear_template" = "Удалить шаблон";
+"template.form.optional" = "(необязательно)";
+"template.job_reply.field_key_points" = "Ключевые моменты";
+"template.meeting.field_original_time" = "Исходное время";
+"template.meeting.field_new_time" = "Новое время";
+"template.meeting.field_reason" = "Причина";
+"template.apology.field_what_happened" = "Что произошло";
+"template.apology.field_convey" = "Что хотите выразить";
+"template.thankyou.field_what_they_did" = "За что благодарите";
+"template.thankyou.field_detail" = "Конкретная деталь";
+"template.birthday.field_person" = "Кому / Отношения";
+"template.birthday.field_personal_touch" = "Личное пожелание";
+"template.complaint.field_issue" = "Проблема";
+"template.complaint.field_target" = "Компания / Человек";
+"template.complaint.field_outcome" = "Желаемый результат";
+"template.followup.field_previous" = "Предыдущий разговор";
+"template.followup.field_topic" = "Тема";
+"template.followup.field_next_steps" = "Что необходимо";
+"template.outreach.field_person" = "Кому / Должность";
+"template.outreach.field_purpose" = "Цель";
+"template.outreach.field_value" = "Ценностное предложение";
+"template.dating.field_profile" = "Деталь из профиля";
+"template.dating.field_interest" = "Общий интерес";
+"template.caption.field_about" = "Фото / Пост о";
+"template.caption.field_mood" = "Настроение";
+"template.caption.field_platform" = "Платформа";
+"template.rsvp.field_event" = "Мероприятие";
+"template.rsvp.field_attending" = "Присутствие";
+"template.rsvp.field_message" = "Дополнительное сообщение";
+"template.congrats.field_person" = "Кому";
+"template.congrats.field_achievement" = "Достижение";
+"template.congrats.field_note" = "Личная заметка";
