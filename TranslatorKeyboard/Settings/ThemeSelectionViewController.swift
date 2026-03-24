@@ -877,6 +877,7 @@ private class PremiumThemeCell: UICollectionViewCell {
     private var previewGradientLayer: CAGradientLayer?
     private var previewPatternView: UIView?
     private var animationEffectView: UIView?
+    private var currentPreviewThemeId: String?
     // ★ v3: 애니메이션 라이프사이클 관리
     /// 현재 셀이 보유한 테마 (애니메이션 재시작 시 참조)
     private var currentAnimTheme: KeyboardTheme?
@@ -975,6 +976,7 @@ private class PremiumThemeCell: UICollectionViewCell {
         animationEffectView?.subviews.forEach { $0.removeFromSuperview() }
         animationEffectView?.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         animationEffectView?.isHidden = true
+        currentPreviewThemeId = nil
         cardView.layer.borderColor = UIColor.clear.cgColor
         cardView.layer.borderWidth = 1
 
@@ -1011,6 +1013,34 @@ private class PremiumThemeCell: UICollectionViewCell {
         accessibilityLabel = nil
         accessibilityHint = nil
         accessibilityTraits = .button
+    }
+
+    private func hasLivePreviewAnimation(_ theme: KeyboardTheme) -> Bool {
+        theme.hasWaveAnimation || theme.hasRainAnimation || theme.hasRippleAnimation
+            || theme.hasStardustAnimation || theme.hasEdgeGlowAnimation
+            || theme.hasSnowfallAnimation || theme.hasCherryBlossomAnimation
+    }
+
+    private func resolvePreviewLayoutIfNeeded() {
+        guard previewContainer.bounds.width <= 0 || previewContainer.bounds.height <= 0 else { return }
+        contentView.setNeedsLayout()
+        contentView.layoutIfNeeded()
+        previewContainer.setNeedsLayout()
+        previewContainer.layoutIfNeeded()
+    }
+
+    private func updateRasterization(for theme: KeyboardTheme) {
+        cardView.layer.shouldRasterize = false
+
+        guard !hasLivePreviewAnimation(theme) else { return }
+        let themeId = theme.id
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard self.currentPreviewThemeId == themeId else { return }
+            guard self.cardView.bounds.width > 0, self.cardView.bounds.height > 0 else { return }
+            self.cardView.layer.shouldRasterize = true
+            self.cardView.layer.rasterizationScale = UIScreen.main.scale
+        }
     }
 
     private func setupViews() {
@@ -1197,11 +1227,14 @@ private class PremiumThemeCell: UICollectionViewCell {
     }
 
     func configure(theme: KeyboardTheme, isSelected: Bool, isLocked: Bool) {
+        currentPreviewThemeId = theme.id
+        cardView.layer.shouldRasterize = false
+        resolvePreviewLayoutIfNeeded()
         cardView.backgroundColor = AppColors.card
 
         // 1. Gradient background
+        previewContainer.backgroundColor = theme.keyboardBackground
         if theme.hasGradient, let colors = theme.gradientColors {
-            previewContainer.backgroundColor = .clear
             if previewGradientLayer == nil {
                 let gl = CAGradientLayer()
                 previewContainer.layer.insertSublayer(gl, at: 0)
@@ -1211,6 +1244,7 @@ private class PremiumThemeCell: UICollectionViewCell {
             previewGradientLayer?.locations = theme.gradientLocations
             previewGradientLayer?.startPoint = theme.gradientDirection.startPoint
             previewGradientLayer?.endPoint = theme.gradientDirection.endPoint
+            previewContainer.layoutIfNeeded()
             previewGradientLayer?.frame = previewContainer.bounds
         } else {
             previewGradientLayer?.removeFromSuperlayer()
@@ -1233,6 +1267,7 @@ private class PremiumThemeCell: UICollectionViewCell {
                 ])
                 previewPatternView = pv
             }
+            previewContainer.layoutIfNeeded()
             if let img = ThemePatternRenderer.patternImage(
                 style: theme.patternStyle, tint: theme.patternTint,
                 opacity: theme.patternOpacity, size: CGSize(width: 64, height: 64)
@@ -1459,14 +1494,7 @@ private class PremiumThemeCell: UICollectionViewCell {
             accessibilityHint = L("accessibility.theme_select_hint")
         }
 
-        // ★ 래스터화를 다음 RunLoop으로 지연 — configure + layout 완료 후 설정
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            guard self.cardView.bounds.width > 0,
-                  self.cardView.bounds.height > 0 else { return }
-            self.cardView.layer.shouldRasterize = true
-            self.cardView.layer.rasterizationScale = UIScreen.main.scale
-        }
+        updateRasterization(for: theme)
     }
 
     // MARK: - ★ v3 Animation Lifecycle
@@ -1542,6 +1570,7 @@ private class PremiumThemeCell: UICollectionViewCell {
             animationEffectView = v
         }
 
+        previewContainer.layoutIfNeeded()
         animationEffectView?.subviews.forEach { $0.removeFromSuperview() }
         animationEffectView?.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         animationEffectView?.isHidden = false
