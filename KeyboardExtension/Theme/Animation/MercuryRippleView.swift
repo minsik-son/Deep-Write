@@ -5,9 +5,15 @@ final class MercuryRippleView: UIView {
     // MARK: - Configuration
     private static let targetFPS: Int = 24
     private static let maxRipples: Int = 15
-    private static let rippleSpeed: CGFloat = 180        // pts/sec 확산 속도
+    // ★ Fix: 리플 확산 속도 대폭 축소 — 키 ~2개 크기로 제한
+    // 기존 180 pts/sec × 1.2초 = 최대 반경 216pt (키 6~7개)
+    // 변경 80 pts/sec × 0.8초 = 최대 반경 64pt (키 ~2개)
+    private static let rippleSpeed: CGFloat = 80         // pts/sec 확산 속도
     private static let rippleMaxRadius: CGFloat = 200    // 최대 반경
-    private static let rippleLifetime: CGFloat = 1.2     // 초
+    // ★ Fix: 리플 수명 단축 — 작은 리플에 맞는 빠른 소멸
+    // 기존 1.2초: 큰 리플이 천천히 사라짐
+    // 변경 0.8초: 작은 리플이 깔끔하게 사라짐 — 빠른 타이핑에도 쾌적
+    private static let rippleLifetime: CGFloat = 0.8     // 초
 
     static let perspectiveY: CGFloat = 1.0                // 완전한 원형 (원근감 없음)
 

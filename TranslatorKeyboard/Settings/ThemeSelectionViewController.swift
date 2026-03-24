@@ -1308,13 +1308,14 @@ private class PremiumThemeCell: UICollectionViewCell {
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .edgeGlow(let borderColor, let glowColor):
                     label.backgroundColor = .clear
-                    label.layer.borderWidth = 0.5
-                    label.layer.borderColor = borderColor.withAlphaComponent(0.5).cgColor
+                    // ★ Fix: 프리뷰 키 간격(2pt)에서 글로우 블리딩 방지
+                    label.layer.borderWidth = 0.8
+                    label.layer.borderColor = borderColor.withAlphaComponent(0.4).cgColor
                     label.clipsToBounds = false
                     label.layer.shadowColor = glowColor.cgColor
                     label.layer.shadowOffset = .zero
-                    label.layer.shadowRadius = 1.5
-                    label.layer.shadowOpacity = 0.3
+                    label.layer.shadowRadius = 0.8
+                    label.layer.shadowOpacity = 0.15
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .frostedGlass(let bgAlpha, let borderColor, _):
                     label.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
@@ -1349,13 +1350,14 @@ private class PremiumThemeCell: UICollectionViewCell {
                 label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
             case .edgeGlow(let borderColor, let glowColor):
                 label.backgroundColor = .clear
-                label.layer.borderWidth = 0.5
-                label.layer.borderColor = borderColor.withAlphaComponent(0.5).cgColor
+                // ★ Fix: 프리뷰 키 간격(2pt)에서 글로우 블리딩 방지
+                label.layer.borderWidth = 0.8
+                label.layer.borderColor = borderColor.withAlphaComponent(0.4).cgColor
                 label.clipsToBounds = false
                 label.layer.shadowColor = glowColor.cgColor
                 label.layer.shadowOffset = .zero
-                label.layer.shadowRadius = 1.5
-                label.layer.shadowOpacity = 0.3
+                label.layer.shadowRadius = 0.8
+                label.layer.shadowOpacity = 0.15
                 label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
             case .frostedGlass(let bgAlpha, let borderColor, _):
                 label.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
@@ -1391,13 +1393,14 @@ private class PremiumThemeCell: UICollectionViewCell {
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .edgeGlow(let borderColor, let glowColor):
                     label.backgroundColor = .clear
-                    label.layer.borderWidth = 0.5
-                    label.layer.borderColor = borderColor.withAlphaComponent(0.5).cgColor
+                    // ★ Fix: 프리뷰 키 간격(2pt)에서 글로우 블리딩 방지
+                    label.layer.borderWidth = 0.8
+                    label.layer.borderColor = borderColor.withAlphaComponent(0.4).cgColor
                     label.clipsToBounds = false
                     label.layer.shadowColor = glowColor.cgColor
                     label.layer.shadowOffset = .zero
-                    label.layer.shadowRadius = 1.5
-                    label.layer.shadowOpacity = 0.3
+                    label.layer.shadowRadius = 0.8
+                    label.layer.shadowOpacity = 0.15
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .frostedGlass(let bgAlpha, let borderColor, _):
                     label.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
@@ -1426,13 +1429,14 @@ private class PremiumThemeCell: UICollectionViewCell {
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .edgeGlow(let borderColor, let glowColor):
                     label.backgroundColor = .clear
-                    label.layer.borderWidth = 0.5
-                    label.layer.borderColor = borderColor.withAlphaComponent(0.5).cgColor
+                    // ★ Fix: 프리뷰 키 간격(2pt)에서 글로우 블리딩 방지
+                    label.layer.borderWidth = 0.8
+                    label.layer.borderColor = borderColor.withAlphaComponent(0.4).cgColor
                     label.clipsToBounds = false
                     label.layer.shadowColor = glowColor.cgColor
                     label.layer.shadowOffset = .zero
-                    label.layer.shadowRadius = 1.5
-                    label.layer.shadowOpacity = 0.3
+                    label.layer.shadowRadius = 0.8
+                    label.layer.shadowOpacity = 0.15
                     label.layer.shadowPath = UIBezierPath(roundedRect: label.bounds, cornerRadius: label.layer.cornerRadius).cgPath
                 case .frostedGlass(let bgAlpha, let borderColor, _):
                     label.backgroundColor = UIColor(hex: "#192846").withAlphaComponent(bgAlpha)
@@ -1631,59 +1635,94 @@ private class PremiumThemeCell: UICollectionViewCell {
         glowLayer.add(locAnim, forKey: "wave_preview_anim")
     }
 
+    // ★ v1: 디지털 레인 프리뷰 — 실제 키보드처럼 위→아래 연속 낙하
+    // 구현 원리:
+    //   - 10개 컬럼, 각 컬럼에 Trail A + Trail B (이중 트레일)
+    //   - 각 트레일은 UIView 컨테이너 안에 12개 UILabel(카타카나/숫자)
+    //   - CABasicAnimation(position.y)로 컨테이너를 위→아래로 연속 이동
+    //   - Trail B는 Trail A 대비 반 주기(duration/2) 늦게 시작 → 끊김 없는 커버리지
+    //   - animationEffectView.clipsToBounds=true이므로 프리뷰 밖 문자는 자동 클리핑
+    //
+    // 리소스 비교 (기존 vs 신규):
+    //   기존: ~108 UILabel + ~108 CAAnimationGroup(각 2개 애니메이션) = 324 애니메이션 객체
+    //   신규: 240 UILabel + 20 CABasicAnimation = 20 애니메이션 객체 (94% 감소)
+    //   → 라벨 수는 증가하지만 애니메이션 수 대폭 감소로 GPU 부하 경감
     private func addRainPreviewEffect(to view: UIView, theme: KeyboardTheme) {
-        let chars = "アイウエオカキクケコ0123456789"
+        let chars = "アイウエオカキクケコサシスセソ0123456789"
         let tint = theme.keyTextColor
+        let previewH: CGFloat = view.bounds.isEmpty ? 130 : view.bounds.height
 
-        let columns: [(x: CGFloat, chars: Int, topOffset: CGFloat)] = [
-            (8, 10, -5), (22, 8, 10), (38, 11, -15),
-            (55, 9, 5), (72, 10, -10), (88, 7, 15),
-            (105, 11, -8), (120, 9, 3), (135, 8, -12),
-            (148, 10, 8), (160, 7, -3), (42, 6, 20),
+        let charH: CGFloat = 9.0       // 문자 간 세로 간격
+        let fontSize: CGFloat = 6.0    // 프리뷰용 축소 폰트
+        let charsPerTrail = 12         // 트레일당 문자 수 (trailHeight = 108pt)
+        let trailHeight = CGFloat(charsPerTrail) * charH  // 108pt
+
+        // 10개 컬럼 정의: (x좌표, 낙하 duration초, 시작 지연초)
+        // duration이 작을수록 빠름 — 실제 키보드의 speed 차이를 재현
+        let columnDefs: [(x: CGFloat, dur: Double, delay: Double)] = [
+            (6,   3.2, 0.0),   (22,  4.8, 0.9),   (38,  2.8, 1.6),
+            (56,  5.2, 0.4),   (72,  3.5, 2.1),   (90,  4.3, 0.7),
+            (108, 3.0, 1.3),   (126, 5.0, 1.9),   (144, 3.6, 0.2),
+            (160, 4.5, 1.1),
         ]
 
-        for col in columns {
-            for i in 0..<col.chars {
-                let charIndex = ((Int(col.x) &* 7) &+ (i &* 13)) % chars.count
-                let char = chars[chars.index(chars.startIndex, offsetBy: charIndex)]
+        for colDef in columnDefs {
+            // Trail A와 Trail B — 반 주기 오프셋으로 연속 커버리지 보장
+            for trailIdx in 0..<2 {
+                let trailContainer = UIView()
+                trailContainer.frame = CGRect(x: colDef.x, y: 0, width: 10, height: trailHeight)
+                trailContainer.isUserInteractionEnabled = false
 
-                let label = UILabel()
-                label.text = String(char)
-                label.font = .monospacedSystemFont(ofSize: 6, weight: .regular)
+                for i in 0..<charsPerTrail {
+                    // 의사 랜덤 문자 선택 (컬럼 x + 인덱스 + 트레일로 시드)
+                    let charIndex = ((Int(colDef.x) &* 7) &+ (i &* 13) &+ (trailIdx &* 31)) % chars.count
+                    let char = chars[chars.index(chars.startIndex, offsetBy: charIndex)]
 
-                let normalizedPos = CGFloat(i) / CGFloat(col.chars)
-                let alpha: CGFloat = normalizedPos > 0.7 ? (0.5 + (normalizedPos - 0.7) * 1.5) : (normalizedPos * 0.35)
-                label.textColor = tint.withAlphaComponent(alpha)
+                    let label = UILabel()
+                    label.text = String(char)
+                    label.font = .monospacedSystemFont(ofSize: fontSize, weight: .regular)
+                    label.textAlignment = .center
 
-                let y = col.topOffset + CGFloat(i) * 9
-                label.frame = CGRect(x: col.x, y: y, width: 8, height: 9)
-                view.addSubview(label)
+                    // 색상 그라디언트: 하단(head) 밝음 → 상단(tail) 어두움
+                    // 실제 키보드의 20단계 colorPalette를 단순화
+                    let t = CGFloat(i) / CGFloat(charsPerTrail - 1) // 0=상단(tail), 1=하단(head)
+                    let alpha: CGFloat
+                    if t > 0.85 {
+                        // Head 영역 — 가장 밝은 초록
+                        alpha = 0.45 + (t - 0.85) * 3.3   // 0.45 → ~0.94
+                    } else if t > 0.50 {
+                        // 중간 트레일 — 중간 밝기
+                        alpha = 0.15 + (t - 0.50) * 0.86  // 0.15 → 0.45
+                    } else {
+                        // Tail 영역 — 어두운 초록 (최소 0.03 유지)
+                        alpha = max(0.03, t * 0.30)        // 0.03 → 0.15
+                    }
+                    label.textColor = tint.withAlphaComponent(alpha)
 
-                // ★ v3: 개별 label falling 애니메이션
-                let fallAnim = CABasicAnimation(keyPath: "position.y")
-                fallAnim.fromValue = label.layer.position.y
-                fallAnim.toValue = label.layer.position.y + 12
-                fallAnim.duration = Double.random(in: 1.5...3.0)
-                fallAnim.repeatCount = .infinity
-                fallAnim.autoreverses = true
-                fallAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                fallAnim.isRemovedOnCompletion = false
+                    label.frame = CGRect(x: 0, y: CGFloat(i) * charH, width: 10, height: charH)
+                    trailContainer.addSubview(label)
+                }
 
-                let opacityAnim = CABasicAnimation(keyPath: "opacity")
-                opacityAnim.fromValue = CGFloat(label.layer.opacity)
-                opacityAnim.toValue = CGFloat(max(Float(0.05), label.layer.opacity - 0.2))
-                opacityAnim.duration = fallAnim.duration
-                opacityAnim.repeatCount = .infinity
-                opacityAnim.autoreverses = true
-                opacityAnim.isRemovedOnCompletion = false
+                view.addSubview(trailContainer)
 
-                let group = CAAnimationGroup()
-                group.animations = [fallAnim, opacityAnim]
-                group.duration = fallAnim.duration
-                group.repeatCount = .infinity
-                group.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...1.5)
-                group.isRemovedOnCompletion = false
-                label.layer.add(group, forKey: "rain_preview_anim")
+                // 낙하 애니메이션: 프리뷰 위 → 프리뷰 아래로 연속 이동
+                // fromValue: 트레일 전체가 프리뷰 위에 (head가 y=0에 닿기 직전)
+                // toValue: 트레일 전체가 프리뷰 아래에 (tail이 y=previewH를 벗어남)
+                let anim = CABasicAnimation(keyPath: "position.y")
+                anim.fromValue = -(trailHeight / 2)            // 트레일 중심이 프리뷰 위
+                anim.toValue = previewH + (trailHeight / 2)    // 트레일 중심이 프리뷰 아래
+                anim.duration = colDef.dur
+                anim.repeatCount = .infinity
+                anim.timingFunction = CAMediaTimingFunction(name: .linear)
+                anim.isRemovedOnCompletion = false
+
+                // Trail B는 반 주기(duration/2) 늦게 시작 → 끊김 없는 연속 낙하
+                // Trail A가 프리뷰 하단을 벗어날 때 Trail B가 프리뷰 중간에 위치
+                let trailDelay = colDef.delay + (trailIdx == 1 ? colDef.dur / 2.0 : 0)
+                anim.beginTime = CACurrentMediaTime() + trailDelay
+                anim.fillMode = .backwards  // beginTime 이전에 fromValue 적용 (깜빡임 방지)
+
+                trailContainer.layer.add(anim, forKey: "rain_fall_\(trailIdx)")
             }
         }
     }
@@ -1827,12 +1866,14 @@ private class PremiumThemeCell: UICollectionViewCell {
 
         let glowLayer = CAGradientLayer()
         glowLayer.frame = view.bounds.isEmpty ? CGRect(x: 0, y: 0, width: 168, height: 130) : view.bounds
+        // ★ Fix: 그라디언트 오버레이 alpha 대폭 축소
+        // 0.15 → 0.06: 은은한 빛 느낌만 유지, 키 배경이 색으로 채워지는 착시 제거
         glowLayer.colors = [
             UIColor.clear.cgColor,
             UIColor.clear.cgColor,
-            glowColor.withAlphaComponent(0.08).cgColor,
-            glowColor.withAlphaComponent(0.15).cgColor,
-            glowColor.withAlphaComponent(0.08).cgColor,
+            glowColor.withAlphaComponent(0.03).cgColor,
+            glowColor.withAlphaComponent(0.06).cgColor,
+            glowColor.withAlphaComponent(0.03).cgColor,
             UIColor.clear.cgColor,
             UIColor.clear.cgColor,
         ]

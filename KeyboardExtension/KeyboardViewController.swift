@@ -308,9 +308,10 @@ class KeyboardViewController: UIInputViewController {
         hasUserTypedSinceAppeared = false
         toolbarView.hideSuggestions()
 
-        lastKnownClipboardChangeCount = UIPasteboard.general.changeCount
-        checkClipboardForNewContent()
-        startClipboardMonitoring()
+        // Delay pasteboard access until the user explicitly opens clipboard history.
+        // This avoids the system paste permission prompt racing with the keyboard's
+        // initial presentation during onboarding verification and similar first-open flows.
+        stopClipboardMonitoring()
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
     }
@@ -1575,6 +1576,8 @@ class KeyboardViewController: UIInputViewController {
             cv.applyTheme(theme)
             cv.updateAppearance(isDark: isDarkMode)
         }
+        syncClipboardForVisibleHistory()
+        startClipboardMonitoring()
         clipboardHistoryView?.reloadData()
         clipboardHistoryView?.isHidden = false
         clipboardHistoryView?.alpha = 0
@@ -1592,6 +1595,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func hideClipboardHistory() {
+        stopClipboardMonitoring()
         UIView.animate(withDuration: 0.15, animations: {
             self.clipboardHistoryView?.alpha = 0
         }) { _ in
@@ -1602,6 +1606,8 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Clipboard Monitoring
 
     private func startClipboardMonitoring() {
+        guard hasFullAccess() else { return }
+        lastKnownClipboardChangeCount = UIPasteboard.general.changeCount
         clipboardCheckTimer?.invalidate()
         clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -1631,6 +1637,12 @@ class KeyboardViewController: UIInputViewController {
     private func stopClipboardMonitoring() {
         clipboardCheckTimer?.invalidate()
         clipboardCheckTimer = nil
+    }
+
+    private func syncClipboardForVisibleHistory() {
+        guard hasFullAccess() else { return }
+        lastKnownClipboardChangeCount = UIPasteboard.general.changeCount
+        checkClipboardForNewContent()
     }
 
     private func checkClipboardForNewContent() {
