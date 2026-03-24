@@ -2423,6 +2423,8 @@ class KeyboardViewController: UIInputViewController {
 
     private func checkAutoCapitalize() {
         guard cachedAutoCapitalize else { return }
+        // Caps Lock active — skip auto-capitalize logic
+        guard !keyboardLayoutView.isCapsLocked else { return }
         guard currentMode == .defaultMode || currentMode == .quickNoteMode else { return }
 
         let lang = keyboardLayoutView.getCurrentLanguage()

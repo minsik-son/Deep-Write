@@ -75,7 +75,25 @@ class KeyboardLayoutView: UIView {
 
     private var currentLanguage: KeyboardLanguage = .english
     private var currentPage: KeyboardPage = .letters
-    private var isShifted = false
+    // MARK: - Shift State (3-state: off / shifted / capsLocked)
+    private enum ShiftState {
+        case off
+        case shifted
+        case capsLocked
+    }
+    private var shiftState: ShiftState = .off
+
+    /// isShifted compatibility property — used by all existing code referencing isShifted
+    private var isShifted: Bool {
+        get { shiftState != .off }
+        set { shiftState = newValue ? .shifted : .off }
+    }
+
+    /// Double-tap detection timestamp
+    private var lastShiftTapTime: TimeInterval = 0
+
+    /// Caps Lock visual indicator (dash bar)
+    private weak var capsLockIndicator: UIView?
     private var isDark = false
     private var pendingBuildWork: DispatchWorkItem?
     /// 터치별 하이라이트된 버튼 추적 (멀티터치 지원)
@@ -954,6 +972,10 @@ class KeyboardLayoutView: UIView {
                 }
             }
             button.setTitle(nil, for: .normal)
+            // Restore Caps Lock dash indicator after keyboard rebuild
+            if shiftState == .capsLocked {
+                addCapsLockIndicator(to: button)
+            }
 
         case Self.backKey:
             let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
@@ -1289,15 +1311,41 @@ class KeyboardLayoutView: UIView {
     private func handleKeyAction(_ key: String) {
         switch key {
         case Self.shiftKey:
-            isShifted.toggle()
-            updateKeyLabelsForShift()
+            let now = CACurrentMediaTime()
+            let elapsed = now - lastShiftTapTime
+            lastShiftTapTime = now
+
+            switch shiftState {
+            case .off:
+                shiftState = .shifted
+                updateKeyLabelsForShift()
+                updateShiftButtonAppearance()
+
+            case .shifted:
+                if elapsed <= 0.3 {
+                    // Fast double-tap -> capsLocked
+                    shiftState = .capsLocked
+                    updateShiftButtonAppearance()
+                } else {
+                    // Slow re-tap -> off
+                    shiftState = .off
+                    updateKeyLabelsForShift()
+                    updateShiftButtonAppearance()
+                }
+
+            case .capsLocked:
+                shiftState = .off
+                lastShiftTapTime = 0  // Reset timestamp (prevent accidental double-tap after unlock)
+                updateKeyLabelsForShift()
+                updateShiftButtonAppearance()
+            }
 
         case Self.langKR:
             let oldLang = currentLanguage
             let oldPage = currentPage
             let wasShifted = isShifted
             currentLanguage = .korean
-            isShifted = false
+            shiftState = .off
             currentPage = .letters
             if oldPage != .letters {
                 buildKeyboard()
@@ -1311,7 +1359,7 @@ class KeyboardLayoutView: UIView {
             let oldPage = currentPage
             let wasShifted = isShifted
             currentLanguage = .english
-            isShifted = false
+            shiftState = .off
             currentPage = .letters
             if oldPage != .letters {
                 buildKeyboard()
@@ -1332,7 +1380,7 @@ class KeyboardLayoutView: UIView {
                 onLanguageChanged?(.english)
             }
             let wasShifted = isShifted
-            isShifted = false
+            shiftState = .off
             currentPage = .letters
             // 심볼 페이지에서 전환했으면 버튼이 심볼 레이아웃 → 풀 rebuild 필수
             if oldPage != .letters {
@@ -1357,14 +1405,16 @@ class KeyboardLayoutView: UIView {
 
         case Self.abcKey:
             currentPage = .letters
-            isShifted = false
+            shiftState = .off
             buildKeyboard()  // symbols → letters: 행 구조 다름 → 풀 rebuild (0.18s 딜레이 제거)
 
         default:
             onKeyTap?(key)
-            if isShifted && !Self.specialKeys.contains(key) && currentPage == .letters {
-                isShifted = false
+            // Auto-release only from .shifted — capsLocked persists
+            if shiftState == .shifted && !Self.specialKeys.contains(key) && currentPage == .letters {
+                shiftState = .off
                 updateKeyLabelsForShift()
+                updateShiftButtonAppearance()
             }
             // ' 키 입력 후 자동으로 문자 키보드로 복귀
             if key == "'" && (currentPage == .symbols1 || currentPage == .symbols2) {
@@ -2764,7 +2814,7 @@ class KeyboardLayoutView: UIView {
         let oldPage = currentPage
         let wasShifted = isShifted
         currentLanguage = language
-        isShifted = false
+        shiftState = .off
         currentPage = .letters
         // 초기 로딩, 심볼 페이지, 또는 버튼 미생성 시 풀 build
         if allKeyButtons.isEmpty || oldPage != .letters {
@@ -3050,9 +3100,85 @@ class KeyboardLayoutView: UIView {
 
     func setShifted(_ shifted: Bool) {
         guard currentPage == .letters else { return }
-        guard isShifted != shifted else { return }
-        isShifted = shifted
+        // capsLocked: ignore external auto-capitalize commands
+        if shiftState == .capsLocked { return }
+        let newState: ShiftState = shifted ? .shifted : .off
+        guard shiftState != newState else { return }
+        shiftState = newState
         updateKeyLabelsForShift()
+        updateShiftButtonAppearance()
+    }
+
+    /// Current Caps Lock state (external query)
+    var isCapsLocked: Bool {
+        return shiftState == .capsLocked
+    }
+
+    // MARK: - Caps Lock Indicator Helper
+
+    /// Add dash indicator below shift icon (DRY — used by both updateShiftButtonAppearance and buildButton)
+    private func addCapsLockIndicator(to button: UIButton) {
+        capsLockIndicator?.removeFromSuperview()
+        let indicator = UIView()
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        indicator.isUserInteractionEnabled = false
+        indicator.layer.cornerRadius = 1.0
+        indicator.backgroundColor = customTheme?.keyTextColor ?? (isDark ? .white : .black)
+        button.addSubview(indicator)
+        NSLayoutConstraint.activate([
+            indicator.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            indicator.topAnchor.constraint(equalTo: button.centerYAnchor, constant: 11),
+            indicator.widthAnchor.constraint(equalToConstant: 10),
+            indicator.heightAnchor.constraint(equalToConstant: 2)
+        ])
+        capsLockIndicator = indicator
+    }
+
+    /// Update shift button appearance to match current shiftState
+    private func updateShiftButtonAppearance() {
+        guard let shiftBtn = allKeyButtons.first(where: { $0.accessibilityLabel == Self.shiftKey }) else { return }
+
+        let isDarkMode = isDark
+        let theme = customTheme
+
+        switch shiftState {
+        case .off:
+            let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
+            shiftBtn.setImage(UIImage(systemName: "shift", withConfiguration: config), for: .normal)
+            shiftBtn.tintColor = theme?.keyTextColor ?? (isDarkMode ? .white : .black)
+            if let t = theme {
+                shiftBtn.backgroundColor = t.specialKeyBackground
+            } else {
+                shiftBtn.backgroundColor = isDarkMode ? UIColor(white: 0.35, alpha: 1) : UIColor(white: 0.78, alpha: 1)
+            }
+            capsLockIndicator?.removeFromSuperview()
+            capsLockIndicator = nil
+
+        case .shifted:
+            let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+            shiftBtn.setImage(UIImage(systemName: "shift.fill", withConfiguration: config), for: .normal)
+            shiftBtn.tintColor = theme?.keyTextColor ?? (isDarkMode ? .white : .black)
+            if let t = theme {
+                shiftBtn.backgroundColor = t.keyBackground
+            } else {
+                shiftBtn.backgroundColor = isDarkMode ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            }
+            capsLockIndicator?.removeFromSuperview()
+            capsLockIndicator = nil
+
+        case .capsLocked:
+            let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+            shiftBtn.setImage(UIImage(systemName: "shift.fill", withConfiguration: config), for: .normal)
+            shiftBtn.tintColor = theme?.keyTextColor ?? (isDarkMode ? .white : .black)
+            if let t = theme {
+                shiftBtn.backgroundColor = t.keyBackground
+            } else {
+                shiftBtn.backgroundColor = isDarkMode ? UIColor(white: 0.55, alpha: 1) : UIColor(white: 0.95, alpha: 1)
+            }
+            if capsLockIndicator == nil {
+                addCapsLockIndicator(to: shiftBtn)
+            }
+        }
     }
 
     // MARK: - Mode-Aware Return Key (Proposal 03)
