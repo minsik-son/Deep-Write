@@ -132,6 +132,20 @@ class ThemeSelectionViewController: UIViewController {
         applyFilter()   // 초기 필터 적용 (전체)
 
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+
+        // ★ v3: 앱 백그라운드/포그라운드 시 애니메이션 관리
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -328,13 +342,11 @@ extension ThemeSelectionViewController: UICollectionViewDataSource, UICollection
         case .premium:
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PremiumThemeCell.reuseId, for: indexPath) as! PremiumThemeCell
 
-            // 캐시된 애니메이션 프리뷰 전달
-            cell.setAnimationPreviewCache(animationPreviewCache[theme.id])
-
-            // 캐시 미스 시 렌더링 완료 콜백 설정
-            cell.onPreviewRendered = { [weak self] image in
-                self?.animationPreviewCache[theme.id] = image
-            }
+            // ★ v3: 라이브 애니메이션으로 전환 — 스냅샷 캐시 비활성화
+            // cell.setAnimationPreviewCache(animationPreviewCache[theme.id])
+            // cell.onPreviewRendered = { [weak self] image in
+            //     self?.animationPreviewCache[theme.id] = image
+            // }
 
             cell.configure(theme: theme, isSelected: isSelected, isLocked: isLocked)
             return cell
@@ -426,9 +438,34 @@ extension ThemeSelectionViewController: UICollectionViewDataSource, UICollection
         }
     }
 
+    // ★ v3: 화면 진입 시 애니메이션 재개
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if let premiumCell = cell as? PremiumThemeCell {
+            premiumCell.startAnimations()
+        }
+    }
+
+    // ★ v3: 화면 이탈 시 애니메이션 일시정지 (레이어는 유지)
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         if let premiumCell = cell as? PremiumThemeCell {
-            premiumCell.clearOffscreenResources()
+            premiumCell.stopAnimations()
+        }
+    }
+
+    // ★ v3: 앱 라이프사이클 — 애니메이션 관리
+    @objc private func appDidEnterBackground() {
+        for cell in collectionView.visibleCells {
+            if let premiumCell = cell as? PremiumThemeCell {
+                premiumCell.stopAnimations()
+            }
+        }
+    }
+
+    @objc private func appWillEnterForeground() {
+        for cell in collectionView.visibleCells {
+            if let premiumCell = cell as? PremiumThemeCell {
+                premiumCell.startAnimations()
+            }
         }
     }
 }
@@ -840,6 +877,12 @@ private class PremiumThemeCell: UICollectionViewCell {
     private var previewGradientLayer: CAGradientLayer?
     private var previewPatternView: UIView?
     private var animationEffectView: UIView?
+    // ★ v3: 애니메이션 라이프사이클 관리
+    /// 현재 셀이 보유한 테마 (애니메이션 재시작 시 참조)
+    private var currentAnimTheme: KeyboardTheme?
+
+    /// 애니메이션 활성 상태 (willDisplay/didEndDisplaying 전환)
+    private var isAnimating = false
 
     private var keyLabels: [[UILabel]] = []
     private var specialKeyLabels: [UILabel] = []
@@ -920,6 +963,15 @@ private class PremiumThemeCell: UICollectionViewCell {
         previewGradientLayer?.removeFromSuperlayer()
         previewGradientLayer = nil
         previewPatternView?.isHidden = true
+        // ★ v3: 애니메이션 상태 리셋 + sublayer 정리
+        isAnimating = false
+        currentAnimTheme = nil
+        // paused 상태에서 재사용될 수 있으므로 speed 복원
+        if let effectLayer = animationEffectView?.layer, effectLayer.speed == 0 {
+            effectLayer.speed = 1.0
+            effectLayer.timeOffset = 0.0
+            effectLayer.beginTime = 0.0
+        }
         animationEffectView?.subviews.forEach { $0.removeFromSuperview() }
         animationEffectView?.layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         animationEffectView?.isHidden = true
@@ -954,12 +1006,7 @@ private class PremiumThemeCell: UICollectionViewCell {
             label.layer.shadowRadius = 0
         }
 
-        // 캐시된 스냅샷 UIImageView 제거
-        animationEffectView?.viewWithTag(9999)?.removeFromSuperview()
-
-        // 캐시 관련 리셋
-        cachedPreviewImage = nil
-        onPreviewRendered = nil
+        // ★ v3: 스냅샷 캐시 미사용 — 관련 리셋 제거
 
         accessibilityLabel = nil
         accessibilityHint = nil
@@ -1422,6 +1469,50 @@ private class PremiumThemeCell: UICollectionViewCell {
         }
     }
 
+    // MARK: - ★ v3 Animation Lifecycle
+
+    /// 화면에 보이는 셀의 애니메이션 시작/재개
+    func startAnimations() {
+        guard let effectView = animationEffectView,
+              !effectView.isHidden,
+              currentAnimTheme != nil else { return }
+        guard !isAnimating else { return }
+        isAnimating = true
+
+        // effectView.layer가 paused 상태(speed==0)이면 resume만
+        if effectView.layer.speed == 0 {
+            resumeLayerAnimations(effectView.layer)
+        }
+        // speed > 0 이면 이미 동작 중이거나 새로 생성된 상태 → 추가 작업 불필요
+    }
+
+    /// 화면 밖으로 나간 셀의 애니메이션 일시정지
+    func stopAnimations() {
+        guard let effectView = animationEffectView else { return }
+        isAnimating = false
+
+        // 이미 paused 상태면 skip
+        guard effectView.layer.speed != 0 else { return }
+        pauseLayerAnimations(effectView.layer)
+    }
+
+    /// parent layer만 pause — sublayer는 Core Animation 트리 구조에 의해 자동 freeze
+    private func pauseLayerAnimations(_ layer: CALayer) {
+        let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
+        layer.speed = 0.0
+        layer.timeOffset = pausedTime
+    }
+
+    /// parent layer만 resume — sublayer는 자동 unfreeze
+    private func resumeLayerAnimations(_ layer: CALayer) {
+        let pausedTime = layer.timeOffset
+        layer.speed = 1.0
+        layer.timeOffset = 0.0
+        layer.beginTime = 0.0
+        let timeSincePause = layer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
+        layer.beginTime = timeSincePause
+    }
+
     // MARK: - Animation Preview Effects
 
     private func configureAnimationPreview(theme: KeyboardTheme) {
@@ -1429,8 +1520,12 @@ private class PremiumThemeCell: UICollectionViewCell {
               || theme.hasStardustAnimation || theme.hasEdgeGlowAnimation || theme.hasSnowfallAnimation
               || theme.hasCherryBlossomAnimation else {
             animationEffectView?.isHidden = true
+            currentAnimTheme = nil  // ★ v3: 비-애니메이션 테마
             return
         }
+
+        // ★ v3: 테마 저장 (애니메이션 재시작 시 참조)
+        currentAnimTheme = theme
 
         if animationEffectView == nil {
             let v = UIView()
@@ -1453,19 +1548,7 @@ private class PremiumThemeCell: UICollectionViewCell {
 
         guard let effectView = animationEffectView else { return }
 
-        // 캐시된 스냅샷이 있으면 UIImageView로 즉시 표시 (레이어 생성 건너뜀)
-        if let cachedImage = cachedPreviewImage {
-            let imageView = UIImageView(image: cachedImage)
-            imageView.frame = effectView.bounds
-            imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            imageView.contentMode = .scaleAspectFill
-            imageView.clipsToBounds = true
-            imageView.tag = 9999
-            effectView.addSubview(imageView)
-            return
-        }
-
-        // 캐시 미스 → 기존 방식으로 레이어 생성
+        // ★ v3: 라이브 애니메이션 — 캐시 스냅샷 미사용, 직접 레이어 생성
         if theme.hasWaveAnimation {
             addWavePreviewEffect(to: effectView, theme: theme)
         } else if theme.hasRainAnimation {
@@ -1482,15 +1565,10 @@ private class PremiumThemeCell: UICollectionViewCell {
             addCherryBlossomPreviewEffect(to: effectView, theme: theme)
         }
 
-        // 렌더링 완료 후 스냅샷 캐시 (다음 프레임에서 bounds 확정 후)
+        // ★ v3: 레이어 생성 완료 후 다음 프레임에서 애니메이션 시작
         DispatchQueue.main.async { [weak self] in
-            guard let effectView = self?.animationEffectView,
-                  effectView.bounds.width > 0 else { return }
-            let renderer = UIGraphicsImageRenderer(bounds: effectView.bounds)
-            let image = renderer.image { ctx in
-                effectView.layer.render(in: ctx.cgContext)
-            }
-            self?.onPreviewRendered?(image)
+            guard let self = self else { return }
+            self.startAnimations()
         }
     }
 
@@ -1510,6 +1588,18 @@ private class PremiumThemeCell: UICollectionViewCell {
         glowLayer.startPoint = CGPoint(x: 0, y: 0)
         glowLayer.endPoint = CGPoint(x: 1, y: 1)
         view.layer.addSublayer(glowLayer)
+        // ★ v3: gradient locations 애니메이션 — gradient가 레이어 안에서 sweep
+        // 현재 locations: [0.0, 0.25, 0.38, 0.45, 0.52, 0.65, 1.0]
+        // 밝은 영역(0.38-0.52)을 좌→우로 이동시킴
+        let locAnim = CABasicAnimation(keyPath: "locations")
+        locAnim.fromValue = [0.0, 0.05, 0.15, 0.22, 0.29, 0.40, 1.0] as [NSNumber]
+        locAnim.toValue   = [0.0, 0.60, 0.71, 0.78, 0.85, 0.95, 1.0] as [NSNumber]
+        locAnim.duration = 2.5
+        locAnim.repeatCount = .infinity
+        locAnim.autoreverses = true
+        locAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        locAnim.isRemovedOnCompletion = false
+        glowLayer.add(locAnim, forKey: "wave_preview_anim")
     }
 
     private func addRainPreviewEffect(to view: UIView, theme: KeyboardTheme) {
@@ -1539,6 +1629,32 @@ private class PremiumThemeCell: UICollectionViewCell {
                 let y = col.topOffset + CGFloat(i) * 9
                 label.frame = CGRect(x: col.x, y: y, width: 8, height: 9)
                 view.addSubview(label)
+
+                // ★ v3: 개별 label falling 애니메이션
+                let fallAnim = CABasicAnimation(keyPath: "position.y")
+                fallAnim.fromValue = label.layer.position.y
+                fallAnim.toValue = label.layer.position.y + 12
+                fallAnim.duration = Double.random(in: 1.5...3.0)
+                fallAnim.repeatCount = .infinity
+                fallAnim.autoreverses = true
+                fallAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                fallAnim.isRemovedOnCompletion = false
+
+                let opacityAnim = CABasicAnimation(keyPath: "opacity")
+                opacityAnim.fromValue = CGFloat(label.layer.opacity)
+                opacityAnim.toValue = CGFloat(max(Float(0.05), label.layer.opacity - 0.2))
+                opacityAnim.duration = fallAnim.duration
+                opacityAnim.repeatCount = .infinity
+                opacityAnim.autoreverses = true
+                opacityAnim.isRemovedOnCompletion = false
+
+                let group = CAAnimationGroup()
+                group.animations = [fallAnim, opacityAnim]
+                group.duration = fallAnim.duration
+                group.repeatCount = .infinity
+                group.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...1.5)
+                group.isRemovedOnCompletion = false
+                label.layer.add(group, forKey: "rain_preview_anim")
             }
         }
     }
@@ -1567,6 +1683,41 @@ private class PremiumThemeCell: UICollectionViewCell {
             circleLayer.strokeColor = tint.withAlphaComponent(ring.alpha).cgColor
             circleLayer.lineWidth = ring.width
             view.layer.addSublayer(circleLayer)
+            // ★ v3: 개별 ring에 scale + opacity 애니메이션
+            // path가 arcCenter=(70,60) 기준으로 그려져 있으므로
+            // layer의 bounds/position/anchorPoint를 설정하여 (70,60) 기준 scale 확보
+            let layerWidth: CGFloat = view.bounds.isEmpty ? 168 : view.bounds.width
+            let layerHeight: CGFloat = view.bounds.isEmpty ? 130 : view.bounds.height
+            circleLayer.bounds = CGRect(x: 0, y: 0, width: layerWidth, height: layerHeight)
+            circleLayer.position = CGPoint(x: layerWidth / 2, y: layerHeight / 2)
+            // ★ v3 FIX: anchorPoint를 ripple center(70,60) 비율로 설정 → scale이 여기서 발생
+            circleLayer.anchorPoint = CGPoint(x: 70.0 / layerWidth, y: 60.0 / layerHeight)
+            // anchorPoint 변경으로 position이 자동 이동하므로, position을 ripple center로 재설정
+            circleLayer.position = CGPoint(x: 70, y: 60)
+
+            let scaleAnim = CABasicAnimation(keyPath: "transform.scale")
+            scaleAnim.fromValue = 0.85
+            scaleAnim.toValue = 1.15
+            scaleAnim.duration = 2.0 + Double(ring.r) * 0.02  // 바깥 ring일수록 살짝 느리게
+            scaleAnim.repeatCount = .infinity
+            scaleAnim.autoreverses = true
+            scaleAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            scaleAnim.isRemovedOnCompletion = false
+
+            let opacityAnim = CABasicAnimation(keyPath: "opacity")
+            opacityAnim.fromValue = 0.5
+            opacityAnim.toValue = 1.0
+            opacityAnim.duration = scaleAnim.duration
+            opacityAnim.repeatCount = .infinity
+            opacityAnim.autoreverses = true
+            opacityAnim.isRemovedOnCompletion = false
+
+            let group = CAAnimationGroup()
+            group.animations = [scaleAnim, opacityAnim]
+            group.duration = scaleAnim.duration
+            group.repeatCount = .infinity
+            group.isRemovedOnCompletion = false
+            circleLayer.add(group, forKey: "ripple_preview_anim")
         }
 
         let glowLayer = CALayer()
@@ -1574,6 +1725,16 @@ private class PremiumThemeCell: UICollectionViewCell {
         glowLayer.cornerRadius = 12
         glowLayer.backgroundColor = tint.withAlphaComponent(0.08).cgColor
         view.layer.addSublayer(glowLayer)
+        // ★ v3: 중심 glow 맥동
+        let glowPulse = CABasicAnimation(keyPath: "opacity")
+        glowPulse.fromValue = 0.4
+        glowPulse.toValue = 1.0
+        glowPulse.duration = 1.5
+        glowPulse.repeatCount = .infinity
+        glowPulse.autoreverses = true
+        glowPulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        glowPulse.isRemovedOnCompletion = false
+        glowLayer.add(glowPulse, forKey: "ripple_glow_anim")
     }
 
     private func addStardustPreviewEffect(to view: UIView, theme: KeyboardTheme) {
@@ -1593,6 +1754,17 @@ private class PremiumThemeCell: UICollectionViewCell {
             dot.cornerRadius = star.size / 2
             dot.backgroundColor = tint.withAlphaComponent(star.alpha).cgColor
             view.layer.addSublayer(dot)
+            // ★ v3: 시차 반짝임
+            let anim = CABasicAnimation(keyPath: "opacity")
+            anim.fromValue = star.alpha  // CGFloat
+            anim.toValue = max(star.alpha - 0.3, CGFloat(0.1))  // CGFloat 통일
+            anim.duration = Double.random(in: 0.8...2.0)
+            anim.repeatCount = .infinity
+            anim.autoreverses = true
+            anim.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...1.5)
+            anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            anim.isRemovedOnCompletion = false
+            dot.add(anim, forKey: "stardust_preview_anim")
         }
 
         let burstCenter = CGPoint(x: 90, y: 35)
@@ -1607,6 +1779,17 @@ private class PremiumThemeCell: UICollectionViewCell {
             dot.cornerRadius = 0.75
             dot.backgroundColor = tint.withAlphaComponent(0.7).cgColor
             view.layer.addSublayer(dot)
+            // ★ v3: burst 반짝임 (더 빠르게)
+            let anim = CABasicAnimation(keyPath: "opacity")
+            anim.fromValue = CGFloat(0.7)
+            anim.toValue = CGFloat(0.2)
+            anim.duration = Double.random(in: 0.5...1.2)
+            anim.repeatCount = .infinity
+            anim.autoreverses = true
+            anim.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...0.8)
+            anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            anim.isRemovedOnCompletion = false
+            dot.add(anim, forKey: "stardust_burst_anim")
         }
     }
 
@@ -1628,6 +1811,17 @@ private class PremiumThemeCell: UICollectionViewCell {
         glowLayer.startPoint = CGPoint(x: 0, y: 0)
         glowLayer.endPoint = CGPoint(x: 1, y: 1)
         view.layer.addSublayer(glowLayer)
+        // ★ v3: gradient locations 애니메이션 (Wave와 동일 패턴, 약간 느린 duration)
+        // 현재 locations: [0.0, 0.20, 0.35, 0.42, 0.49, 0.60, 1.0]
+        let locAnim = CABasicAnimation(keyPath: "locations")
+        locAnim.fromValue = [0.0, 0.02, 0.10, 0.17, 0.24, 0.35, 1.0] as [NSNumber]
+        locAnim.toValue   = [0.0, 0.65, 0.75, 0.82, 0.89, 0.98, 1.0] as [NSNumber]
+        locAnim.duration = 3.0
+        locAnim.repeatCount = .infinity
+        locAnim.autoreverses = true
+        locAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        locAnim.isRemovedOnCompletion = false
+        glowLayer.add(locAnim, forKey: "edgeglow_preview_anim")
     }
 
     private func addSnowfallPreviewEffect(to view: UIView, theme: KeyboardTheme) {
@@ -1657,6 +1851,35 @@ private class PremiumThemeCell: UICollectionViewCell {
                 cornerRadius: flake.size / 2
             ).cgPath
             view.layer.addSublayer(dot)
+            dot.name = "snow_flake"  // ★ v3: 디버깅용 태깅
+
+            // ★ v3: 개별 눈송이 falling + 좌우 흔들림
+            let fallAnim = CABasicAnimation(keyPath: "position.y")
+            fallAnim.fromValue = dot.position.y - 8
+            fallAnim.toValue = dot.position.y + 8
+            fallAnim.duration = Double.random(in: 2.0...3.5)
+            fallAnim.repeatCount = .infinity
+            fallAnim.autoreverses = true
+            fallAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            fallAnim.isRemovedOnCompletion = false
+
+            let swayAnim = CABasicAnimation(keyPath: "position.x")
+            swayAnim.fromValue = dot.position.x - 3
+            swayAnim.toValue = dot.position.x + 3
+            swayAnim.duration = Double.random(in: 1.5...2.5)
+            swayAnim.repeatCount = .infinity
+            swayAnim.autoreverses = true
+            swayAnim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            swayAnim.isRemovedOnCompletion = false
+
+            let maxDur = max(fallAnim.duration, swayAnim.duration)
+            let group = CAAnimationGroup()
+            group.animations = [fallAnim, swayAnim]
+            group.duration = maxDur
+            group.repeatCount = .infinity
+            group.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...2.0)
+            group.isRemovedOnCompletion = false
+            dot.add(group, forKey: "snow_preview_anim")
         }
     }
 
@@ -1690,6 +1913,41 @@ private class PremiumThemeCell: UICollectionViewCell {
             // 회전으로 자연스러운 흩날림 효과
             dot.transform = CATransform3DMakeRotation(CGFloat(i) * 0.5, 0, 0, 1)
             view.layer.addSublayer(dot)
+            dot.name = "cherry_petal"  // ★ v3: 디버깅용 태깅
+
+            // ★ v3: 꽃잎 흩날림 — 대각선 이동 + 살짝 회전
+            let driftX = CABasicAnimation(keyPath: "position.x")
+            driftX.fromValue = dot.position.x + 4
+            driftX.toValue = dot.position.x - 4
+            driftX.duration = Double.random(in: 2.5...4.0)
+            driftX.repeatCount = .infinity
+            driftX.autoreverses = true
+            driftX.isRemovedOnCompletion = false
+
+            let driftY = CABasicAnimation(keyPath: "position.y")
+            driftY.fromValue = dot.position.y - 3
+            driftY.toValue = dot.position.y + 3
+            driftY.duration = Double.random(in: 2.0...3.5)
+            driftY.repeatCount = .infinity
+            driftY.autoreverses = true
+            driftY.isRemovedOnCompletion = false
+
+            let rotateAnim = CABasicAnimation(keyPath: "transform.rotation.z")
+            rotateAnim.fromValue = CGFloat(i) * 0.5 - 0.15  // 기존 회전값 기준 흔들림
+            rotateAnim.toValue = CGFloat(i) * 0.5 + 0.15
+            rotateAnim.duration = Double.random(in: 1.8...3.0)
+            rotateAnim.repeatCount = .infinity
+            rotateAnim.autoreverses = true
+            rotateAnim.isRemovedOnCompletion = false
+
+            let maxDur = max(max(driftX.duration, driftY.duration), rotateAnim.duration)
+            let group = CAAnimationGroup()
+            group.animations = [driftX, driftY, rotateAnim]
+            group.duration = maxDur
+            group.repeatCount = .infinity
+            group.beginTime = CACurrentMediaTime() + Double.random(in: 0.0...2.0)
+            group.isRemovedOnCompletion = false
+            dot.add(group, forKey: "cherry_preview_anim")
         }
 
         // 오른쪽 상단 꽃 클러스터 (핑크 원형 뭉치)
