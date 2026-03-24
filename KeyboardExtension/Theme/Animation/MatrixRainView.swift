@@ -243,12 +243,19 @@ final class MatrixRainView: UIView {
 
     private func createColumn(viewHeight: CGFloat, staggered: Bool) -> RainColumn {
         let maxVisibleChars = Int(viewHeight / Self.charSize) + 5
-        let speed = CGFloat.random(in: 150...220)
-        let trailLength = CGFloat.random(in: 550...700)
+        // ★ v2: speed 범위 확대 — 빠르게 쏟아지는 컬럼 / 느리게 흘러내리는 컬럼 공존
+        // 최소 120: 12fps에서 프레임당 10px = charSize(14)의 71% → 자연스러운 흐름 보장
+        // 최대 280: 프레임당 23.3px → 빠르게 쏟아지는 역동적 효과
+        let speed = CGFloat.random(in: 120...280)
+        // ★ v2: trailLength 범위 확대 — 짧은 꼬리 / 긴 꼬리 혼재
+        let trailLength = CGFloat.random(in: 300...900)
 
         // Trail A: 메인 트레일
+        // ★ v2: stagger 범위 대폭 확대 — 컬럼마다 완전히 다른 시작 위치
+        // viewHeight * 2.5 범위로 확대하여 일부는 이미 화면 중간에서 시작,
+        // 일부는 화면 위 한참 밖에서 시작 → 초기 로드부터 자연스러운 불규칙 분포
         let startYA: CGFloat = staggered
-            ? -CGFloat.random(in: 0...(viewHeight * 0.8))
+            ? -CGFloat.random(in: 0...(viewHeight * 2.5))
             : -CGFloat.random(in: 20...120)
         let charsA = (0..<maxVisibleChars).map { _ in
             Int.random(in: 0..<Self.characters.count)
