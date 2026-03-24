@@ -1389,18 +1389,33 @@ class KeyboardLayoutView: UIView {
                 return button
             }
         }
-        // Gap hit — find nearest button
+        // Phase 1: Research-based touch offset correction + weighted distance (v2)
+        //
+        // 1. Y offset: users systematically touch ~2pt below intended key (Henze et al., CHI 2012)
+        //    -> shift touch point up by 2pt to map closer to intended key
+        // 2. Y weight: vertical variance ~25% larger than horizontal (Azenkot & Zhai, 2012)
+        //    -> multiply Y distance by 0.82 to reduce Y penalty (more forgiving vertically)
+        // 3. Scope: gap hits only — direct hits (inside key frame) unchanged
+        //
+        // Memory: 0KB (constants + arithmetic only)
+
         guard bounds.contains(point), !allKeyButtons.isEmpty else { return nil }
+
+        let correctedY = point.y - 2.0
+
         var closestButton: UIButton?
         var minDistSq: CGFloat = .greatestFiniteMagnitude
+
         for button in allKeyButtons {
             guard let sv = button.superview else { continue }
             let frame = sv.convert(button.frame, to: self)
             guard frame.width > 0 && frame.height > 0 else { continue }
             let center = CGPoint(x: frame.midX, y: frame.midY)
+
             let dx = point.x - center.x
-            let dy = point.y - center.y
+            let dy = (correctedY - center.y) * 0.82
             let distSq = dx * dx + dy * dy
+
             if distSq < minDistSq {
                 minDistSq = distSq
                 closestButton = button
