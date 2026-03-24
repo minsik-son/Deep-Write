@@ -595,3 +595,7 @@
 "template.congrats.field_person" = "대상";
 "template.congrats.field_achievement" = "축하할 일";
 "template.congrats.field_note" = "개인적인 한마디";
+
+"settings.key_tap_preview" = "키 탭 미리보기";
+"settings.latin_special_characters" = "라틴 특수 문자";
+"settings.period_key" = "마침표 키";

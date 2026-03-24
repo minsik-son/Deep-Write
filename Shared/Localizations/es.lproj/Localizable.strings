@@ -595,3 +595,7 @@
 "template.congrats.field_person" = "Persona";
 "template.congrats.field_achievement" = "Logro";
 "template.congrats.field_note" = "Nota personal";
+
+"settings.key_tap_preview" = "Vista previa de tecla";
+"settings.latin_special_characters" = "Caracteres especiales latinos";
+"settings.period_key" = "Tecla de punto";

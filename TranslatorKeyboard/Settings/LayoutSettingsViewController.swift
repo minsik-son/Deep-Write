@@ -10,6 +10,36 @@ class LayoutSettingsViewController: UITableViewController {
         return toggle
     }()
 
+    private lazy var keyTapPreviewSwitch: UISwitch = {
+        let toggle = UISwitch()
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        toggle.isOn = defaults?.object(forKey: AppConstants.UserDefaultsKeys.keyTapPreview) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.keyTapPreview) ?? true)
+        toggle.addTarget(self, action: #selector(keyTapPreviewToggled(_:)), for: .valueChanged)
+        return toggle
+    }()
+
+    private lazy var latinAlternativesSwitch: UISwitch = {
+        let toggle = UISwitch()
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        toggle.isOn = defaults?.object(forKey: AppConstants.UserDefaultsKeys.latinAlternatives) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.latinAlternatives) ?? true)
+        toggle.addTarget(self, action: #selector(latinAlternativesToggled(_:)), for: .valueChanged)
+        return toggle
+    }()
+
+    private lazy var periodKeySwitch: UISwitch = {
+        let toggle = UISwitch()
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        toggle.isOn = defaults?.object(forKey: AppConstants.UserDefaultsKeys.showPeriodKey) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.showPeriodKey) ?? true)
+        toggle.addTarget(self, action: #selector(periodKeyToggled(_:)), for: .valueChanged)
+        return toggle
+    }()
+
     private struct LanguageOption {
         let code: String
         let displayName: String
@@ -53,7 +83,7 @@ class LayoutSettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return 1
+        case 0: return 4  // Number Row + Key Tap Preview + Latin Special Characters + Period Key
         case 1: return languageOptions.count
         default: return 0
         }
@@ -75,10 +105,27 @@ class LayoutSettingsViewController: UITableViewController {
 
         switch indexPath.section {
         case 0:
-            config.text = L("settings.number_row")
-            cell.contentConfiguration = config
-            cell.accessoryView = numberRowSwitch
             cell.selectionStyle = .none
+            switch indexPath.row {
+            case 0:
+                config.text = L("settings.number_row")
+                cell.contentConfiguration = config
+                cell.accessoryView = numberRowSwitch
+            case 1:
+                config.text = L("settings.key_tap_preview")
+                cell.contentConfiguration = config
+                cell.accessoryView = keyTapPreviewSwitch
+            case 2:
+                config.text = L("settings.latin_special_characters")
+                cell.contentConfiguration = config
+                cell.accessoryView = latinAlternativesSwitch
+            case 3:
+                config.text = L("settings.period_key")
+                cell.contentConfiguration = config
+                cell.accessoryView = periodKeySwitch
+            default:
+                cell.contentConfiguration = config
+            }
         case 1:
             let option = languageOptions[indexPath.row]
             config.text = option.displayName
@@ -114,5 +161,17 @@ class LayoutSettingsViewController: UITableViewController {
 
     @objc private func numberRowToggled(_ sender: UISwitch) {
         AppGroupManager.shared.set(sender.isOn, forKey: AppConstants.UserDefaultsKeys.showNumberRow)
+    }
+
+    @objc private func keyTapPreviewToggled(_ sender: UISwitch) {
+        AppGroupManager.shared.set(sender.isOn, forKey: AppConstants.UserDefaultsKeys.keyTapPreview)
+    }
+
+    @objc private func latinAlternativesToggled(_ sender: UISwitch) {
+        AppGroupManager.shared.set(sender.isOn, forKey: AppConstants.UserDefaultsKeys.latinAlternatives)
+    }
+
+    @objc private func periodKeyToggled(_ sender: UISwitch) {
+        AppGroupManager.shared.set(sender.isOn, forKey: AppConstants.UserDefaultsKeys.showPeriodKey)
     }
 }

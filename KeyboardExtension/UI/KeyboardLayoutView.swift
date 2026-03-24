@@ -69,12 +69,18 @@ class KeyboardLayoutView: UIView {
         didSet { if oldValue != showNumberRow { buildKeyboard() } }
     }
 
+    var showPeriodKey: Bool = true {
+        didSet { if oldValue != showPeriodKey { buildKeyboard() } }
+    }
+
+    var onHeightChangeNeeded: (() -> Void)?
+
     var pairedLanguage: KeyboardLanguage = .korean {
         didSet { if oldValue != pairedLanguage { buildKeyboard() } }
     }
 
     private var currentLanguage: KeyboardLanguage = .english
-    private var currentPage: KeyboardPage = .letters
+    private(set) var currentPage: KeyboardPage = .letters
     // MARK: - Shift State (3-state: off / shifted / capsLocked)
     private enum ShiftState {
         case off
@@ -208,15 +214,13 @@ class KeyboardLayoutView: UIView {
     private static let englishRows: [[String]] = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
         ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-        ["\u{21E7}", "z", "x", "c", "v", "b", "n", "m", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["\u{21E7}", "z", "x", "c", "v", "b", "n", "m", "\u{232B}"]
     ]
 
     private static let englishShiftRows: [[String]] = [
         ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
         ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-        ["\u{21E7}", "Z", "X", "C", "V", "B", "N", "M", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["\u{21E7}", "Z", "X", "C", "V", "B", "N", "M", "\u{232B}"]
     ]
 
     private static let koreanRows: [[String]] = [
@@ -225,8 +229,7 @@ class KeyboardLayoutView: UIView {
         ["\u{3141}", "\u{3134}", "\u{3147}", "\u{3139}", "\u{314E}",
          "\u{3157}", "\u{3153}", "\u{314F}", "\u{3163}"],
         ["\u{21E7}", "\u{314B}", "\u{314C}", "\u{314A}", "\u{314D}",
-         "\u{3160}", "\u{315C}", "\u{3161}", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+         "\u{3160}", "\u{315C}", "\u{3161}", "\u{232B}"]
     ]
 
     private static let koreanShiftRows: [[String]] = [
@@ -235,8 +238,7 @@ class KeyboardLayoutView: UIView {
         ["\u{3141}", "\u{3134}", "\u{3147}", "\u{3139}", "\u{314E}",
          "\u{3157}", "\u{3153}", "\u{314F}", "\u{3163}"],
         ["\u{21E7}", "\u{314B}", "\u{314C}", "\u{314A}", "\u{314D}",
-         "\u{3160}", "\u{315C}", "\u{3161}", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+         "\u{3160}", "\u{315C}", "\u{3161}", "\u{232B}"]
     ]
 
     // ── Russian ЙЦУКЕН layouts ──
@@ -244,15 +246,13 @@ class KeyboardLayoutView: UIView {
     private static let russianRows: [[String]] = [
         ["й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х"],
         ["ф", "ы", "в", "а", "п", "р", "о", "л", "д", "ж", "э"],
-        ["\u{21E7}", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["\u{21E7}", "я", "ч", "с", "м", "и", "т", "ь", "б", "ю", "\u{232B}"]
     ]
 
     private static let russianShiftRows: [[String]] = [
         ["Й", "Ц", "У", "К", "Е", "Н", "Г", "Ш", "Щ", "З", "Х"],
         ["Ф", "Ы", "В", "А", "П", "Р", "О", "Л", "Д", "Ж", "Э"],
-        ["\u{21E7}", "Я", "Ч", "С", "М", "И", "Т", "Ь", "Б", "Ю", "\u{232B}"],
-        ["+=♥", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["\u{21E7}", "Я", "Ч", "С", "М", "И", "Т", "Ь", "Б", "Ю", "\u{232B}"]
     ]
 
     // ── Symbol layouts ──
@@ -260,15 +260,13 @@ class KeyboardLayoutView: UIView {
     private static let symbolRows1: [[String]] = [
         ["$", "€", "£", "¥", "¢", "~", "…", "°", "※", "•"],
         ["-", "/", ":", ";", "(", ")", "₩", "&", "@", "\""],
-        ["#+=", ".", ",", "?", "!", "'", "\u{232B}"],
-        ["ABC", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["#+=", ".", ",", "?", "!", "'", "\u{232B}"]
     ]
 
     private static let symbolRows2: [[String]] = [
         ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
         ["_", "\\", "|", "<", ">", "«", "»", "§", "©", "®"],
-        ["123", ".", ",", "?", "!", "'", "\u{232B}"],
-        ["ABC", "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        ["123", ".", ",", "?", "!", "'", "\u{232B}"]
     ]
 
     // ── Special keys set ──
@@ -326,24 +324,57 @@ class KeyboardLayoutView: UIView {
 
     // MARK: - Current Layout
 
-    private func currentRows() -> [[String]] {
+    /// Whether the top number row should be shown for this page
+    private func shouldShowTopNumberRow(for page: KeyboardPage) -> Bool {
+        switch page {
+        case .letters:  return showNumberRow
+        case .symbols1: return true
+        case .symbols2: return true
+        }
+    }
+
+    /// Bottom row keys based on current page and settings
+    private func currentBottomRowKeys() -> [String] {
+        let functionKey: String
         switch currentPage {
         case .letters:
-            let letterRows: [[String]]
+            functionKey = showNumberRow ? Self.symbolToggleKey : Self.symbolKey
+        case .symbols1, .symbols2:
+            functionKey = Self.abcKey
+        }
+
+        if showPeriodKey {
+            return [functionKey, "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        } else {
+            return [functionKey, "__GLOBE_A__", " ", "\u{23CE}"]
+        }
+    }
+
+    private func currentRows() -> [[String]] {
+        let showTopNumber = shouldShowTopNumberRow(for: currentPage)
+        let bottomRow = currentBottomRowKeys()
+
+        switch currentPage {
+        case .letters:
+            let coreRows: [[String]]
             switch currentLanguage {
             case .korean:
-                letterRows = isShifted ? Self.koreanShiftRows : Self.koreanRows
+                coreRows = isShifted ? Self.koreanShiftRows : Self.koreanRows
             case .russian:
-                letterRows = isShifted ? Self.russianShiftRows : Self.russianRows
+                coreRows = isShifted ? Self.russianShiftRows : Self.russianRows
             default:
-                // English, Spanish, French, German, Italian all use QWERTY
-                letterRows = isShifted ? Self.englishShiftRows : Self.englishRows
+                coreRows = isShifted ? Self.englishShiftRows : Self.englishRows
             }
-            return showNumberRow ? [Self.numberRow] + letterRows : letterRows
+            let topRows = showTopNumber ? [Self.numberRow] + coreRows : coreRows
+            return topRows + [bottomRow]
+
         case .symbols1:
-            return showNumberRow ? [Self.numberRow] + Self.symbolRows1 : Self.symbolRows1
+            let topRows = showTopNumber ? [Self.numberRow] + Self.symbolRows1 : Self.symbolRows1
+            return topRows + [bottomRow]
+
         case .symbols2:
-            return showNumberRow ? [Self.numberRow] + Self.symbolRows2 : Self.symbolRows2
+            let topRows = showTopNumber ? [Self.numberRow] + Self.symbolRows2 : Self.symbolRows2
+            return topRows + [bottomRow]
         }
     }
 
@@ -351,7 +382,8 @@ class KeyboardLayoutView: UIView {
     /// English/Korean = 10, Russian = 11.
     private var referenceKeyCount: CGFloat {
         let rows = currentRows()
-        let letterRowIndex = showNumberRow ? 1 : 0
+        let showTopNumber = shouldShowTopNumberRow(for: currentPage)
+        let letterRowIndex = showTopNumber ? 1 : 0
         guard letterRowIndex < rows.count else { return 10 }
         return CGFloat(rows[letterRowIndex].count)
     }
@@ -408,7 +440,7 @@ class KeyboardLayoutView: UIView {
 
         let rows = currentRows()
         let totalRows = rows.count
-        let isNumberRow = showNumberRow
+        let isNumberRow = shouldShowTopNumberRow(for: currentPage)
         var previousRowView: UIView?
 
         for (rowIndex, rowKeys) in rows.enumerated() {
@@ -533,6 +565,8 @@ class KeyboardLayoutView: UIView {
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             cv.startAnimation()
         }
+
+        onHeightChangeNeeded?()
     }
 
     private func buildRow(keys: [String], rowIndex: Int, totalRows: Int) -> UIView {
@@ -555,7 +589,8 @@ class KeyboardLayoutView: UIView {
         // In letters page: indent rows with fewer keys than the reference row (first letter row).
         // English/Korean: row 2 has 9 keys vs 10 → indent. Russian: rows 1,2 both 11 → no indent.
         let refCount = Int(referenceKeyCount)
-        let needsIndent = (keys.count < refCount && currentPage == .letters && rowIndex > (showNumberRow ? 0 : -1))
+        let showTopNumber = shouldShowTopNumberRow(for: currentPage)
+        let needsIndent = (keys.count < refCount && currentPage == .letters && rowIndex > (showTopNumber ? 0 : -1))
 
         var previousButton: UIButton?
         let firstButton = createKeyButton(keys[0], rowIndex: rowIndex)
@@ -723,10 +758,11 @@ class KeyboardLayoutView: UIView {
     // MARK: - Bottom row (+=♥, 🌐A, space, period, return)
 
     private func buildBottomRow(container: UIView, keys: [String], rowIndex: Int) {
-        // 5 keys: +=♥(50), 🌐A(50), space(flexible), .(50), return(74)
         let funcKeyWidth: CGFloat = 50    // +=♥, 🌐A
         let periodKeyWidth: CGFloat = 34  // "."
-        let returnKeyWidth: CGFloat = 74  // return
+        let hasPeriod = keys.contains(".")
+        // period OFF: return absorbs period space
+        let returnKeyWidth: CGFloat = hasPeriod ? 74 : (74 + periodKeyWidth + Layout.keySpacingH)
 
         var previousView: UIButton?
 
@@ -1078,6 +1114,20 @@ class KeyboardLayoutView: UIView {
     private var accentBaseKey: String?
     private var accentSourceButton: UIButton?
 
+    // MARK: - Key Tap Preview
+
+    var isKeyTapPreviewEnabled: Bool = true
+    var isLatinAlternativesEnabled: Bool = true
+
+    private lazy var keyPreviewView: KeyPreviewView = {
+        let view = KeyPreviewView()
+        view.isHidden = true
+        addSubview(view)
+        return view
+    }()
+
+    private weak var keyPreviewTouch: UITouch?
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let loc = touch.location(in: self)
@@ -1142,7 +1192,12 @@ class KeyboardLayoutView: UIView {
             }
 
             // ── Accent-capable keys: track for potential long-press ──
-            let accentAlternatives = AccentMap.accents(for: currentLanguage)[key] ?? []
+            let accentAlternatives: [String]
+            if isLatinAlternativesEnabled {
+                accentAlternatives = AccentMap.accents(for: currentLanguage)[key] ?? []
+            } else {
+                accentAlternatives = []
+            }
             if !accentAlternatives.isEmpty {
                 accentTrackingTouch = touch
                 accentBaseKey = key
@@ -1158,6 +1213,9 @@ class KeyboardLayoutView: UIView {
                     sv.addBurst(at: burstLoc, isSupernova: false)
                 }
                 handleKeyAction(key)  // Immediately type the base character
+                if shouldShowPreview(for: key) {
+                    showKeyPreview(for: key, sourceButton: button, touch: touch)
+                }
 
                 accentLongPressTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
                     self?.showAccentPopup(accents: accentAlternatives, sourceButton: button)
@@ -1176,6 +1234,9 @@ class KeyboardLayoutView: UIView {
                 let burstLoc = button.superview?.convert(button.center, to: sv) ?? loc
                 sv.addBurst(at: burstLoc, isSupernova: false)
             }
+            if shouldShowPreview(for: key) {
+                showKeyPreview(for: key, sourceButton: button, touch: touch)
+            }
             handleKeyAction(key)
         }
     }
@@ -1185,6 +1246,15 @@ class KeyboardLayoutView: UIView {
         if let tracked = accentTrackingTouch, touches.contains(tracked), accentPopupView != nil {
             let loc = tracked.location(in: self)
             accentPopupView?.updateSelection(at: loc)
+        } else if let tracked = keyPreviewTouch, touches.contains(tracked) {
+            let loc = tracked.location(in: self)
+            if let newButton = findButtonAt(loc),
+               let newKey = newButton.accessibilityLabel,
+               shouldShowPreview(for: newKey) {
+                showKeyPreview(for: newKey, sourceButton: newButton, touch: tracked)
+            } else {
+                hideKeyPreview()
+            }
         }
 
         // Space bar trackpad cursor movement — accumulate only; CADisplayLink fires moves
@@ -1240,6 +1310,10 @@ class KeyboardLayoutView: UIView {
             // ★ 모든 터치에 대해 즉시 하이라이트 해제
             removeHighlight(for: touch)
 
+            if touch === keyPreviewTouch {
+                hideKeyPreview()
+            }
+
             // Accent popup
             if touch === accentTrackingTouch {
                 accentLongPressTimer?.invalidate()
@@ -1280,6 +1354,10 @@ class KeyboardLayoutView: UIView {
         for touch in touches {
             // ★ 모든 터치에 대해 즉시 하이라이트 해제
             removeHighlight(for: touch)
+
+            if touch === keyPreviewTouch {
+                hideKeyPreview()
+            }
 
             if touch === accentTrackingTouch {
                 accentLongPressTimer?.invalidate()
@@ -1396,7 +1474,13 @@ class KeyboardLayoutView: UIView {
         case Self.symbolKey:
             let oldPage = currentPage
             currentPage = .symbols1
-            updateKeyLabelsForSymbolPage(from: oldPage, to: .symbols1)
+            let oldTopNumber = shouldShowTopNumberRow(for: oldPage)
+            let newTopNumber = shouldShowTopNumberRow(for: .symbols1)
+            if oldTopNumber != newTopNumber || oldPage == .letters {
+                buildKeyboard()
+            } else {
+                updateKeyLabelsForSymbolPage(from: oldPage, to: .symbols1)
+            }
 
         case Self.moreSymKey:
             let oldPage = currentPage
@@ -1698,10 +1782,13 @@ class KeyboardLayoutView: UIView {
 
     private func showAccentPopup(accents: [String], sourceButton: UIButton) {
         hideAccentPopup()
+        hideKeyPreview()
         guard let sv = sourceButton.superview else { return }
         let sourceFrame = sv.convert(sourceButton.frame, to: self)
         let popup = AccentPopupView()
-        popup.configure(accents: accents, sourceFrame: sourceFrame, in: self)
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        popup.configure(accents: accents, sourceFrame: sourceFrame, in: self,
+                        theme: customTheme, isDark: isDark)
         addSubview(popup)
         accentPopupView = popup
     }
@@ -1709,6 +1796,53 @@ class KeyboardLayoutView: UIView {
     private func hideAccentPopup() {
         accentPopupView?.removeFromSuperview()
         accentPopupView = nil
+    }
+
+    // MARK: - Key Preview Helpers
+
+    private func shouldShowPreview(for key: String) -> Bool {
+        guard isKeyTapPreviewEnabled else { return false }
+        if Self.specialKeys.contains(key) { return false }
+        if key == " " { return false }
+        return true
+    }
+
+    private func showKeyPreview(for key: String, sourceButton: UIButton, touch: UITouch) {
+        if keyPreviewTouch != nil && keyPreviewTouch !== touch {
+            hideKeyPreview()
+        }
+
+        keyPreviewTouch = touch
+
+        let theme = customTheme
+        let isDark = traitCollection.userInterfaceStyle == .dark
+
+        // v4: use button's current display text (handles Korean jamo shift correctly)
+        let displayText: String
+        if let buttonTitle = sourceButton.titleLabel?.text, !buttonTitle.isEmpty {
+            displayText = buttonTitle
+        } else {
+            displayText = key
+        }
+
+        keyPreviewView.configure(
+            text: displayText,
+            sourceButton: sourceButton,
+            parentBounds: bounds,
+            theme: theme,
+            isDark: isDark
+        )
+
+        if let popup = accentPopupView {
+            insertSubview(keyPreviewView, belowSubview: popup)
+        } else {
+            bringSubviewToFront(keyPreviewView)
+        }
+    }
+
+    private func hideKeyPreview() {
+        keyPreviewView.hide()
+        keyPreviewTouch = nil
     }
 
     private func enterTrackpadMode() {

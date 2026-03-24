@@ -142,10 +142,20 @@ class KeyboardViewController: UIInputViewController {
         static let topPadding: CGFloat = 8
     }
 
-    private var keyAreaHeight: CGFloat {
+    private func keyAreaHeight(for page: KeyboardPage? = nil) -> CGFloat {
+        let effectivePage = page ?? keyboardLayoutView.currentPage
+
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
-        let showNumberRow = defaults?.object(forKey: AppConstants.UserDefaultsKeys.showNumberRow) == nil ? true : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.showNumberRow) ?? true)
-        return showNumberRow ? 270 : 222
+        let showNumberRow = defaults?.object(forKey: AppConstants.UserDefaultsKeys.showNumberRow) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.showNumberRow) ?? true)
+
+        switch effectivePage {
+        case .letters:
+            return showNumberRow ? 270 : 222
+        case .symbols1, .symbols2:
+            return 270  // number row always visible in symbols
+        }
     }
 
     // MARK: - Lifecycle
@@ -300,6 +310,9 @@ class KeyboardViewController: UIInputViewController {
             LocalizationManager.shared.reload()
             self.reloadLocalizedStrings()
             self.loadNumberRowSetting()
+            self.loadPeriodKeySetting()
+            self.loadKeyPreviewSetting()
+            self.loadLatinAlternativesSetting()
             self.loadKeyboardLanguageSetting()
             self.updateReturnKeyAppearance()
             self.checkAutoCapitalize()
@@ -482,7 +495,31 @@ class KeyboardViewController: UIInputViewController {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         let show = defaults?.object(forKey: AppConstants.UserDefaultsKeys.showNumberRow) == nil ? true : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.showNumberRow) ?? true)
         keyboardLayoutView.showNumberRow = show
-        keyboardLayoutHeightConstraint?.constant = keyAreaHeight
+        keyboardLayoutHeightConstraint?.constant = keyAreaHeight()
+    }
+
+    private func loadPeriodKeySetting() {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        let show = defaults?.object(forKey: AppConstants.UserDefaultsKeys.showPeriodKey) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.showPeriodKey) ?? true)
+        keyboardLayoutView.showPeriodKey = show
+    }
+
+    private func loadKeyPreviewSetting() {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        let enabled = defaults?.object(forKey: AppConstants.UserDefaultsKeys.keyTapPreview) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.keyTapPreview) ?? true)
+        keyboardLayoutView.isKeyTapPreviewEnabled = enabled
+    }
+
+    private func loadLatinAlternativesSetting() {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        let enabled = defaults?.object(forKey: AppConstants.UserDefaultsKeys.latinAlternatives) == nil
+            ? true
+            : (defaults?.bool(forKey: AppConstants.UserDefaultsKeys.latinAlternatives) ?? true)
+        keyboardLayoutView.isLatinAlternativesEnabled = enabled
     }
 
     private func loadKeyboardLanguageSetting() {
@@ -542,14 +579,14 @@ class KeyboardViewController: UIInputViewController {
         guard heightConstraint == nil, let inputView = self.inputView else { return }
         // DO NOT set translatesAutoresizingMaskIntoConstraints = false on inputView
         // iOS system manages the keyboard extension's inputView width via autoresizing masks
-        let totalDefault = Heights.topPadding + Heights.toolbar + keyAreaHeight
+        let totalDefault = Heights.topPadding + Heights.toolbar + keyAreaHeight()
         heightConstraint = inputView.heightAnchor.constraint(equalToConstant: totalDefault)
         heightConstraint?.priority = .defaultHigh
         heightConstraint?.isActive = true
     }
 
     private func updateHeight(for mode: KeyboardMode, animated: Bool = true) {
-        let keyArea = keyAreaHeight
+        let keyArea = keyAreaHeight()
         keyboardLayoutHeightConstraint?.constant = keyArea
         let newHeight: CGFloat
         switch mode {
@@ -686,7 +723,7 @@ class KeyboardViewController: UIInputViewController {
         ])
 
         // Fixed height for keyboard layout — prevents stretching when system popup expands inputView
-        keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight)
+        keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight())
         keyboardLayoutHeightConstraint?.isActive = true
 
         // Default: keyboard top = toolbar bottom
@@ -956,6 +993,14 @@ class KeyboardViewController: UIInputViewController {
         // Keyboard layout — always present
         keyboardLayoutView.onKeyTap = { [weak self] key in
             self?.handleKeyTap(key)
+        }
+        keyboardLayoutView.onHeightChangeNeeded = { [weak self] in
+            guard let self = self else { return }
+            let newHeight = self.keyAreaHeight()
+            guard let constraint = self.keyboardLayoutHeightConstraint,
+                  constraint.constant != newHeight else { return }
+            constraint.constant = newHeight
+            self.updateHeight(for: self.currentMode, animated: true)
         }
         keyboardLayoutView.onLanguageChanged = { [weak self] lang in
             self?.commitDefaultComposing()

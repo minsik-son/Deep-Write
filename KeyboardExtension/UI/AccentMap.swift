@@ -3,6 +3,7 @@ import Foundation
 struct AccentMap {
     static func accents(for language: KeyboardLanguage) -> [String: [String]] {
         switch language {
+        case .english: return englishAccents
         case .spanish: return spanishAccents
         case .french: return frenchAccents
         case .german: return germanAccents
@@ -10,6 +11,30 @@ struct AccentMap {
         default: return [:]
         }
     }
+
+    private static let englishAccents: [String: [String]] = [
+        "a": ["à", "á", "â", "ä", "æ", "ã", "å"],
+        "e": ["è", "é", "ê", "ë"],
+        "i": ["ì", "í", "î", "ï"],
+        "o": ["ò", "ó", "ô", "ö", "œ", "ø", "õ"],
+        "u": ["ù", "ú", "û", "ü"],
+        "y": ["ÿ"],
+        "c": ["ç"],
+        "n": ["ñ"],
+        "s": ["ß"],
+        "l": ["ł"],
+
+        "A": ["À", "Á", "Â", "Ä", "Æ", "Ã", "Å"],
+        "E": ["È", "É", "Ê", "Ë"],
+        "I": ["Ì", "Í", "Î", "Ï"],
+        "O": ["Ò", "Ó", "Ô", "Ö", "Œ", "Ø", "Õ"],
+        "U": ["Ù", "Ú", "Û", "Ü"],
+        "Y": ["Ÿ"],
+        "C": ["Ç"],
+        "N": ["Ñ"],
+        "S": ["ẞ"],
+        "L": ["Ł"]
+    ]
 
     private static let spanishAccents: [String: [String]] = [
         "a": ["á", "à", "â", "ä", "ã"], "A": ["Á", "À", "Â", "Ä", "Ã"],

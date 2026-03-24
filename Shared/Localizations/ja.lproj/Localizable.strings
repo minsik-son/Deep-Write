@@ -595,3 +595,7 @@
 "template.congrats.field_person" = "相手";
 "template.congrats.field_achievement" = "お祝いの内容";
 "template.congrats.field_note" = "一言メッセージ";
+
+"settings.key_tap_preview" = "キータッププレビュー";
+"settings.latin_special_characters" = "ラテン語特殊文字";
+"settings.period_key" = "ピリオドキー";

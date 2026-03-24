@@ -595,3 +595,7 @@
 "template.congrats.field_person" = "对象";
 "template.congrats.field_achievement" = "成就";
 "template.congrats.field_note" = "个人寄语";
+
+"settings.key_tap_preview" = "按键预览";
+"settings.latin_special_characters" = "拉丁特殊字符";
+"settings.period_key" = "句号键";

@@ -6,16 +6,18 @@ class AccentPopupView: UIView {
     private var selectedIndex: Int = -1
     private let cellWidth: CGFloat = 36
     private let cellHeight: CGFloat = 42
+    private var storedTheme: KeyboardTheme?
 
     var selectedCharacter: String? {
         guard selectedIndex >= 0, selectedIndex < accentLabels.count else { return nil }
         return accentLabels[selectedIndex].text
     }
 
-    func configure(accents: [String], sourceFrame: CGRect, in parentView: UIView) {
+    func configure(accents: [String], sourceFrame: CGRect, in parentView: UIView, theme: KeyboardTheme? = nil, isDark: Bool = false) {
         subviews.forEach { $0.removeFromSuperview() }
         accentLabels.removeAll()
         selectedIndex = -1
+        storedTheme = theme
 
         let totalWidth = cellWidth * CGFloat(accents.count)
         let popupHeight = cellHeight
@@ -25,11 +27,17 @@ class AccentPopupView: UIView {
         var originX = centerX - totalWidth / 2
         // Clamp to parent bounds
         originX = max(4, min(originX, parentView.bounds.width - totalWidth - 4))
-        let originY = sourceFrame.minY - popupHeight - 4
+        // Y-clamp — prevent going above top edge
+        var originY = sourceFrame.minY - popupHeight - 4
+        originY = max(2, originY)
 
         frame = CGRect(x: originX, y: originY, width: totalWidth, height: popupHeight)
 
-        backgroundColor = UIColor.systemBackground
+        if let theme = theme {
+            backgroundColor = theme.keyBackground
+        } else {
+            backgroundColor = UIColor.systemBackground
+        }
         layer.cornerRadius = 8
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -76,7 +84,7 @@ class AccentPopupView: UIView {
 
         // Select new
         if selectedIndex >= 0, selectedIndex < accentLabels.count {
-            accentLabels[selectedIndex].backgroundColor = UIColor.systemBlue
+            accentLabels[selectedIndex].backgroundColor = storedTheme?.returnKeyAccentColor ?? UIColor.systemBlue
             accentLabels[selectedIndex].textColor = .white
         }
     }
