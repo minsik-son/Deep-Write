@@ -136,4 +136,35 @@ final class PredictionEngine {
         let sorted = scored.sorted { $0.value > $1.value }
         return Array(sorted.prefix(limit).map { $0.key })
     }
+
+    /// Phase 3: next character probability distribution from unigram data
+    func nextCharacterProbabilities(prefix: String) -> [Character: Float] {
+        guard !prefix.isEmpty, isModelLoaded else { return [:] }
+
+        let lowerPrefix = prefix.lowercased()
+        var charFreq: [Character: Int] = [:]
+        var totalFreq: Int = 0
+
+        for (word, freq) in unigrams {
+            let lowerWord = word.lowercased()
+            guard lowerWord.hasPrefix(lowerPrefix),
+                  lowerWord.count > lowerPrefix.count else { continue }
+
+            let nextIndex = lowerWord.index(lowerWord.startIndex, offsetBy: lowerPrefix.count)
+            let nextChar = lowerWord[nextIndex]
+
+            guard nextChar.isLetter && nextChar.isASCII else { continue }
+
+            charFreq[nextChar, default: 0] += freq
+            totalFreq += freq
+        }
+
+        guard totalFreq > 0 else { return [:] }
+
+        var probs: [Character: Float] = [:]
+        for (char, freq) in charFreq {
+            probs[char] = Float(freq) / Float(totalFreq)
+        }
+        return probs
+    }
 }

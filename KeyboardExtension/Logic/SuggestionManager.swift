@@ -4,6 +4,9 @@ final class SuggestionManager {
     private let autocorrectEngine = AutocorrectEngine()
     private let predictionEngine = PredictionEngine()
 
+    /// Phase 3: KeyboardLayoutView에서 PredictionEngine 접근용 getter
+    var predictionEngineRef: PredictionEngine { return predictionEngine }
+
     /// debounce 타이머 참조
     private var suggestionDebounceTimer: Timer?
 

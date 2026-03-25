@@ -100,6 +100,55 @@ class KeyboardLayoutView: UIView {
 
     /// Caps Lock visual indicator (dash bar)
     private weak var capsLockIndicator: UIView?
+
+    // MARK: - Phase 2: Per-User Touch Offset Learning
+
+    struct RowOffsetStats: Codable {
+        var meanOffsetX: Float = 0
+        var meanOffsetY: Float = -2.0
+        var varianceX: Float = 36.0
+        var varianceY: Float = 56.25
+        var sampleCount: UInt16 = 0
+    }
+
+    private var rowOffsetStats: [RowOffsetStats] = [
+        RowOffsetStats(),
+        RowOffsetStats(),
+        RowOffsetStats()
+    ]
+
+    private let touchLearningAlpha: Float = 0.05
+    private let touchLearningMinSamples: UInt16 = 30
+
+    // MARK: - Phase 3: Context-Based Character Probability
+
+    weak var predictionEngine: PredictionEngine?
+    var currentTypingPrefix: String = ""
+    var isDefaultMode: Bool = true
+
+    private var cachedProbPrefix: String = ""
+    private var cachedCharProbs: [Character: Float] = [:]
+
+    private static let phase3Languages: Set<KeyboardLanguage> = [
+        .english, .spanish, .french, .german, .italian
+    ]
+
+    private func nextCharProbabilities() -> [Character: Float] {
+        guard isDefaultMode,
+              Self.phase3Languages.contains(currentLanguage),
+              currentPage == .letters,
+              !currentTypingPrefix.isEmpty else {
+            return [:]
+        }
+
+        if currentTypingPrefix == cachedProbPrefix {
+            return cachedCharProbs
+        }
+
+        cachedCharProbs = predictionEngine?.nextCharacterProbabilities(prefix: currentTypingPrefix) ?? [:]
+        cachedProbPrefix = currentTypingPrefix
+        return cachedCharProbs
+    }
     private var isDark = false
     private var pendingBuildWork: DispatchWorkItem?
     /// 터치별 하이라이트된 버튼 추적 (멀티터치 지원)
@@ -1520,22 +1569,28 @@ class KeyboardLayoutView: UIView {
             let frame = sv.convert(button.frame, to: self)
             guard frame.width > 0 && frame.height > 0 else { continue }
             if frame.contains(point) {
+                // Phase 2: collect touch offset from direct-hits (ground truth)
+                if currentPage == .letters,
+                   let key = button.accessibilityLabel,
+                   key.count == 1,
+                   let firstChar = key.first,
+                   firstChar.isLetter {
+                    let center = CGPoint(x: frame.midX, y: frame.midY)
+                    let offsetX = Float(point.x - center.x)
+                    let offsetY = Float(point.y - center.y)
+                    let rowIdx = rowIndexForKeyCenter(center.y)
+                    if rowIdx >= 0 {
+                        recordTouchOffset(row: rowIdx, offsetX: offsetX, offsetY: offsetY)
+                    }
+                }
                 return button
             }
         }
-        // Phase 1: Research-based touch offset correction + weighted distance (v2)
-        //
-        // 1. Y offset: users systematically touch ~2pt below intended key (Henze et al., CHI 2012)
-        //    -> shift touch point up by 2pt to map closer to intended key
-        // 2. Y weight: vertical variance ~25% larger than horizontal (Azenkot & Zhai, 2012)
-        //    -> multiply Y distance by 0.82 to reduce Y penalty (more forgiving vertically)
-        // 3. Scope: gap hits only — direct hits (inside key frame) unchanged
-        //
-        // Memory: 0KB (constants + arithmetic only)
+        // Phase 2+3: user-learned offset + context probability weighted distance
 
         guard bounds.contains(point), !allKeyButtons.isEmpty else { return nil }
 
-        let correctedY = point.y - 2.0
+        let charProbs = nextCharProbabilities()
 
         var closestButton: UIButton?
         var minDistSq: CGFloat = .greatestFiniteMagnitude
@@ -1546,9 +1601,43 @@ class KeyboardLayoutView: UIView {
             guard frame.width > 0 && frame.height > 0 else { continue }
             let center = CGPoint(x: frame.midX, y: frame.midY)
 
-            let dx = point.x - center.x
-            let dy = (correctedY - center.y) * 0.82
-            let distSq = dx * dx + dy * dy
+            // Phase 2: per-row learned offset or Phase 1 fallback
+            let rowIdx = rowIndexForKeyCenter(center.y)
+            let stats: RowOffsetStats
+            if rowIdx >= 0 && rowIdx < 3 {
+                stats = rowOffsetStats[rowIdx]
+            } else {
+                stats = RowOffsetStats()
+            }
+
+            let correctedX: CGFloat
+            let correctedY: CGFloat
+            let varRatio: CGFloat
+
+            if stats.sampleCount >= touchLearningMinSamples {
+                correctedX = point.x - CGFloat(stats.meanOffsetX)
+                correctedY = point.y - CGFloat(stats.meanOffsetY)
+                varRatio = CGFloat(sqrt(stats.varianceX / stats.varianceY))
+            } else {
+                correctedX = point.x
+                correctedY = point.y - 2.0
+                varRatio = 0.82
+            }
+
+            let dx = correctedX - center.x
+            let dy = (correctedY - center.y) * varRatio
+            var distSq = dx * dx + dy * dy
+
+            // Phase 3: context probability weighting (Latin alphabets + prefix ≥ 1 only)
+            if !charProbs.isEmpty,
+               let key = button.accessibilityLabel,
+               key.count == 1,
+               let char = key.lowercased().first,
+               let prob = charProbs[char] {
+                let baseline: Float = 1.0 / 26.0
+                let probWeight = max(0.7, 1.0 - (prob - baseline) * 2.0)
+                distSq *= CGFloat(probWeight)
+            }
 
             if distSq < minDistSq {
                 minDistSq = distSq
@@ -3313,6 +3402,79 @@ class KeyboardLayoutView: UIView {
                 addCapsLockIndicator(to: shiftBtn)
             }
         }
+    }
+
+    // MARK: - Phase 2: Touch Learning Helpers
+
+    private func rowIndexForKeyCenter(_ centerY: CGFloat) -> Int {
+        let hasTopNumberRow = shouldShowTopNumberRow(for: currentPage)
+
+        let letterRowStart: CGFloat
+        if hasTopNumberRow {
+            letterRowStart = 4.0 + 40.0 + 8.0  // topInset + numberRowHeight + numberRowSpacingV
+        } else {
+            letterRowStart = 4.0  // topInset only
+        }
+
+        if hasTopNumberRow && centerY < letterRowStart {
+            return -1  // number row area — skip learning
+        }
+
+        let rowStride: CGFloat = 56.0  // keyHeight(46) + keySpacingV(10)
+        let inRowY = centerY - letterRowStart
+
+        if inRowY < rowStride {
+            return 0  // QWERTY
+        } else if inRowY < rowStride * 2 {
+            return 1  // ASDF
+        } else {
+            return 2  // ZXCV
+        }
+    }
+
+    private func recordTouchOffset(row: Int, offsetX: Float, offsetY: Float) {
+        guard row >= 0 && row < 3 else { return }
+
+        let alpha = touchLearningAlpha
+        var stats = rowOffsetStats[row]
+
+        let oldMeanX = stats.meanOffsetX
+        let oldMeanY = stats.meanOffsetY
+
+        stats.meanOffsetX = (1 - alpha) * oldMeanX + alpha * offsetX
+        stats.meanOffsetY = (1 - alpha) * oldMeanY + alpha * offsetY
+
+        let diffOldX = offsetX - oldMeanX
+        let diffNewX = offsetX - stats.meanOffsetX
+        stats.varianceX = (1 - alpha) * stats.varianceX + alpha * (diffOldX * diffNewX)
+
+        let diffOldY = offsetY - oldMeanY
+        let diffNewY = offsetY - stats.meanOffsetY
+        stats.varianceY = (1 - alpha) * stats.varianceY + alpha * (diffOldY * diffNewY)
+
+        stats.varianceX = max(stats.varianceX, 1.0)
+        stats.varianceY = max(stats.varianceY, 1.0)
+
+        if stats.sampleCount < UInt16.max {
+            stats.sampleCount += 1
+        }
+
+        rowOffsetStats[row] = stats
+    }
+
+    func saveTouchLearningData() {
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else { return }
+        if let data = try? JSONEncoder().encode(rowOffsetStats) {
+            defaults.set(data, forKey: "touch_offset_learning_v2")
+        }
+    }
+
+    func loadTouchLearningData() {
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier),
+              let data = defaults.data(forKey: "touch_offset_learning_v2"),
+              let stats = try? JSONDecoder().decode([RowOffsetStats].self, from: data),
+              stats.count == 3 else { return }
+        rowOffsetStats = stats
     }
 
     // MARK: - Mode-Aware Return Key (Proposal 03)

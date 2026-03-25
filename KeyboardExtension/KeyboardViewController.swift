@@ -233,6 +233,11 @@ class KeyboardViewController: UIInputViewController {
         switchMode(to: .defaultMode)
         restoreState()
 
+        // Phase 2: load touch learning data
+        keyboardLayoutView.loadTouchLearningData()
+        // Phase 3: connect PredictionEngine
+        keyboardLayoutView.predictionEngine = suggestionManager.predictionEngineRef
+
         // 저전력 모드 변경 감지
         NotificationCenter.default.addObserver(
             self,
@@ -350,6 +355,9 @@ class KeyboardViewController: UIInputViewController {
             autoSaveIfNeeded()
         }
         CompositionSessionManager.shared.endSession(reason: .keyboardHidden)
+
+        // Phase 2: save touch learning data
+        keyboardLayoutView.saveTouchLearningData()
 
         // ════════════════════════════════════════════
         // 조기 해제 (Early Teardown) — 단계별 메모리 측정
@@ -1299,6 +1307,9 @@ class KeyboardViewController: UIInputViewController {
         currentMode = mode
         hideEmojiKeyboard()
 
+        // Phase 3: disable context probability in non-default modes
+        keyboardLayoutView.isDefaultMode = (mode == .defaultMode)
+
         // Deactivate all keyboard top constraints first
         keyboardTopToToolbarConstraint?.isActive = false
         keyboardTopToTranslationConstraint?.isActive = false
@@ -2077,6 +2088,7 @@ class KeyboardViewController: UIInputViewController {
             } else {
                 textDocumentProxy.deleteBackward()
             }
+            keyboardLayoutView.currentTypingPrefix = currentTypingWord() ?? ""
 
         case KeyboardLayoutView.returnKey:
             if currentTypingWord() != nil {
@@ -2084,6 +2096,7 @@ class KeyboardViewController: UIInputViewController {
             }
             commitDefaultComposing()
             textDocumentProxy.insertText("\n")
+            keyboardLayoutView.currentTypingPrefix = ""
             isSuggestionDismissedForCurrentWord = false
 
         case " ":
@@ -2092,6 +2105,7 @@ class KeyboardViewController: UIInputViewController {
             }
             commitDefaultComposing()
             textDocumentProxy.insertText(" ")
+            keyboardLayoutView.currentTypingPrefix = ""
 
         default:
             isSuggestionDismissedForCurrentWord = false
@@ -2120,6 +2134,7 @@ class KeyboardViewController: UIInputViewController {
                 commitDefaultComposing()
                 textDocumentProxy.insertText(key)
             }
+            keyboardLayoutView.currentTypingPrefix = currentTypingWord() ?? ""
         }
 
         checkAutoCapitalize()
