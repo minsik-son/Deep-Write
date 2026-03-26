@@ -6,9 +6,8 @@ final class StoreKitManager {
 
     enum ProductID: String, CaseIterable {
         case monthlyPro = "com.translatorkeyboard.pro.monthly"
-        case yearlyPro = "com.translatorkeyboard.pro.yearly"
+        case yearlyPro = "com.translatorkeyboard.pro.annual"
         case monthlyPremium = "com.translatorkeyboard.premium.monthly"
-        case yearlyPremium = "com.translatorkeyboard.premium.yearly"
     }
 
     private(set) var products: [Product] = []

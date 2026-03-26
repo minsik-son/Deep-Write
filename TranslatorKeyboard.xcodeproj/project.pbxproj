@@ -26,6 +26,8 @@
 		3B89DA1F2F7116F800D2D4F9 /* ComposeHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA1B2F7116F800D2D4F9 /* ComposeHistoryManager.swift */; };
 		3B89DA212F71DB4000D2D4F9 /* AIWriterTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */; };
 		3BB993A72F7328A1002EA7C3 /* KeyPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993A62F7328A1002EA7C3 /* KeyPreviewView.swift */; };
+		3BB993BB2F749811002EA7C3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BB993BA2F749811002EA7C3 /* StoreKit.framework */; };
+		3BB993BE2F7498B2002EA7C3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3BB993BD2F7498B2002EA7C3 /* Products.storekit */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -183,6 +185,8 @@
 		3B89DA1C2F7116F800D2D4F9 /* ComposeHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeHistoryViewController.swift; sourceTree = "<group>"; };
 		3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWriterTemplates.swift; sourceTree = "<group>"; };
 		3BB993A62F7328A1002EA7C3 /* KeyPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPreviewView.swift; sourceTree = "<group>"; };
+		3BB993BA2F749811002EA7C3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		3BB993BD2F7498B2002EA7C3 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -274,10 +278,22 @@
 		WD01AA11BB22CC33DD550001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		3BB993BC2F749811002EA7C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BB993BB2F749811002EA7C3 /* StoreKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
 		029E3101DC7948E229F6347C /* Paywall */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993BD2F7498B2002EA7C3 /* Products.storekit */,
 				ED4D8415F1183E7FDB8673AA /* PaywallViewController.swift */,
 				1F99A6C778738429BC6EC5C3 /* StoreKitManager.swift */,
 			);
@@ -309,6 +325,14 @@
 				CEFCD59B19D6B214370C504C /* TranslatorKeyboard.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3BB993B92F749811002EA7C3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3BB993BA2F749811002EA7C3 /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		4230CE9937E4FE53729BBD96 /* TranslatorKeyboard */ = {
@@ -465,6 +489,7 @@
 				8D733AA9C8A306DC2EF99AFE /* KeyboardExtension */,
 				90AD3FEDABA364962673A6D5 /* Shared */,
 				4230CE9937E4FE53729BBD96 /* TranslatorKeyboard */,
+				3BB993B92F749811002EA7C3 /* Frameworks */,
 				306EA16641B37F317462C1B4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -555,6 +580,7 @@
 				E4C8E3DB10A82D2C45F59E89 /* Sources */,
 				AA22BB33CC44DD55EE660030 /* Resources */,
 				D2A6B5D3C4D79287000C2AC2 /* Embed Foundation Extensions */,
+				3BB993BC2F749811002EA7C3 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -636,6 +662,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA22BB33CC44DD55EE660002 /* Localizable.strings in Resources */,
+				3BB993BE2F7498B2002EA7C3 /* Products.storekit in Resources */,
 				519D0746F0B61F636F3E9CF7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
