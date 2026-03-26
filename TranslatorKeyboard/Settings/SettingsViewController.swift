@@ -29,25 +29,25 @@ class SettingsViewController: UITableViewController {
     }
 
     private var sections: [(title: String?, items: [SettingsItem])] {
-        var result: [(title: String?, items: [SettingsItem])] = [
-            // Section 0: Plan Banner
-            (
-                title: nil,
-                items: [
-                    SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .planBanner),
-                ]
-            ),
-        ]
+        var result: [(title: String?, items: [SettingsItem])] = []
 
-        // Section 1: Subscription — Pro/Premium일 때만 표시
         let tier = SubscriptionStatus.shared.currentTier
         if tier == .pro || tier == .premium {
+            // Pro/Premium: PlanBanner 대신 Subscription 카드를 헤더 없이 최상단 배치
             result.append((
-                title: L("settings.section.subscription"),
+                title: nil,
                 items: [
                     SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .subscriptionStatus),
                     SettingsItem(title: L("settings.manage_subscription"), iconName: "gear", iconBackgroundColor: AppColors.accent, accessory: .chevron),
                     SettingsItem(title: L("settings.restore_purchases"), iconName: "arrow.counterclockwise", iconBackgroundColor: .systemGray, accessory: .chevron),
+                ]
+            ))
+        } else {
+            // Free: 기존 PlanBanner 유지
+            result.append((
+                title: nil,
+                items: [
+                    SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .planBanner),
                 ]
             ))
         }
@@ -68,7 +68,7 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.language"), iconName: "globe", iconBackgroundColor: AppColors.accent, accessory: .chevron),
                     SettingsItem(title: L("settings.layout"), iconName: "keyboard", iconBackgroundColor: AppColors.green, accessory: .chevron),
                     SettingsItem(title: L("settings.autocomplete"), iconName: "text.badge.checkmark", iconBackgroundColor: .systemGreen, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoComplete)),
-                    SettingsItem(title: L("settings.auto_capitalize"), iconName: "textformat", iconBackgroundColor: AppColors.blue, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoCapitalize)),
+                    SettingsItem(title: L("settings.auto_capitalize"), iconName: "textformat.size", iconBackgroundColor: AppColors.blue, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoCapitalize)),
                     SettingsItem(title: L("settings.haptic"), iconName: "iphone.radiowaves.left.and.right", iconBackgroundColor: AppColors.pink, accessory: .toggle(key: AppConstants.UserDefaultsKeys.hapticFeedback)),
                     SettingsItem(title: L("settings.quick_notes"), iconName: "note.text", iconBackgroundColor: .systemYellow, accessory: .chevron),
                 ]
@@ -270,8 +270,8 @@ class SettingsViewController: UITableViewController {
 
         var vc: UIViewController?
 
-        // Subscription section
-        if sectionTitle == L("settings.section.subscription") {
+        // Subscription section — title이 nil이므로 accessory 기반 판별
+        if case .subscriptionStatus = sections[indexPath.section].items.first?.accessory {
             switch indexPath.row {
             case 1: manageSubscriptionTapped()
             case 2: restorePurchasesTapped()
@@ -630,6 +630,13 @@ private class SubscriptionStatusCell: UITableViewCell {
         return label
     }()
 
+    private let badgeIconView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
+    }()
+
     private let statusDot: UIView = {
         let dot = UIView()
         dot.layer.cornerRadius = 3.5
@@ -659,6 +666,7 @@ private class SubscriptionStatusCell: UITableViewCell {
     private func setupUI() {
         selectionStyle = .none
 
+        badgeContainer.addSubview(badgeIconView)
         badgeContainer.addSubview(badgeLabel)
 
         let rightStack = UIStackView(arrangedSubviews: [statusDot, statusLabel])
@@ -671,7 +679,12 @@ private class SubscriptionStatusCell: UITableViewCell {
         contentView.addSubview(rightStack)
 
         NSLayoutConstraint.activate([
-            badgeLabel.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 10),
+            badgeIconView.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 10),
+            badgeIconView.centerYAnchor.constraint(equalTo: badgeContainer.centerYAnchor),
+            badgeIconView.widthAnchor.constraint(equalToConstant: 14),
+            badgeIconView.heightAnchor.constraint(equalToConstant: 14),
+
+            badgeLabel.leadingAnchor.constraint(equalTo: badgeIconView.trailingAnchor, constant: 4),
             badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -10),
             badgeLabel.topAnchor.constraint(equalTo: badgeContainer.topAnchor),
             badgeLabel.bottomAnchor.constraint(equalTo: badgeContainer.bottomAnchor),
@@ -701,15 +714,17 @@ private class SubscriptionStatusCell: UITableViewCell {
     private func applyTierColors(tier: UserTier) {
         switch tier {
         case .pro:
-            badgeLabel.text = "👑 \(L("home.plan.pro"))"
+            badgeIconView.image = UIImage(named: "CrownIcon")
+            badgeLabel.text = L("home.plan.pro")
             badgeLabel.textColor = AppColors.gold
             badgeContainer.backgroundColor = AppColors.goldSoft
         case .premium:
-            badgeLabel.text = "💎 \(L("home.plan.premium"))"
+            badgeIconView.image = UIImage(named: "DiamondIcon")
+            badgeLabel.text = L("home.plan.premium")
             badgeLabel.textColor = AppColors.purple
             badgeContainer.backgroundColor = AppColors.purpleSoft
         case .free:
-            break
+            break // Free일 때는 이 셀 자체가 표시되지 않음
         }
     }
 

@@ -14,6 +14,21 @@ class HomeViewController: UIViewController {
 
     private let planCard = UIView()
     private let planBadgeLabel = UILabel()
+    private let planBadgeIconView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
+    }()
+    private let planBadgeContainer: UIView = {
+        let view = UIView()
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    private var badgeLabelLeadingToIcon: NSLayoutConstraint!
+    private var badgeLabelLeadingToContainer: NSLayoutConstraint!
     private let proLinkButton = UIButton(type: .system)
     private let corrProgressContainer = UIView()
     private let corrCenterLabel = UILabel()
@@ -204,26 +219,40 @@ class HomeViewController: UIViewController {
         topRow.alignment = .center
         topRow.distribution = .equalSpacing
 
-        // Plan badge (pill shape)
-        planBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        planBadgeLabel.textColor = AppColors.accent
-        planBadgeLabel.backgroundColor = AppColors.accentSoft
+        // Plan badge (pill shape) — 아이콘 + 텍스트
+        planBadgeLabel.font = .systemFont(ofSize: 13, weight: .bold)
         planBadgeLabel.textAlignment = .center
-        planBadgeLabel.layer.cornerRadius = 16
-        planBadgeLabel.clipsToBounds = true
         planBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let badgeWrapper = UIView()
-        badgeWrapper.addSubview(planBadgeLabel)
-        NSLayoutConstraint.activate([
-            planBadgeLabel.topAnchor.constraint(equalTo: badgeWrapper.topAnchor),
-            planBadgeLabel.leadingAnchor.constraint(equalTo: badgeWrapper.leadingAnchor),
-            planBadgeLabel.bottomAnchor.constraint(equalTo: badgeWrapper.bottomAnchor),
-            planBadgeLabel.heightAnchor.constraint(equalToConstant: 32),
-        ])
-        // Intrinsic content size + padding
         planBadgeLabel.setContentHuggingPriority(.required, for: .horizontal)
         planBadgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        planBadgeContainer.addSubview(planBadgeIconView)
+        planBadgeContainer.addSubview(planBadgeLabel)
+
+        badgeLabelLeadingToIcon = planBadgeLabel.leadingAnchor.constraint(equalTo: planBadgeIconView.trailingAnchor, constant: 4)
+        badgeLabelLeadingToContainer = planBadgeLabel.leadingAnchor.constraint(equalTo: planBadgeContainer.leadingAnchor, constant: 12)
+        badgeLabelLeadingToIcon.isActive = true
+        badgeLabelLeadingToContainer.isActive = false
+
+        NSLayoutConstraint.activate([
+            planBadgeContainer.heightAnchor.constraint(equalToConstant: 32),
+
+            planBadgeIconView.leadingAnchor.constraint(equalTo: planBadgeContainer.leadingAnchor, constant: 10),
+            planBadgeIconView.centerYAnchor.constraint(equalTo: planBadgeContainer.centerYAnchor),
+            planBadgeIconView.widthAnchor.constraint(equalToConstant: 14),
+            planBadgeIconView.heightAnchor.constraint(equalToConstant: 14),
+
+            planBadgeLabel.trailingAnchor.constraint(equalTo: planBadgeContainer.trailingAnchor, constant: -12),
+            planBadgeLabel.centerYAnchor.constraint(equalTo: planBadgeContainer.centerYAnchor),
+        ])
+
+        let badgeWrapper = UIView()
+        badgeWrapper.addSubview(planBadgeContainer)
+        NSLayoutConstraint.activate([
+            planBadgeContainer.topAnchor.constraint(equalTo: badgeWrapper.topAnchor),
+            planBadgeContainer.leadingAnchor.constraint(equalTo: badgeWrapper.leadingAnchor),
+            planBadgeContainer.bottomAnchor.constraint(equalTo: badgeWrapper.bottomAnchor),
+        ])
 
         topRow.addArrangedSubview(badgeWrapper)
 
@@ -410,18 +439,36 @@ class HomeViewController: UIViewController {
         let tier = SubscriptionStatus.shared.currentTier
         let usage = DailyUsageManager.shared
 
-        // Badge
+        // Badge — tier별 색상 + PNG 아이콘 적용
         switch tier {
         case .free:
-            planBadgeLabel.text = "   Free Plan   "
+            planBadgeLabel.text = "Free Plan"
+            planBadgeLabel.textColor = AppColors.accent
+            planBadgeContainer.backgroundColor = AppColors.accentSoft
+            planBadgeIconView.image = nil
+            planBadgeIconView.isHidden = true
+            badgeLabelLeadingToIcon.isActive = false
+            badgeLabelLeadingToContainer.isActive = true
             proLinkButton.isHidden = false
         case .pro:
-            planBadgeLabel.text = "   Pro Plan   "
+            planBadgeLabel.text = "Pro Plan"
+            planBadgeLabel.textColor = AppColors.gold
+            planBadgeContainer.backgroundColor = AppColors.goldSoft
+            planBadgeIconView.image = UIImage(named: "CrownIcon")
+            planBadgeIconView.isHidden = false
+            badgeLabelLeadingToContainer.isActive = false
+            badgeLabelLeadingToIcon.isActive = true
             proLinkButton.isHidden = true
             rewardCorrectionAdButton.isHidden = true
             rewardTranslationAdButton.isHidden = true
         case .premium:
-            planBadgeLabel.text = "   Premium Plan   "
+            planBadgeLabel.text = "Premium Plan"
+            planBadgeLabel.textColor = AppColors.purple
+            planBadgeContainer.backgroundColor = AppColors.purpleSoft
+            planBadgeIconView.image = UIImage(named: "DiamondIcon")
+            planBadgeIconView.isHidden = false
+            badgeLabelLeadingToContainer.isActive = false
+            badgeLabelLeadingToIcon.isActive = true
             proLinkButton.isHidden = true
             rewardCorrectionAdButton.isHidden = true
             rewardTranslationAdButton.isHidden = true
