@@ -1,4 +1,11 @@
 import UIKit
+import StoreKit
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let subscriptionStatusDidChange = Notification.Name("subscriptionStatusDidChange")
+}
 
 class SettingsViewController: UITableViewController {
 
@@ -8,7 +15,11 @@ class SettingsViewController: UITableViewController {
         case chevron
         case toggle(key: String)
         case planBanner
+        case subscriptionStatus
     }
+
+    private var toggleKeyMap: [Int: String] = [:]
+    private var isRestoringPurchases = false
 
     private struct SettingsItem {
         let title: String
@@ -18,7 +29,7 @@ class SettingsViewController: UITableViewController {
     }
 
     private var sections: [(title: String?, items: [SettingsItem])] {
-        [
+        var result: [(title: String?, items: [SettingsItem])] = [
             // Section 0: Plan Banner
             (
                 title: nil,
@@ -26,14 +37,31 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .planBanner),
                 ]
             ),
-            // Section 1: Appearance
+        ]
+
+        // Section 1: Subscription — Pro/Premium일 때만 표시
+        let tier = SubscriptionStatus.shared.currentTier
+        if tier == .pro || tier == .premium {
+            result.append((
+                title: L("settings.section.subscription"),
+                items: [
+                    SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .subscriptionStatus),
+                    SettingsItem(title: L("settings.manage_subscription"), iconName: "gear", iconBackgroundColor: AppColors.accent, accessory: .chevron),
+                    SettingsItem(title: L("settings.restore_purchases"), iconName: "arrow.counterclockwise", iconBackgroundColor: .systemGray, accessory: .chevron),
+                ]
+            ))
+        }
+
+        // 나머지 섹션
+        result.append(contentsOf: [
+            // Appearance
             (
                 title: L("settings.section.appearance"),
                 items: [
                     SettingsItem(title: L("settings.dark_mode"), iconName: "moon", iconBackgroundColor: UIColor(red: 0.345, green: 0.337, blue: 0.839, alpha: 1), accessory: .toggle(key: AppConstants.UserDefaultsKeys.appDarkMode)),
                 ]
             ),
-            // Section 2: Keyboard
+            // Keyboard
             (
                 title: L("settings.section.keyboard"),
                 items: [
@@ -45,7 +73,7 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.quick_notes"), iconName: "note.text", iconBackgroundColor: .systemYellow, accessory: .chevron),
                 ]
             ),
-            // Section 3: AI
+            // AI
             (
                 title: L("settings.section.ai"),
                 items: [
@@ -53,7 +81,7 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.ai_translation"), iconName: "arrow.right.arrow.left", iconBackgroundColor: AppColors.green, accessory: .chevron),
                 ]
             ),
-            // Section 4: Privacy
+            // Privacy
             (
                 title: L("settings.section.privacy"),
                 items: [
@@ -61,7 +89,7 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.full_access_explain"), iconName: "lock.open", iconBackgroundColor: AppColors.accent, accessory: .chevron),
                 ]
             ),
-            // Section 5: About
+            // About
             (
                 title: L("settings.section.about"),
                 items: [
@@ -73,7 +101,9 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.terms"), iconName: "doc.text", iconBackgroundColor: .systemGray, accessory: .chevron),
                 ]
             ),
-        ]
+        ])
+
+        return result
     }
 
     // MARK: - Admin Mode
@@ -126,13 +156,27 @@ class SettingsViewController: UITableViewController {
 
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SettingsCell")
         tableView.register(PlanBannerCell.self, forCellReuseIdentifier: PlanBannerCell.reuseIdentifier)
+        tableView.register(SubscriptionStatusCell.self, forCellReuseIdentifier: SubscriptionStatusCell.reuseIdentifier)
         tableView.tableFooterView = versionFooterView
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSubscriptionStatusChanged),
+            name: .subscriptionStatusDidChange,
+            object: nil
+        )
+    }
+
+    @objc private func handleSubscriptionStatusChanged() {
+        toggleKeyMap.removeAll()
+        tableView.reloadData()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationItem.title = L("settings.title")
         updateAdminBadge()
+        toggleKeyMap.removeAll()
         tableView.reloadData()
     }
 
@@ -155,6 +199,13 @@ class SettingsViewController: UITableViewController {
 
         if case .planBanner = item.accessory {
             let cell = tableView.dequeueReusableCell(withIdentifier: PlanBannerCell.reuseIdentifier, for: indexPath) as! PlanBannerCell
+            cell.selectionStyle = .none
+            return cell
+        }
+
+        if case .subscriptionStatus = item.accessory {
+            let cell = tableView.dequeueReusableCell(withIdentifier: SubscriptionStatusCell.reuseIdentifier, for: indexPath) as! SubscriptionStatusCell
+            cell.updateStatus()
             cell.selectionStyle = .none
             return cell
         }
@@ -184,11 +235,12 @@ class SettingsViewController: UITableViewController {
             }
             toggle.isOn = defaults?.object(forKey: key) == nil ? defaultValue : AppGroupManager.shared.bool(forKey: key)
             toggle.tag = indexPath.section * 100 + indexPath.row
+            toggleKeyMap[toggle.tag] = key
             toggle.addTarget(self, action: #selector(toggleChanged(_:)), for: .valueChanged)
             cell.accessoryType = .none
             cell.accessoryView = toggle
             cell.selectionStyle = .none
-        case .planBanner:
+        case .planBanner, .subscriptionStatus:
             break
         }
 
@@ -200,41 +252,90 @@ class SettingsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
 
-        var vc: UIViewController?
+        let sectionTitle = sections[indexPath.section].title
+        let item = sections[indexPath.section].items[indexPath.row]
 
-        switch (indexPath.section, indexPath.row) {
-        // Plan banner
-        case (0, 0):
+        // Plan Banner
+        if case .planBanner = item.accessory {
             let paywall = PaywallViewController()
             paywall.modalPresentationStyle = .fullScreen
             present(paywall, animated: true)
+            return
+        }
+
+        // Subscription Status cell — no action
+        if case .subscriptionStatus = item.accessory {
+            return
+        }
+
+        var vc: UIViewController?
+
+        // Subscription section
+        if sectionTitle == L("settings.section.subscription") {
+            switch indexPath.row {
+            case 1: manageSubscriptionTapped()
+            case 2: restorePurchasesTapped()
+            default: break
+            }
+            return
+        }
+
         // Keyboard section
-        case (2, 0): vc = LanguageSettingsViewController()
-        case (2, 1): vc = LayoutSettingsViewController()
-        case (2, 5): vc = QuickNoteListViewController()
+        if sectionTitle == L("settings.section.keyboard") {
+            switch indexPath.row {
+            case 0: vc = LanguageSettingsViewController()
+            case 1: vc = LayoutSettingsViewController()
+            case 5: vc = QuickNoteListViewController()
+            default: break
+            }
+        }
+
         // AI section
-        case (3, 0): vc = AICorrectionInfoViewController()
-        case (3, 1): vc = AITranslationInfoViewController()
+        if sectionTitle == L("settings.section.ai") {
+            switch indexPath.row {
+            case 0: vc = AICorrectionInfoViewController()
+            case 1: vc = AITranslationInfoViewController()
+            default: break
+            }
+        }
+
         // Privacy section
-        case (4, 0): vc = PrivacyDashboardViewController()
-        case (4, 1): vc = FullAccessExplainViewController()
+        if sectionTitle == L("settings.section.privacy") {
+            switch indexPath.row {
+            case 0: vc = PrivacyDashboardViewController()
+            case 1: vc = FullAccessExplainViewController()
+            default: break
+            }
+        }
+
         // About section
-        case (5, 0):
-            let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
-            defaults.set(false, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
-            let onboarding = OnboardingViewController()
-            onboarding.modalPresentationStyle = .fullScreen
-            present(onboarding, animated: true)
-        case (5, 1): vc = PasteGuideViewController()
-        case (5, 2):
-            if let url = URL(string: "itms-apps://itunes.apple.com/app/id\(AppConstants.mainBundleIdentifier)") {
-                UIApplication.shared.open(url)
+        if sectionTitle == L("settings.section.about") {
+            switch indexPath.row {
+            case 0:
+                let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+                defaults.set(false, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
+                let onboarding = OnboardingViewController()
+                onboarding.modalPresentationStyle = .fullScreen
+                present(onboarding, animated: true)
+            case 1: vc = PasteGuideViewController()
+            case 2:
+                if let url = URL(string: "itms-apps://itunes.apple.com/app/id\(AppConstants.mainBundleIdentifier)") {
+                    UIApplication.shared.open(url)
+                }
+            case 3:
+                if let url = URL(string: "https://support.translatorkeyboard.com/faq") {
+                    UIApplication.shared.open(url)
+                }
+            case 4:
+                if let url = URL(string: "https://support.translatorkeyboard.com/privacy") {
+                    UIApplication.shared.open(url)
+                }
+            case 5:
+                if let url = URL(string: "https://support.translatorkeyboard.com/terms") {
+                    UIApplication.shared.open(url)
+                }
+            default: break
             }
-        case (5, 3):
-            if let url = URL(string: "https://support.translatorkeyboard.com/faq") {
-                UIApplication.shared.open(url)
-            }
-        default: break
         }
 
         if let vc = vc {
@@ -245,15 +346,93 @@ class SettingsViewController: UITableViewController {
     // MARK: - Actions
 
     @objc private func toggleChanged(_ sender: UISwitch) {
-        let section = sender.tag / 100
-        let row = sender.tag % 100
-        let item = sections[section].items[row]
-        if case .toggle(let key) = item.accessory {
-            AppGroupManager.shared.set(sender.isOn, forKey: key)
-            if key == AppConstants.UserDefaultsKeys.appDarkMode {
-                view.window?.overrideUserInterfaceStyle = sender.isOn ? .dark : .light
+        guard let key = toggleKeyMap[sender.tag] else { return }
+        AppGroupManager.shared.set(sender.isOn, forKey: key)
+        if key == AppConstants.UserDefaultsKeys.appDarkMode {
+            view.window?.overrideUserInterfaceStyle = sender.isOn ? .dark : .light
+        }
+    }
+
+    // MARK: - Subscription Management
+
+    @MainActor
+    private func manageSubscriptionTapped() {
+        if #available(iOS 15.0, *) {
+            guard let windowScene = view.window?.windowScene else {
+                openSubscriptionManagementURL()
+                return
+            }
+            Task {
+                do {
+                    try await AppStore.showManageSubscriptions(in: windowScene)
+                } catch {
+                    openSubscriptionManagementURL()
+                }
+            }
+        } else {
+            openSubscriptionManagementURL()
+        }
+    }
+
+    private func openSubscriptionManagementURL() {
+        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func restorePurchasesTapped() {
+        guard !isRestoringPurchases else { return }
+
+        let alert = UIAlertController(
+            title: L("settings.restore.title"),
+            message: L("settings.restore.message"),
+            preferredStyle: .alert
+        )
+
+        let restoreAction = UIAlertAction(title: L("settings.restore.confirm"), style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            self.isRestoringPurchases = true
+
+            Task { @MainActor in
+                defer { self.isRestoringPurchases = false }
+                do {
+                    try await StoreKitManager.shared.restorePurchases()
+                    self.toggleKeyMap.removeAll()
+                    self.tableView.reloadData()
+                    self.showRestoreResult()
+                } catch {
+                    self.showRestoreError()
+                }
             }
         }
+
+        alert.addAction(restoreAction)
+        alert.addAction(UIAlertAction(title: L("common.cancel"), style: .cancel))
+        present(alert, animated: true)
+    }
+
+    private func showRestoreResult() {
+        let tier = SubscriptionStatus.shared.currentTier
+        let message: String
+        if tier == .free {
+            message = L("settings.restore.no_subscription")
+        } else {
+            message = String(format: L("settings.restore.success"), L("home.plan.\(tier.rawValue)"))
+        }
+
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default))
+        present(alert, animated: true)
+    }
+
+    private func showRestoreError() {
+        let alert = UIAlertController(
+            title: L("settings.restore.error_title"),
+            message: L("settings.restore.error_message"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default))
+        present(alert, animated: true)
     }
 
     // MARK: - Admin Mode Actions
@@ -425,6 +604,120 @@ private class PlanBannerCell: UITableViewCell {
         case .premium:
             planNameLabel.text = L("home.plan.premium")
             upgradeImageView.isHidden = true
+        }
+    }
+}
+
+// MARK: - SubscriptionStatusCell
+
+private class SubscriptionStatusCell: UITableViewCell {
+
+    static let reuseIdentifier = "SubscriptionStatusCell"
+
+    private let badgeContainer: UIView = {
+        let view = UIView()
+        view.layer.cornerRadius = 12
+        view.clipsToBounds = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    private let badgeLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 13, weight: .bold)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private let statusDot: UIView = {
+        let dot = UIView()
+        dot.layer.cornerRadius = 3.5
+        dot.backgroundColor = AppColors.green
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        return dot
+    }()
+
+    private let statusLabel: UILabel = {
+        let label = UILabel()
+        label.text = L("settings.subscription.active")
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.textColor = AppColors.green
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupUI() {
+        selectionStyle = .none
+
+        badgeContainer.addSubview(badgeLabel)
+
+        let rightStack = UIStackView(arrangedSubviews: [statusDot, statusLabel])
+        rightStack.axis = .horizontal
+        rightStack.spacing = 5
+        rightStack.alignment = .center
+        rightStack.translatesAutoresizingMaskIntoConstraints = false
+
+        contentView.addSubview(badgeContainer)
+        contentView.addSubview(rightStack)
+
+        NSLayoutConstraint.activate([
+            badgeLabel.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 10),
+            badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -10),
+            badgeLabel.topAnchor.constraint(equalTo: badgeContainer.topAnchor),
+            badgeLabel.bottomAnchor.constraint(equalTo: badgeContainer.bottomAnchor),
+
+            badgeContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            badgeContainer.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            badgeContainer.heightAnchor.constraint(equalToConstant: 28),
+
+            statusDot.widthAnchor.constraint(equalToConstant: 7),
+            statusDot.heightAnchor.constraint(equalToConstant: 7),
+
+            rightStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            rightStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+
+            badgeContainer.trailingAnchor.constraint(lessThanOrEqualTo: rightStack.leadingAnchor, constant: -8),
+
+            contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 48),
+        ])
+    }
+
+    func updateStatus() {
+        let tier = SubscriptionStatus.shared.currentTier
+        applyTierColors(tier: tier)
+        statusLabel.text = L("settings.subscription.active")
+    }
+
+    private func applyTierColors(tier: UserTier) {
+        switch tier {
+        case .pro:
+            badgeLabel.text = "👑 \(L("home.plan.pro"))"
+            badgeLabel.textColor = AppColors.gold
+            badgeContainer.backgroundColor = AppColors.goldSoft
+        case .premium:
+            badgeLabel.text = "💎 \(L("home.plan.premium"))"
+            badgeLabel.textColor = AppColors.purple
+            badgeContainer.backgroundColor = AppColors.purpleSoft
+        case .free:
+            break
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            let tier = SubscriptionStatus.shared.currentTier
+            applyTierColors(tier: tier)
         }
     }
 }

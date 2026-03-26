@@ -44,6 +44,18 @@ enum AppColors {
     static let orange = UIColor(red: 1.0, green: 0.624, blue: 0.263, alpha: 1)              // #FF9F43
     static let blue = UIColor(red: 0.329, green: 0.627, blue: 1.0, alpha: 1)                // #54A0FF
     static let pink = UIColor(red: 1.0, green: 0.420, blue: 0.616, alpha: 1)                // #FF6B9D
+
+    // Subscription tier accent colors
+    static let gold = UIColor(red: 0.620, green: 0.455, blue: 0.165, alpha: 1)              // #9E7428
+    static let goldSoft = UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 0.620, green: 0.455, blue: 0.165, alpha: 0.15)
+        : UIColor(red: 0.961, green: 0.902, blue: 0.769, alpha: 1)                           // light: #F5E6C4
+    }
+    static let purple = UIColor(red: 0.486, green: 0.306, blue: 0.749, alpha: 1)             // #7C4EBF
+    static let purpleSoft = UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 0.486, green: 0.306, blue: 0.749, alpha: 0.15)
+        : UIColor(red: 0.910, green: 0.863, blue: 0.961, alpha: 1)                           // light: #E8DCF5
+    }
 }
 
 enum AppSpacing {

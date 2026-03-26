@@ -599,3 +599,15 @@
 "settings.key_tap_preview" = "按键预览";
 "settings.latin_special_characters" = "拉丁特殊字符";
 "settings.period_key" = "句号键";
+
+"settings.section.subscription" = "订阅";
+"settings.manage_subscription" = "管理订阅";
+"settings.restore_purchases" = "恢复购买";
+"settings.subscription.active" = "已激活";
+"settings.restore.title" = "恢复购买";
+"settings.restore.message" = "这将恢复之前购买的订阅。";
+"settings.restore.confirm" = "恢复";
+"settings.restore.no_subscription" = "未找到有效订阅。";
+"settings.restore.success" = "%@方案已成功恢复。";
+"settings.restore.error_title" = "恢复失败";
+"settings.restore.error_message" = "无法恢复购买，请重试。";

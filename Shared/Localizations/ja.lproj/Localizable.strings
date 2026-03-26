@@ -599,3 +599,15 @@
 "settings.key_tap_preview" = "キータッププレビュー";
 "settings.latin_special_characters" = "ラテン語特殊文字";
 "settings.period_key" = "ピリオドキー";
+
+"settings.section.subscription" = "サブスクリプション";
+"settings.manage_subscription" = "サブスクリプション管理";
+"settings.restore_purchases" = "購入を復元";
+"settings.subscription.active" = "有効";
+"settings.restore.title" = "購入を復元";
+"settings.restore.message" = "以前購入したサブスクリプションを復元します。";
+"settings.restore.confirm" = "復元";
+"settings.restore.no_subscription" = "有効なサブスクリプションが見つかりません。";
+"settings.restore.success" = "%@ プランが正常に復元されました。";
+"settings.restore.error_title" = "復元に失敗";
+"settings.restore.error_message" = "購入を復元できませんでした。もう一度お試しください。";

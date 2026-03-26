@@ -599,3 +599,15 @@
 "settings.key_tap_preview" = "Key Tap Preview";
 "settings.latin_special_characters" = "Latin Special Characters";
 "settings.period_key" = "Period Key";
+
+"settings.section.subscription" = "Subscription";
+"settings.manage_subscription" = "Manage Subscription";
+"settings.restore_purchases" = "Restore Purchases";
+"settings.subscription.active" = "Active";
+"settings.restore.title" = "Restore Purchases";
+"settings.restore.message" = "This will restore any previously purchased subscriptions.";
+"settings.restore.confirm" = "Restore";
+"settings.restore.no_subscription" = "No active subscriptions found.";
+"settings.restore.success" = "%@ plan has been restored successfully.";
+"settings.restore.error_title" = "Restore Failed";
+"settings.restore.error_message" = "Unable to restore purchases. Please try again.";

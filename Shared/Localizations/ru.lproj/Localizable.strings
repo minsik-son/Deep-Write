@@ -599,3 +599,15 @@
 "settings.key_tap_preview" = "Предпросмотр клавиш";
 "settings.latin_special_characters" = "Латинские спецсимволы";
 "settings.period_key" = "Клавиша точки";
+
+"settings.section.subscription" = "Подписка";
+"settings.manage_subscription" = "Управление подпиской";
+"settings.restore_purchases" = "Восстановить покупки";
+"settings.subscription.active" = "Активна";
+"settings.restore.title" = "Восстановить покупки";
+"settings.restore.message" = "Ранее приобретённые подписки будут восстановлены.";
+"settings.restore.confirm" = "Восстановить";
+"settings.restore.no_subscription" = "Активных подписок не найдено.";
+"settings.restore.success" = "План %@ успешно восстановлен.";
+"settings.restore.error_title" = "Ошибка восстановления";
+"settings.restore.error_message" = "Не удалось восстановить покупки. Попробуйте ещё раз.";

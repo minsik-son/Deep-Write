@@ -599,3 +599,15 @@
 "settings.key_tap_preview" = "Aperçu de touche";
 "settings.latin_special_characters" = "Caractères spéciaux latins";
 "settings.period_key" = "Touche point";
+
+"settings.section.subscription" = "Abonnement";
+"settings.manage_subscription" = "Gérer l'abonnement";
+"settings.restore_purchases" = "Restaurer les achats";
+"settings.subscription.active" = "Actif";
+"settings.restore.title" = "Restaurer les achats";
+"settings.restore.message" = "Cela restaurera les abonnements précédemment achetés.";
+"settings.restore.confirm" = "Restaurer";
+"settings.restore.no_subscription" = "Aucun abonnement actif trouvé.";
+"settings.restore.success" = "Le plan %@ a été restauré avec succès.";
+"settings.restore.error_title" = "Échec de la restauration";
+"settings.restore.error_message" = "Impossible de restaurer les achats. Veuillez réessayer.";
