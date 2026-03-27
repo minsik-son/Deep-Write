@@ -13,6 +13,10 @@ class HomeViewController: UIViewController {
     // MARK: - Plan Card
 
     private let planCard = UIView()
+    private let usageContainer = UIView()
+    private let planCardTopLine = CAGradientLayer()
+    private let usageBgGradient = CAGradientLayer()
+    private var lastPlanCardWidth: CGFloat = 0
     private let planBadgeLabel = UILabel()
     private let planBadgeIconView: UIImageView = {
         let iv = UIImageView()
@@ -61,6 +65,10 @@ class HomeViewController: UIViewController {
     private var cachedClipboardCount = 0
     private var cachedPhrasesCount = 0
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -73,6 +81,7 @@ class HomeViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleAppWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleHistoryChange), name: .savedPhrasesDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSubscriptionChange), name: .subscriptionStatusDidChange, object: nil)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -201,6 +210,25 @@ class HomeViewController: UIViewController {
         planCard.layer.shadowOffset = CGSize(width: 0, height: 1)
         planCard.layer.shadowRadius = 3
 
+        // planCardTopLine: 3px gradient line at top (conditional insert)
+        if planCardTopLine.superlayer == nil {
+            planCardTopLine.startPoint = CGPoint(x: 0, y: 0.5)
+            planCardTopLine.endPoint = CGPoint(x: 1, y: 0.5)
+            planCardTopLine.frame = CGRect(x: 0, y: 0, width: max(planCard.bounds.width, 1), height: 3)
+
+            let topLineMask = CAShapeLayer()
+            let maskRect = CGRect(x: 0, y: 0, width: max(planCard.bounds.width, 1), height: 3)
+            topLineMask.frame = maskRect
+            topLineMask.path = UIBezierPath(
+                roundedRect: maskRect,
+                byRoundingCorners: [.topLeft, .topRight],
+                cornerRadii: CGSize(width: 1.5, height: 1.5)
+            ).cgPath
+            planCardTopLine.mask = topLineMask
+
+            planCard.layer.addSublayer(planCardTopLine)
+        }
+
         let mainStack = UIStackView()
         mainStack.axis = .vertical
         mainStack.spacing = 16
@@ -271,12 +299,24 @@ class HomeViewController: UIViewController {
         mainStack.addArrangedSubview(topRow)
 
         // Usage area: grey background with two circles
-        let usageContainer = UIView()
+        // usageContainer is a class property — no let declaration
+        usageContainer.subviews.forEach { $0.removeFromSuperview() }
+
         usageContainer.backgroundColor = UIColor { $0.userInterfaceStyle == .dark
             ? UIColor.white.withAlphaComponent(0.06)
             : UIColor(red: 0.965, green: 0.965, blue: 0.975, alpha: 1)
         }
         usageContainer.layer.cornerRadius = AppRadius.sm
+        usageContainer.clipsToBounds = true
+
+        // Pro/Premium usage background gradient (conditional insert)
+        if usageBgGradient.superlayer == nil {
+            usageBgGradient.startPoint = CGPoint(x: 0, y: 0)
+            usageBgGradient.endPoint = CGPoint(x: 1, y: 1)
+            usageBgGradient.cornerRadius = AppRadius.sm
+            usageBgGradient.isHidden = true
+            usageContainer.layer.insertSublayer(usageBgGradient, at: 0)
+        }
 
         let circleSize: CGFloat = 72
 
@@ -380,7 +420,7 @@ class HomeViewController: UIViewController {
         button.heightAnchor.constraint(equalToConstant: 40).isActive = true
     }
 
-    private func setupCircle(container: UIView, trackLayer: inout CAShapeLayer, progressLayer: inout CAShapeLayer, used: Int, total: Int, color: UIColor) {
+    private func setupCircle(container: UIView, trackLayer: inout CAShapeLayer, progressLayer: inout CAShapeLayer, used: Int, total: Int, color: UIColor, isPremiumTrack: Bool = false) {
         trackLayer.removeFromSuperlayer()
         progressLayer.removeFromSuperlayer()
 
@@ -399,9 +439,12 @@ class HomeViewController: UIViewController {
         // Track
         trackLayer = CAShapeLayer()
         trackLayer.path = circularPath.cgPath
-        let trackColor = UIColor { $0.userInterfaceStyle == .dark
-            ? UIColor.white.withAlphaComponent(0.1)
-            : UIColor(red: 0.910, green: 0.910, blue: 0.929, alpha: 1)
+        let trackColor = UIColor { trait in
+            if trait.userInterfaceStyle == .dark {
+                return UIColor.white.withAlphaComponent(0.1)
+            } else {
+                return color.withAlphaComponent(isPremiumTrack ? 0.10 : 0.12)
+            }
         }
         trackLayer.strokeColor = trackColor.cgColor
         // 라이트 모드: 원 중앙을 흰색으로 채움 / 다크 모드: 투명 유지
@@ -484,22 +527,124 @@ class HomeViewController: UIViewController {
         let transTotal = FeatureGate.shared.dailyTranslationLimit
             + (UserDefaults(suiteName: AppConstants.appGroupIdentifier)?.integer(forKey: "bonus_translation_count") ?? 0)
 
+        // Plan Card visual tier differentiation
+        let isDark = traitCollection.userInterfaceStyle == .dark
+
+        switch tier {
+        case .free:
+            planCardTopLine.isHidden = true
+            planCard.layer.shadowColor = UIColor.black.cgColor
+            planCard.layer.shadowOpacity = 0.04
+            planCard.layer.shadowRadius = 3
+            usageBgGradient.isHidden = true
+            usageContainer.backgroundColor = UIColor { $0.userInterfaceStyle == .dark
+                ? UIColor.white.withAlphaComponent(0.06)
+                : UIColor(red: 0.965, green: 0.965, blue: 0.975, alpha: 1)
+            }
+
+        case .pro:
+            planCardTopLine.isHidden = false
+            if isDark {
+                planCardTopLine.colors = [
+                    UIColor(red: 0.702, green: 0.549, blue: 0.235, alpha: 1).cgColor,
+                    UIColor(red: 0.792, green: 0.631, blue: 0.298, alpha: 1).cgColor,
+                ]
+            } else {
+                planCardTopLine.colors = [
+                    UIColor(red: 0.471, green: 0.337, blue: 0.0, alpha: 1).cgColor,
+                    UIColor(red: 0.596, green: 0.427, blue: 0.0, alpha: 1).cgColor,
+                ]
+            }
+            planCard.layer.shadowColor = isDark
+                ? UIColor(red: 0.702, green: 0.549, blue: 0.235, alpha: 1).cgColor
+                : UIColor(red: 0.620, green: 0.455, blue: 0.165, alpha: 1).cgColor
+            planCard.layer.shadowOpacity = isDark ? 0.12 : 0.08
+            planCard.layer.shadowRadius = 12
+            if isDark {
+                usageBgGradient.isHidden = true
+                usageContainer.backgroundColor = UIColor.white.withAlphaComponent(0.06)
+            } else {
+                usageContainer.backgroundColor = .clear
+                usageBgGradient.isHidden = false
+                usageBgGradient.colors = [
+                    UIColor(red: 0.992, green: 0.980, blue: 0.953, alpha: 1).cgColor,
+                    UIColor(red: 0.973, green: 0.957, blue: 0.922, alpha: 1).cgColor,
+                ]
+                let usageBounds = usageContainer.bounds
+                if usageBounds.width > 0 && usageBounds.height > 0 {
+                    usageBgGradient.frame = usageBounds
+                }
+            }
+
+        case .premium:
+            planCardTopLine.isHidden = false
+            if isDark {
+                planCardTopLine.colors = [
+                    UIColor(red: 0.533, green: 0.376, blue: 0.792, alpha: 1).cgColor,
+                    UIColor(red: 0.600, green: 0.431, blue: 0.859, alpha: 1).cgColor,
+                ]
+            } else {
+                planCardTopLine.colors = [
+                    UIColor(red: 0.369, green: 0.208, blue: 0.631, alpha: 1).cgColor,
+                    UIColor(red: 0.416, green: 0.239, blue: 0.690, alpha: 1).cgColor,
+                ]
+            }
+            planCard.layer.shadowColor = isDark
+                ? UIColor(red: 0.533, green: 0.376, blue: 0.792, alpha: 1).cgColor
+                : UIColor(red: 0.486, green: 0.306, blue: 0.749, alpha: 1).cgColor
+            planCard.layer.shadowOpacity = isDark ? 0.12 : 0.08
+            planCard.layer.shadowRadius = 12
+            if isDark {
+                usageBgGradient.isHidden = true
+                usageContainer.backgroundColor = UIColor.white.withAlphaComponent(0.06)
+            } else {
+                usageContainer.backgroundColor = .clear
+                usageBgGradient.isHidden = false
+                usageBgGradient.colors = [
+                    UIColor(red: 0.980, green: 0.969, blue: 0.992, alpha: 1).cgColor,
+                    UIColor(red: 0.953, green: 0.933, blue: 0.976, alpha: 1).cgColor,
+                ]
+                let usageBounds = usageContainer.bounds
+                if usageBounds.width > 0 && usageBounds.height > 0 {
+                    usageBgGradient.frame = usageBounds
+                }
+            }
+        }
+
+        // Progress rings — tier-based colors
+        let isPremiumTier = (tier == .premium)
+
         if tier == .premium && FeatureGate.shared.isPremiumUnlimited {
             corrCenterLabel.text = L("home.plan.unlimited")
             corrCenterLabel.font = .systemFont(ofSize: 20, weight: .bold)
             transCenterLabel.text = L("home.plan.unlimited")
             transCenterLabel.font = .systemFont(ofSize: 20, weight: .bold)
-            setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: 1, total: 1, color: AppColors.green)
-            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: 1, total: 1, color: AppColors.green)
-            corrProgressLayer.strokeColor = AppColors.green.cgColor
-            transProgressLayer.strokeColor = AppColors.green.cgColor
+            setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: 1, total: 1, color: AppColors.purple, isPremiumTrack: true)
+            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: 1, total: 1, color: AppColors.purple, isPremiumTrack: true)
+            corrProgressLayer.strokeColor = AppColors.purple.cgColor
+            transProgressLayer.strokeColor = AppColors.purple.cgColor
         } else {
             corrCenterLabel.text = "\(corrUsed)/\(corrTotal)"
             corrCenterLabel.font = .systemFont(ofSize: 15, weight: .bold)
             transCenterLabel.text = "\(transUsed)/\(transTotal)"
             transCenterLabel.font = .systemFont(ofSize: 15, weight: .bold)
-            setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: corrUsed, total: corrTotal, color: AppColors.orange)
-            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: transUsed, total: transTotal, color: AppColors.accent)
+
+            let corrRingColor: UIColor
+            let transRingColor: UIColor
+            switch tier {
+            case .pro:
+                corrRingColor = AppColors.gold
+                transRingColor = AppColors.gold
+            case .premium:
+                corrRingColor = AppColors.purple
+                transRingColor = AppColors.purple
+            case .free:
+                corrRingColor = AppColors.orange
+                transRingColor = AppColors.accent
+            }
+
+            setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: corrUsed, total: corrTotal, color: corrRingColor, isPremiumTrack: isPremiumTier)
+            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: transUsed, total: transTotal, color: transRingColor, isPremiumTrack: isPremiumTier)
         }
 
         // Conditional reward button visibility (free tier only)
@@ -513,6 +658,57 @@ class HomeViewController: UIViewController {
             rewardCorrectionAdButton.setTitle(String(format: L("home.reward_ad.cta_mode"), L("reward.mode.correction")), for: .normal)
             rewardTranslationAdButton.setTitle(String(format: L("home.reward_ad.cta_mode"), L("reward.mode.translation")), for: .normal)
         }
+    }
+
+    private func updateBannerColors() {
+        let tier = SubscriptionStatus.shared.currentTier
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+
+        // AI Writer Banner gradient
+        if let aiGradient = aiWriterBanner.layer.sublayers?.first as? CAGradientLayer {
+            switch tier {
+            case .free:
+                aiGradient.colors = [
+                    UIColor(red: 0.192, green: 0.510, blue: 0.965, alpha: 1).cgColor,
+                    UIColor(red: 0.106, green: 0.392, blue: 0.855, alpha: 1).cgColor,
+                ]
+            case .pro:
+                aiGradient.colors = [
+                    UIColor(red: 0.773, green: 0.580, blue: 0.227, alpha: 1).cgColor,
+                    UIColor(red: 0.620, green: 0.455, blue: 0.157, alpha: 1).cgColor,
+                ]
+            case .premium:
+                aiGradient.colors = [
+                    UIColor(red: 0.545, green: 0.361, blue: 0.784, alpha: 1).cgColor,
+                    UIColor(red: 0.416, green: 0.247, blue: 0.667, alpha: 1).cgColor,
+                ]
+            }
+        }
+
+        // Paste Guide Banner gradient
+        if let pasteGradient = pasteGuideBanner.layer.sublayers?.first as? CAGradientLayer {
+            switch tier {
+            case .free:
+                pasteGradient.colors = [
+                    UIColor(red: 0.0, green: 0.808, blue: 0.706, alpha: 1).cgColor,
+                    UIColor(red: 0.0, green: 0.624, blue: 0.576, alpha: 1).cgColor,
+                ]
+            case .pro:
+                pasteGradient.colors = [
+                    UIColor(red: 0.722, green: 0.537, blue: 0.180, alpha: 1).cgColor,
+                    UIColor(red: 0.541, green: 0.408, blue: 0.125, alpha: 1).cgColor,
+                ]
+            case .premium:
+                pasteGradient.colors = [
+                    UIColor(red: 0.486, green: 0.306, blue: 0.749, alpha: 1).cgColor,
+                    UIColor(red: 0.369, green: 0.208, blue: 0.631, alpha: 1).cgColor,
+                ]
+            }
+        }
+
+        CATransaction.commit()
     }
 
     // MARK: - 3. AI Writer Banner
@@ -587,6 +783,51 @@ class HomeViewController: UIViewController {
         if let gradientLayer = pasteGuideBanner.layer.sublayers?.first as? CAGradientLayer {
             gradientLayer.frame = pasteGuideBanner.bounds
         }
+
+        // planCardTopLine + usageBgGradient resize (width change only)
+        let currentPlanCardWidth = planCard.bounds.width
+        if currentPlanCardWidth != lastPlanCardWidth && currentPlanCardWidth > 0 {
+            lastPlanCardWidth = currentPlanCardWidth
+
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+
+            planCardTopLine.frame = CGRect(x: 0, y: 0, width: currentPlanCardWidth, height: 3)
+            if let maskLayer = planCardTopLine.mask as? CAShapeLayer {
+                let maskRect = CGRect(x: 0, y: 0, width: currentPlanCardWidth, height: 3)
+                maskLayer.frame = maskRect
+                maskLayer.path = UIBezierPath(
+                    roundedRect: maskRect,
+                    byRoundingCorners: [.topLeft, .topRight],
+                    cornerRadii: CGSize(width: 1.5, height: 1.5)
+                ).cgPath
+            }
+
+            let usageBounds = usageContainer.bounds
+            if usageBounds.width > 0 && usageBounds.height > 0 {
+                usageBgGradient.frame = usageBounds
+            }
+
+            CATransaction.commit()
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+
+        updatePlanCard()
+        updateBannerColors()
+
+        let usageBounds = usageContainer.bounds
+        if !usageBgGradient.isHidden && usageBounds.width > 0 && usageBounds.height > 0 {
+            usageBgGradient.frame = usageBounds
+        }
+
+        CATransaction.commit()
     }
 
     @objc private func aiWriterBannerTapped() {
@@ -909,7 +1150,16 @@ class HomeViewController: UIViewController {
         corrProgressLayer.removeFromSuperlayer()
         transTrackLayer.removeFromSuperlayer()
         transProgressLayer.removeFromSuperlayer()
+
+        // planCardTopLine, usageBgGradient removed by sublayers?.removeAll()
+        // Reset width so viewDidLayoutSubviews re-creates frame/mask
+        lastPlanCardWidth = 0
+
         buildContent()
+        refreshStats()
+    }
+
+    @objc private func handleSubscriptionChange() {
         refreshStats()
     }
 
@@ -936,6 +1186,9 @@ class HomeViewController: UIViewController {
 
         // Plan card update
         updatePlanCard()
+
+        // Banner gradient tier colors
+        updateBannerColors()
 
         // Weekly stats
         correctionCountLabel.text = "\(stats.weeklyCorrections)"
