@@ -10,6 +10,7 @@ enum ToolbarItemType: String, CaseIterable, Equatable {
     case quickNote
     case correction
     case translation
+    case calculator
 }
 
 // MARK: - Toolbar Configuration
@@ -34,14 +35,6 @@ struct ToolbarConfiguration {
 
         if items.isEmpty {
             return defaultItems
-        }
-
-        // Merge new items from future app versions
-        let existing = Set(items)
-        let newItems = ToolbarItemType.allCases.filter { !existing.contains($0) }
-        if !newItems.isEmpty {
-            items.append(contentsOf: newItems)
-            save(items)
         }
 
         // settings always first

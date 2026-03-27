@@ -625,3 +625,5 @@
 "settings.toolbar.item.quickNote" = "便签";
 "settings.toolbar.item.correction" = "校对";
 "settings.toolbar.item.translation" = "翻译";
+
+"settings.toolbar.item.calculator" = "计算器";

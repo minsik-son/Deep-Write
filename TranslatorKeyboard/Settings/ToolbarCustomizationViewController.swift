@@ -132,6 +132,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .quickNote:    return "icon_toolbar_quicknote"
         case .correction:   return "icon_toolbar_correction"
         case .translation:  return "icon_toolbar_translation"
+        case .calculator:   return "plus.forwardslash.minus"
         }
     }
 
@@ -144,6 +145,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .quickNote:    return L("settings.toolbar.item.quickNote")
         case .correction:   return L("settings.toolbar.item.correction")
         case .translation:  return L("settings.toolbar.item.translation")
+        case .calculator:   return L("settings.toolbar.item.calculator")
         }
     }
 
@@ -375,7 +377,12 @@ private final class ToolbarPreviewCell: UICollectionViewCell {
     }
 
     func configure(iconName: String, showDeleteBadge: Bool) {
-        iconImageView.image = UIImage(named: iconName)?.withRenderingMode(.alwaysTemplate)
+        if let named = UIImage(named: iconName)?.withRenderingMode(.alwaysTemplate) {
+            iconImageView.image = named
+        } else {
+            // Fallback: SF Symbol (calculator 등 에셋 없는 경우)
+            iconImageView.image = UIImage(systemName: iconName)?.withRenderingMode(.alwaysTemplate)
+        }
         deleteBadge.isHidden = !showDeleteBadge
     }
 }
@@ -477,7 +484,11 @@ private final class ToolbarGridCell: UICollectionViewCell {
     }
 
     func configure(iconName: String, title: String) {
-        iconImageView.image = UIImage(named: iconName)?.withRenderingMode(.alwaysTemplate)
+        if let named = UIImage(named: iconName)?.withRenderingMode(.alwaysTemplate) {
+            iconImageView.image = named
+        } else {
+            iconImageView.image = UIImage(systemName: iconName)?.withRenderingMode(.alwaysTemplate)
+        }
         titleLabel.text = title
     }
 }

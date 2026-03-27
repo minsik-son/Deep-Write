@@ -57,6 +57,10 @@ class KeyboardViewController: UIInputViewController {
     private var editingNote: QuickNote?
     private var quickNoteTopConstraint: NSLayoutConstraint?
 
+    // MARK: - Calculator
+    private var calculatorView: CalculatorView?
+    private var modeBeforeCalculator: KeyboardMode?
+
     // MARK: - Logic Managers
 
     private let defaultTextInputHandler = TextInputHandler()
@@ -273,6 +277,14 @@ class KeyboardViewController: UIInputViewController {
         ThemePatternRenderer.clearCache()
         MatrixRainView.clearCharacterImageCache()
 
+        // 계산기가 열려있으면 메모리 확보를 위해 정리 후 defaultMode 복귀
+        if let calc = calculatorView {
+            calc.removeFromSuperview()
+            calculatorView = nil
+            modeBeforeCalculator = nil
+            switchMode(to: .defaultMode)
+        }
+
         #if DEBUG
         kbLogger.warning("⚠️ After cache clear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         #endif
@@ -350,6 +362,13 @@ class KeyboardViewController: UIInputViewController {
         #endif
 
         stopClipboardMonitoring()
+
+        // 계산기 정리
+        if let calc = calculatorView {
+            calc.removeFromSuperview()
+            calculatorView = nil
+            modeBeforeCalculator = nil
+        }
 
         // CC-4: QuickNote 자동 저장 (기존 로직 유지)
         if currentMode == .quickNoteMode {
@@ -991,6 +1010,11 @@ class KeyboardViewController: UIInputViewController {
             self?.hideStatusPopup()
             self?.toggleQuickNoteMode()
         }
+        toolbarView.onCalculatorTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.showCalculator()
+        }
         // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
         toolbarView.onSuggestionTap = { [weak self] suggestion in
             self?.applySuggestion(suggestion)
@@ -1290,6 +1314,13 @@ class KeyboardViewController: UIInputViewController {
 
     func switchMode(to mode: KeyboardMode) {
         let previousMode = currentMode
+
+        // 계산기가 열려있으면 먼저 닫기 (모드 전환 충돌 방지)
+        if let calc = calculatorView {
+            calc.removeFromSuperview()
+            calculatorView = nil
+            modeBeforeCalculator = nil
+        }
 
         // QuickNote 모드 이탈 시 전체 정리
         if previousMode == .quickNoteMode && mode != .quickNoteMode {
@@ -2593,6 +2624,8 @@ class KeyboardViewController: UIInputViewController {
         quickNoteReadView?.updateAppearance(isDark: isDark)
         quickNoteEditView?.applyTheme(theme)
         quickNoteEditView?.updateAppearance(isDark: isDark)
+        calculatorView?.applyTheme(theme)
+        calculatorView?.updateAppearance(isDark: isDark)
     }
 
     // MARK: - Status Popup (Proposal 02)
@@ -2846,6 +2879,93 @@ extension KeyboardViewController {
         } else {
             switchMode(to: .quickNoteMode)
         }
+    }
+
+    // MARK: - Calculator
+
+    private func showCalculator() {
+        guard let inputView = self.inputView else { return }
+
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 showCalculator START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
+
+        modeBeforeCalculator = currentMode
+
+        calculatorView?.removeFromSuperview()
+        calculatorView = nil
+
+        keyboardLayoutView.prepareForDismiss()
+
+        let calc = CalculatorView()
+        calc.translatesAutoresizingMaskIntoConstraints = false
+
+        calc.onClose = { [weak self] in
+            self?.closeCalculator()
+        }
+        calc.onInsert = { [weak self] text in
+            self?.textDocumentProxy.insertText(text)
+        }
+
+        inputView.addSubview(calc)
+        calculatorView = calc
+
+        NSLayoutConstraint.activate([
+            calc.topAnchor.constraint(equalTo: inputView.topAnchor),
+            calc.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            calc.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            calc.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        toolbarView.isHidden = true
+        keyboardLayoutView.isHidden = true
+
+        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let theme = loadTheme()
+        calc.applyTheme(theme)
+        calc.updateAppearance(isDark: isDark)
+
+        calc.alpha = 0
+        UIView.animate(withDuration: 0.2) {
+            calc.alpha = 1
+        }
+
+        inputView.bringSubviewToFront(toastLabel)
+
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 showCalculator END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
+
+        checkMemorySafetyNet()
+    }
+
+    private func closeCalculator() {
+        guard let calc = calculatorView else { return }
+
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("🔬 closeCalculator START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
+        #endif
+
+        calc.removeFromSuperview()
+        calculatorView = nil
+
+        if let previousMode = modeBeforeCalculator {
+            modeBeforeCalculator = nil
+            switchMode(to: previousMode)
+        } else {
+            toolbarView.isHidden = false
+            keyboardLayoutView.isHidden = false
+        }
+
+        updateKeyboardAppearance()
+
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("🔬 closeCalculator END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        #endif
     }
 
     private func showQuickNoteList() {

@@ -625,3 +625,5 @@
 "settings.toolbar.item.quickNote" = "Note";
 "settings.toolbar.item.correction" = "Correzione";
 "settings.toolbar.item.translation" = "Traduzione";
+
+"settings.toolbar.item.calculator" = "Calcolatrice";

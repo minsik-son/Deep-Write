@@ -32,6 +32,7 @@
 		3BB993C32F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
 		3BB993C42F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
 		3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */; };
+		3BB993C82F7726B7002EA7C3 /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -194,6 +195,7 @@
 		3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppColors+Tier.swift"; sourceTree = "<group>"; };
 		3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarConfiguration.swift; sourceTree = "<group>"; };
 		3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarCustomizationViewController.swift; sourceTree = "<group>"; };
+		3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -435,6 +437,7 @@
 		8D733AA9C8A306DC2EF99AFE /* KeyboardExtension */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */,
 				3B8365572F6B8BF300E27AF8 /* DisplayLinkProxy.swift */,
 				3B8365532F68F46500E27AF8 /* FontPool.swift */,
 				3B8365542F68F46500E27AF8 /* WeakProxy.swift */,
@@ -720,6 +723,7 @@
 				58C9FA5545F3E00B33851B70 /* SessionManager.swift in Sources */,
 				SN01AA11BB22CC33DD440001 /* SharedNetworkSession.swift in Sources */,
 				8BA039CD34B039DFEC28E82E /* SubscriptionStatus.swift in Sources */,
+				3BB993C82F7726B7002EA7C3 /* CalculatorView.swift in Sources */,
 				C6F75003C1E7288C7544FB49 /* SuggestionManager.swift in Sources */,
 				48785B31AB3E464020A5AB01 /* TextInputHandler.swift in Sources */,
 				570CC66D851D856F9A768EB0 /* TextProxyManager.swift in Sources */,

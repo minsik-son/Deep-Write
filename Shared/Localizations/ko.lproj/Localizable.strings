@@ -625,3 +625,5 @@
 "settings.toolbar.item.quickNote" = "빠른 메모";
 "settings.toolbar.item.correction" = "맞춤법검사";
 "settings.toolbar.item.translation" = "번역";
+
+"settings.toolbar.item.calculator" = "계산기";

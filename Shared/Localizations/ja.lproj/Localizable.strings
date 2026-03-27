@@ -625,3 +625,5 @@
 "settings.toolbar.item.quickNote" = "メモ";
 "settings.toolbar.item.correction" = "校正";
 "settings.toolbar.item.translation" = "翻訳";
+
+"settings.toolbar.item.calculator" = "電卓";
