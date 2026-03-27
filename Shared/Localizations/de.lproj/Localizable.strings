@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "Käufe konnten nicht wiederhergestellt werden. Bitte erneut versuchen.";
 
 "home.tile.ai_compose" = "KI";
+
+"settings.toolbar" = "Symbolleiste";
+"settings.toolbar.title" = "Symbolleiste anpassen";
+"settings.toolbar.edit" = "Bearbeiten";
+"settings.toolbar.save" = "Speichern";
+"settings.toolbar.item.settings" = "Einstellungen";
+"settings.toolbar.item.emoji" = "Emoji";
+"settings.toolbar.item.clipboard" = "Zwischenablage";
+"settings.toolbar.item.savedPhrases" = "Phrasen";
+"settings.toolbar.item.quickNote" = "Notizen";
+"settings.toolbar.item.correction" = "Korrektur";
+"settings.toolbar.item.translation" = "Übersetzung";

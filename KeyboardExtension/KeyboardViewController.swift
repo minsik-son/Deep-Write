@@ -303,6 +303,7 @@ class KeyboardViewController: UIInputViewController {
         textProxyManager.updateProxy(textDocumentProxy)
         setupHeightConstraint()
         loadCachedSettings()
+        toolbarView.rebuildToolbarIfNeeded()
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
         // viewDidLoad/switchMode(.defaultMode)에서는 호출되지 않으므로

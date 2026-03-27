@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "No se pudieron restaurar las compras. Inténtalo de nuevo.";
 
 "home.tile.ai_compose" = "IA";
+
+"settings.toolbar" = "Barra de herramientas";
+"settings.toolbar.title" = "Configurar barra";
+"settings.toolbar.edit" = "Editar";
+"settings.toolbar.save" = "Guardar";
+"settings.toolbar.item.settings" = "Ajustes";
+"settings.toolbar.item.emoji" = "Emoji";
+"settings.toolbar.item.clipboard" = "Portapapeles";
+"settings.toolbar.item.savedPhrases" = "Frases";
+"settings.toolbar.item.quickNote" = "Notas";
+"settings.toolbar.item.correction" = "Corrección";
+"settings.toolbar.item.translation" = "Traducción";

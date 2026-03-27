@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "Не удалось восстановить покупки. Попробуйте ещё раз.";
 
 "home.tile.ai_compose" = "ИИ";
+
+"settings.toolbar" = "Панель инструментов";
+"settings.toolbar.title" = "Настройка панели";
+"settings.toolbar.edit" = "Изменить";
+"settings.toolbar.save" = "Сохранить";
+"settings.toolbar.item.settings" = "Настройки";
+"settings.toolbar.item.emoji" = "Эмодзи";
+"settings.toolbar.item.clipboard" = "Буфер обмена";
+"settings.toolbar.item.savedPhrases" = "Фразы";
+"settings.toolbar.item.quickNote" = "Заметки";
+"settings.toolbar.item.correction" = "Коррекция";
+"settings.toolbar.item.translation" = "Перевод";

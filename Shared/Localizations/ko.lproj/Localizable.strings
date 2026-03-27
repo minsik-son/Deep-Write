@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "구매를 복원할 수 없습니다. 다시 시도해주세요.";
 
 "home.tile.ai_compose" = "AI 작성";
+
+"settings.toolbar" = "툴바";
+"settings.toolbar.title" = "툴바 설정";
+"settings.toolbar.edit" = "편집";
+"settings.toolbar.save" = "저장";
+"settings.toolbar.item.settings" = "설정";
+"settings.toolbar.item.emoji" = "이모지";
+"settings.toolbar.item.clipboard" = "클립보드";
+"settings.toolbar.item.savedPhrases" = "자주쓰는 문구";
+"settings.toolbar.item.quickNote" = "빠른 메모";
+"settings.toolbar.item.correction" = "맞춤법검사";
+"settings.toolbar.item.translation" = "번역";

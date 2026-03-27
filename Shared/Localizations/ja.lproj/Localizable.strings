@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "購入を復元できませんでした。もう一度お試しください。";
 
 "home.tile.ai_compose" = "AI作成";
+
+"settings.toolbar" = "ツールバー";
+"settings.toolbar.title" = "ツールバー設定";
+"settings.toolbar.edit" = "編集";
+"settings.toolbar.save" = "保存";
+"settings.toolbar.item.settings" = "設定";
+"settings.toolbar.item.emoji" = "絵文字";
+"settings.toolbar.item.clipboard" = "クリップボード";
+"settings.toolbar.item.savedPhrases" = "定型文";
+"settings.toolbar.item.quickNote" = "メモ";
+"settings.toolbar.item.correction" = "校正";
+"settings.toolbar.item.translation" = "翻訳";

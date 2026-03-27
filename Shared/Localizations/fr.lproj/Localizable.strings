@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "Impossible de restaurer les achats. Veuillez réessayer.";
 
 "home.tile.ai_compose" = "IA";
+
+"settings.toolbar" = "Barre d'outils";
+"settings.toolbar.title" = "Configurer la barre";
+"settings.toolbar.edit" = "Modifier";
+"settings.toolbar.save" = "Enregistrer";
+"settings.toolbar.item.settings" = "Réglages";
+"settings.toolbar.item.emoji" = "Emoji";
+"settings.toolbar.item.clipboard" = "Presse-papiers";
+"settings.toolbar.item.savedPhrases" = "Phrases";
+"settings.toolbar.item.quickNote" = "Notes";
+"settings.toolbar.item.correction" = "Correction";
+"settings.toolbar.item.translation" = "Traduction";

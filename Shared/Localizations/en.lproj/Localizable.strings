@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "Unable to restore purchases. Please try again.";
 
 "home.tile.ai_compose" = "AI Compose";
+
+"settings.toolbar" = "Toolbar";
+"settings.toolbar.title" = "Toolbar Settings";
+"settings.toolbar.edit" = "Edit";
+"settings.toolbar.save" = "Save";
+"settings.toolbar.item.settings" = "Settings";
+"settings.toolbar.item.emoji" = "Emoji";
+"settings.toolbar.item.clipboard" = "Clipboard";
+"settings.toolbar.item.savedPhrases" = "Phrases";
+"settings.toolbar.item.quickNote" = "Notes";
+"settings.toolbar.item.correction" = "Correction";
+"settings.toolbar.item.translation" = "Translation";

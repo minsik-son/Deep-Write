@@ -152,64 +152,109 @@ class ToolbarView: UIView {
 
     // MARK: - Build Toolbar Buttons
 
+    private var currentToolbarConfig: [ToolbarItemType] = []
+    private var settingsLinkSizeConfigured = false
+
     private func buildToolbarButtons() {
-        // 아이콘 7개 일렬 배치 (index 0은 SwiftUI Link 컨테이너)
-        // index 0: plus.circle — settingsLinkContainer (SwiftUI Link)
-        // index 1-6: UIButton (기존 기능)
+        let items = ToolbarConfiguration.load()
+        currentToolbarConfig = items
+        applyToolbarItems(items)
+    }
 
-        let buttonItems: [(icon: String, action: Selector, tag: Int)] = [
-            ("icon_toolbar_emoji",        #selector(emojiButtonTapped),       1),
-            ("icon_toolbar_clipboard",    #selector(clipboardHistoryTapped),  2),
-            ("icon_toolbar_savedphrases", #selector(savedPhrasesTapped),      3),
-            ("icon_toolbar_quicknote",    #selector(noteTapped),              4),
-            ("icon_toolbar_correction",   #selector(correctionButtonTapped),  5),
-            ("icon_toolbar_translation",  #selector(translationButtonTapped), 6),
-        ]
+    func rebuildToolbarIfNeeded() {
+        let newConfig = ToolbarConfiguration.load()
+        guard newConfig != currentToolbarConfig else { return }
 
-        // CC-6: 반응형 spacing (iPhone SE 등 좁은 화면 대응)
+        for view in toolbarStack.arrangedSubviews {
+            if view === settingsLinkContainer {
+                toolbarStack.removeArrangedSubview(view)
+                continue
+            }
+            toolbarStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        currentToolbarConfig = newConfig
+        applyToolbarItems(newConfig)
+
+        if let theme = customTheme {
+            applyTheme(theme)
+        }
+        updateAppearance(isDark: isDark)
+    }
+
+    private func applyToolbarItems(_ items: [ToolbarItemType]) {
         let screenWidth = UIScreen.main.bounds.width
         toolbarStack.spacing = screenWidth <= 375 ? 0 : 2
 
-        // 0번: SwiftUI Link 컨테이너 (+ 버튼)
-        settingsLinkContainer.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            settingsLinkContainer.widthAnchor.constraint(equalToConstant: 36),
-            settingsLinkContainer.heightAnchor.constraint(equalToConstant: 34),
-        ])
-        toolbarStack.addArrangedSubview(settingsLinkContainer)
-
-        // 1-6번: 일반 UIButton (커스텀 SVG 아이콘)
         let iconRenderSize: CGFloat = 20
 
-        for item in buttonItems {
-            let btn = UIButton(type: .system)
-
-            // Asset Catalog에서 SVG 로드 → aspectFit으로 20×20pt 안에 렌더링
-            // 비정사각형 SVG(clipboard 222×290, bookmark 211×317 등)도 비율 유지
-            if let original = UIImage(named: item.icon)?.withRenderingMode(.alwaysTemplate) {
-                let targetSize = CGSize(width: iconRenderSize, height: iconRenderSize)
-                let renderer = UIGraphicsImageRenderer(size: targetSize)
-                let resized = renderer.image { _ in
-                    let widthRatio = targetSize.width / original.size.width
-                    let heightRatio = targetSize.height / original.size.height
-                    let scale = min(widthRatio, heightRatio)
-                    let drawWidth = original.size.width * scale
-                    let drawHeight = original.size.height * scale
-                    let drawX = (targetSize.width - drawWidth) / 2
-                    let drawY = (targetSize.height - drawHeight) / 2
-                    original.draw(in: CGRect(x: drawX, y: drawY, width: drawWidth, height: drawHeight))
+        for item in items {
+            switch item {
+            case .settings:
+                if !settingsLinkSizeConfigured {
+                    settingsLinkContainer.translatesAutoresizingMaskIntoConstraints = false
+                    NSLayoutConstraint.activate([
+                        settingsLinkContainer.widthAnchor.constraint(equalToConstant: 36),
+                        settingsLinkContainer.heightAnchor.constraint(equalToConstant: 34),
+                    ])
+                    settingsLinkSizeConfigured = true
                 }
-                btn.setImage(resized.withRenderingMode(.alwaysTemplate), for: .normal)
-            }
+                toolbarStack.addArrangedSubview(settingsLinkContainer)
 
-            btn.tintColor = .label
-            btn.tag = item.tag
-            btn.addTarget(self, action: item.action, for: .touchUpInside)
-            btn.translatesAutoresizingMaskIntoConstraints = false
-            btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
-            btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
-            toolbarStack.addArrangedSubview(btn)
+            case .emoji:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_emoji", action: #selector(emojiButtonTapped), tag: 1, iconSize: iconRenderSize))
+
+            case .clipboard:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_clipboard", action: #selector(clipboardHistoryTapped), tag: 2, iconSize: iconRenderSize))
+
+            case .savedPhrases:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_savedphrases", action: #selector(savedPhrasesTapped), tag: 3, iconSize: iconRenderSize))
+
+            case .quickNote:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_quicknote", action: #selector(noteTapped), tag: 4, iconSize: iconRenderSize))
+
+            case .correction:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_correction", action: #selector(correctionButtonTapped), tag: 5, iconSize: iconRenderSize))
+
+            case .translation:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_translation", action: #selector(translationButtonTapped), tag: 6, iconSize: iconRenderSize))
+            }
         }
+    }
+
+    private func makeToolbarButton(iconName: String, action: Selector, tag: Int, iconSize: CGFloat) -> UIButton {
+        let btn = UIButton(type: .system)
+
+        if let original = UIImage(named: iconName)?.withRenderingMode(.alwaysTemplate) {
+            let targetSize = CGSize(width: iconSize, height: iconSize)
+            let renderer = UIGraphicsImageRenderer(size: targetSize)
+            let resized = renderer.image { _ in
+                let widthRatio = targetSize.width / original.size.width
+                let heightRatio = targetSize.height / original.size.height
+                let scale = min(widthRatio, heightRatio)
+                let drawWidth = original.size.width * scale
+                let drawHeight = original.size.height * scale
+                let drawX = (targetSize.width - drawWidth) / 2
+                let drawY = (targetSize.height - drawHeight) / 2
+                original.draw(in: CGRect(x: drawX, y: drawY, width: drawWidth, height: drawHeight))
+            }
+            btn.setImage(resized.withRenderingMode(.alwaysTemplate), for: .normal)
+        }
+
+        btn.tintColor = .label
+        btn.tag = tag
+        btn.addTarget(self, action: action, for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        return btn
     }
 
     // MARK: - Public Methods

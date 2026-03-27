@@ -34,6 +34,7 @@ enum AppConstants {
         static let keyboardFullAccessEnabled = "keyboard_full_access_enabled"
         static let appDarkMode = "app_dark_mode"
         static let quickNotes = "quick_notes"
+        static let toolbarItems = "toolbar_items"
     }
 
     enum API {

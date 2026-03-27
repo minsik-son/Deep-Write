@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "Impossibile ripristinare gli acquisti. Riprova.";
 
 "home.tile.ai_compose" = "IA";
+
+"settings.toolbar" = "Barra degli strumenti";
+"settings.toolbar.title" = "Configura barra";
+"settings.toolbar.edit" = "Modifica";
+"settings.toolbar.save" = "Salva";
+"settings.toolbar.item.settings" = "Impostazioni";
+"settings.toolbar.item.emoji" = "Emoji";
+"settings.toolbar.item.clipboard" = "Appunti";
+"settings.toolbar.item.savedPhrases" = "Frasi";
+"settings.toolbar.item.quickNote" = "Note";
+"settings.toolbar.item.correction" = "Correzione";
+"settings.toolbar.item.translation" = "Traduzione";

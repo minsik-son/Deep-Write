@@ -29,6 +29,9 @@
 		3BB993BB2F749811002EA7C3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BB993BA2F749811002EA7C3 /* StoreKit.framework */; };
 		3BB993BE2F7498B2002EA7C3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3BB993BD2F7498B2002EA7C3 /* Products.storekit */; };
 		3BB993C12F7618A3002EA7C3 /* AppColors+Tier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */; };
+		3BB993C32F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
+		3BB993C42F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
+		3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -189,6 +192,8 @@
 		3BB993BA2F749811002EA7C3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		3BB993BD2F7498B2002EA7C3 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppColors+Tier.swift"; sourceTree = "<group>"; };
+		3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarConfiguration.swift; sourceTree = "<group>"; };
+		3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarCustomizationViewController.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -305,6 +310,7 @@
 		296F73430F09678354EBCEC9 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */,
 				AA00BB11CC22DD33EE110008 /* AICorrectionInfoViewController.swift */,
 				AA00BB11CC22DD33EE110009 /* AITranslationInfoViewController.swift */,
 				AA00BB11CC22DD33EE110007 /* FullAccessExplainViewController.swift */,
@@ -460,6 +466,7 @@
 		90AD3FEDABA364962673A6D5 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */,
 				AA00BB11CC22DD33EE11000A /* AppColors.swift */,
 				6FE78200C931753ED4B82721 /* AppGroupManager.swift */,
 				AA00BB11CC22DD33EE11000E /* CompositionSessionManager.swift */,
@@ -704,6 +711,7 @@
 				63458A19F0CEE9C46528CDC9 /* LanguagePickerView.swift in Sources */,
 				0C6DEB4CF9B55C2B513025D4 /* LocalizationManager.swift in Sources */,
 				3B8365522F689C6E00E27AF8 /* CoreTextCacheManager.swift in Sources */,
+				3BB993C32F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */,
 				4C8699E363D1887A13469158 /* PredictionEngine.swift in Sources */,
 				AA11BB22CC33DD44EE550005 /* PhraseInputHeaderView.swift in Sources */,
 				6AED575128B04BF4F42DC82A /* QuickEmojiBar.swift in Sources */,
@@ -754,6 +762,7 @@
 			files = (
 				1F142C55559956B546EB2E1C /* AdManager.swift in Sources */,
 				CB01AA11BB22CC33DD440002 /* ClipboardItem.swift in Sources */,
+				3BB993C42F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */,
 				3B89DA1D2F7116F800D2D4F9 /* ComposeHistoryViewController.swift in Sources */,
 				3B89DA1F2F7116F800D2D4F9 /* ComposeHistoryManager.swift in Sources */,
 				E3E121B856F4EDFFEA9FD6A3 /* AppDelegate.swift in Sources */,
@@ -799,6 +808,7 @@
 				DU01AA11BB22CC33DD440003 /* DailyUsageData.swift in Sources */,
 				KH01AA11BB22CC33DD440003 /* KeychainHelper.swift in Sources */,
 				90C244B176664DB7B8761707 /* AdminMode.swift in Sources */,
+				3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */,
 				AA11BB22CC33DD44EE550099 /* SavedPhrasesManager.swift in Sources */,
 				137F3798A9C66C2526CB6DC0 /* QuickNote.swift in Sources */,
 				3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */,

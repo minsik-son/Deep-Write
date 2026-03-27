@@ -613,3 +613,15 @@
 "settings.restore.error_message" = "无法恢复购买，请重试。";
 
 "home.tile.ai_compose" = "AI写作";
+
+"settings.toolbar" = "工具栏";
+"settings.toolbar.title" = "工具栏设置";
+"settings.toolbar.edit" = "编辑";
+"settings.toolbar.save" = "保存";
+"settings.toolbar.item.settings" = "设置";
+"settings.toolbar.item.emoji" = "表情";
+"settings.toolbar.item.clipboard" = "剪贴板";
+"settings.toolbar.item.savedPhrases" = "常用语";
+"settings.toolbar.item.quickNote" = "便签";
+"settings.toolbar.item.correction" = "校对";
+"settings.toolbar.item.translation" = "翻译";
