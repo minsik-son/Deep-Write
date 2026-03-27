@@ -611,3 +611,5 @@
 "settings.restore.success" = "Il piano %@ è stato ripristinato con successo.";
 "settings.restore.error_title" = "Ripristino non riuscito";
 "settings.restore.error_message" = "Impossibile ripristinare gli acquisti. Riprova.";
+
+"home.tile.ai_compose" = "IA";

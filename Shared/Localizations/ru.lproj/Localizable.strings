@@ -611,3 +611,5 @@
 "settings.restore.success" = "План %@ успешно восстановлен.";
 "settings.restore.error_title" = "Ошибка восстановления";
 "settings.restore.error_message" = "Не удалось восстановить покупки. Попробуйте ещё раз.";
+
+"home.tile.ai_compose" = "ИИ";

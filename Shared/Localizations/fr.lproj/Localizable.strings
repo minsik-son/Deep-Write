@@ -611,3 +611,5 @@
 "settings.restore.success" = "Le plan %@ a été restauré avec succès.";
 "settings.restore.error_title" = "Échec de la restauration";
 "settings.restore.error_message" = "Impossible de restaurer les achats. Veuillez réessayer.";
+
+"home.tile.ai_compose" = "IA";

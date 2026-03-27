@@ -611,3 +611,5 @@
 "settings.restore.success" = "%@方案已成功恢复。";
 "settings.restore.error_title" = "恢复失败";
 "settings.restore.error_message" = "无法恢复购买，请重试。";
+
+"home.tile.ai_compose" = "AI写作";

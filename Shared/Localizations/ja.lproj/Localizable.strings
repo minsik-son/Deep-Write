@@ -611,3 +611,5 @@
 "settings.restore.success" = "%@ プランが正常に復元されました。";
 "settings.restore.error_title" = "復元に失敗";
 "settings.restore.error_message" = "購入を復元できませんでした。もう一度お試しください。";
+
+"home.tile.ai_compose" = "AI作成";

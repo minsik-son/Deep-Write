@@ -611,3 +611,5 @@
 "settings.restore.success" = "%@ 플랜이 성공적으로 복원되었습니다.";
 "settings.restore.error_title" = "복원 실패";
 "settings.restore.error_message" = "구매를 복원할 수 없습니다. 다시 시도해주세요.";
+
+"home.tile.ai_compose" = "AI 작성";

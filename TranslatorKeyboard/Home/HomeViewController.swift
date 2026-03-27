@@ -47,6 +47,16 @@ class HomeViewController: UIViewController {
     private let rewardCorrectionAdButton = UIButton(type: .system)
     private let rewardTranslationAdButton = UIButton(type: .system)
 
+    private let circlesStack = UIStackView()
+
+    // MARK: - Premium Tiles
+    private let premiumTilesStack = UIStackView()
+    private let premiumCorrNumLabel = UILabel()
+    private let premiumTransNumLabel = UILabel()
+    private let premiumComposeNumLabel = UILabel()
+    private var circlesStackConstraints: [NSLayoutConstraint] = []
+    private var premiumTilesConstraints: [NSLayoutConstraint] = []
+
     // MARK: - AI Writer Banner
 
     private let aiWriterBanner = UIView()
@@ -377,7 +387,9 @@ class HomeViewController: UIViewController {
         transColumn.addArrangedSubview(transSubLabel)
 
         // Two circles side by side
-        let circlesStack = UIStackView(arrangedSubviews: [corrColumn, transColumn])
+        circlesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        circlesStack.addArrangedSubview(corrColumn)
+        circlesStack.addArrangedSubview(transColumn)
         circlesStack.axis = .horizontal
         circlesStack.spacing = 32
         circlesStack.alignment = .center
@@ -385,11 +397,41 @@ class HomeViewController: UIViewController {
         circlesStack.translatesAutoresizingMaskIntoConstraints = false
 
         usageContainer.addSubview(circlesStack)
-        NSLayoutConstraint.activate([
+        circlesStackConstraints = [
             circlesStack.topAnchor.constraint(equalTo: usageContainer.topAnchor, constant: 16),
             circlesStack.centerXAnchor.constraint(equalTo: usageContainer.centerXAnchor),
             circlesStack.bottomAnchor.constraint(equalTo: usageContainer.bottomAnchor, constant: -16),
-        ])
+        ]
+        NSLayoutConstraint.activate(circlesStackConstraints)
+
+        // Premium tiles (3-column compact tiles — Premium only)
+        premiumTilesStack.axis = .horizontal
+        premiumTilesStack.spacing = 8
+        premiumTilesStack.distribution = .fillEqually
+        premiumTilesStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let corrTile = buildPremiumTile(numLabel: premiumCorrNumLabel,
+                                        unitText: L("home.stat.this_week"),
+                                        nameText: L("home.stat.corrections"))
+        let transTile = buildPremiumTile(numLabel: premiumTransNumLabel,
+                                         unitText: L("home.stat.this_week"),
+                                         nameText: L("home.stat.translations"))
+        let composeTile = buildPremiumTile(numLabel: premiumComposeNumLabel,
+                                           unitText: L("home.stat.this_week"),
+                                           nameText: L("home.tile.ai_compose"))
+
+        premiumTilesStack.addArrangedSubview(corrTile)
+        premiumTilesStack.addArrangedSubview(transTile)
+        premiumTilesStack.addArrangedSubview(composeTile)
+
+        usageContainer.addSubview(premiumTilesStack)
+        premiumTilesConstraints = [
+            premiumTilesStack.topAnchor.constraint(equalTo: usageContainer.topAnchor, constant: 16),
+            premiumTilesStack.leadingAnchor.constraint(equalTo: usageContainer.leadingAnchor, constant: 12),
+            premiumTilesStack.trailingAnchor.constraint(equalTo: usageContainer.trailingAnchor, constant: -12),
+            premiumTilesStack.bottomAnchor.constraint(equalTo: usageContainer.bottomAnchor, constant: -16),
+        ]
+        // 기본 비활성 — updatePlanCard()에서 활성화
 
         mainStack.addArrangedSubview(usageContainer)
 
@@ -418,6 +460,88 @@ class HomeViewController: UIViewController {
         button.addTarget(self, action: action, for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.heightAnchor.constraint(equalToConstant: 40).isActive = true
+    }
+
+    private func buildPremiumTile(numLabel: UILabel, unitText: String, nameText: String) -> UIView {
+        let tile = UIView()
+        tile.layer.cornerRadius = 12
+        tile.clipsToBounds = true
+
+        // 상단 3px 그라디언트 라인 (tag 100으로 식별)
+        let topLine = CAGradientLayer()
+        topLine.colors = [
+            UIColor(red: 0.545, green: 0.361, blue: 0.784, alpha: 1).cgColor,
+            UIColor(red: 0.655, green: 0.494, blue: 0.859, alpha: 1).cgColor,
+        ]
+        topLine.startPoint = CGPoint(x: 0, y: 0.5)
+        topLine.endPoint = CGPoint(x: 1, y: 0.5)
+        topLine.frame = CGRect(x: 0, y: 0, width: 200, height: 3) // viewDidLayoutSubviews에서 리사이즈
+        tile.layer.addSublayer(topLine)
+        tile.tag = 9001 // 타일 식별용
+
+        // 배경색 (dynamic light/dark)
+        tile.backgroundColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor.white.withAlphaComponent(0.05)
+                : UIColor.white.withAlphaComponent(0.7)
+        }
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 2
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        // 숫자 라벨
+        numLabel.font = .systemFont(ofSize: 22, weight: .heavy)
+        numLabel.textColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0.769, green: 0.627, blue: 0.910, alpha: 1) // #C4A0E8
+                : UIColor(red: 0.420, green: 0.247, blue: 0.627, alpha: 1) // #6B3FA0
+        }
+        numLabel.textAlignment = .center
+        numLabel.text = "0"
+
+        // "이번 주" 라벨
+        let unitLabel = UILabel()
+        unitLabel.font = .systemFont(ofSize: 9, weight: .semibold)
+        unitLabel.textColor = UIColor(red: 0.655, green: 0.494, blue: 0.859, alpha: 1) // #A77EDB
+        unitLabel.textAlignment = .center
+        unitLabel.text = unitText
+
+        // 카테고리명 라벨
+        let nameLabel = UILabel()
+        nameLabel.font = .systemFont(ofSize: 10, weight: .semibold)
+        nameLabel.textColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 0.467, alpha: 1) // #777
+                : UIColor(white: 0.6, alpha: 1)   // #999
+        }
+        nameLabel.textAlignment = .center
+        nameLabel.text = nameText
+
+        stack.addArrangedSubview(numLabel)
+        stack.addArrangedSubview(unitLabel)
+        stack.addArrangedSubview(nameLabel)
+
+        tile.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: tile.topAnchor, constant: 14),
+            stack.bottomAnchor.constraint(equalTo: tile.bottomAnchor, constant: -12),
+            stack.leadingAnchor.constraint(equalTo: tile.leadingAnchor, constant: 8),
+            stack.trailingAnchor.constraint(equalTo: tile.trailingAnchor, constant: -8),
+        ])
+
+        return tile
+    }
+
+    /// Premium 타일 상단 그라디언트 라인을 실제 타일 너비로 리사이즈
+    private func updateTileTopLines() {
+        for tile in premiumTilesStack.arrangedSubviews where tile.tag == 9001 {
+            if let topLine = tile.layer.sublayers?.first as? CAGradientLayer {
+                topLine.frame = CGRect(x: 0, y: 0, width: tile.bounds.width, height: 3)
+            }
+        }
     }
 
     private func setupCircle(container: UIView, trackLayer: inout CAShapeLayer, progressLayer: inout CAShapeLayer, used: Int, total: Int, color: UIColor, isPremiumTrack: Bool = false) {
@@ -611,19 +735,43 @@ class HomeViewController: UIViewController {
             }
         }
 
-        // Progress rings — tier-based colors
+        // Layout toggle: circles vs premium tiles
         let isPremiumTier = (tier == .premium)
 
-        if tier == .premium && FeatureGate.shared.isPremiumUnlimited {
-            corrCenterLabel.text = L("home.plan.unlimited")
-            corrCenterLabel.font = .systemFont(ofSize: 20, weight: .bold)
-            transCenterLabel.text = L("home.plan.unlimited")
-            transCenterLabel.font = .systemFont(ofSize: 20, weight: .bold)
-            setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: 1, total: 1, color: AppColors.purple, isPremiumTrack: true)
-            setupCircle(container: transProgressContainer, trackLayer: &transTrackLayer, progressLayer: &transProgressLayer, used: 1, total: 1, color: AppColors.purple, isPremiumTrack: true)
-            corrProgressLayer.strokeColor = AppColors.purple.cgColor
-            transProgressLayer.strokeColor = AppColors.purple.cgColor
+        if isPremiumTier && FeatureGate.shared.isPremiumUnlimited {
+            // ── Premium: 타일 표시, 원형 링 숨김 ──
+            NSLayoutConstraint.deactivate(circlesStackConstraints)
+            NSLayoutConstraint.activate(premiumTilesConstraints)
+            circlesStack.isHidden = true
+            premiumTilesStack.isHidden = false
+
+            // 보상 버튼 숨김 (Premium은 필요 없음)
+            rewardCorrectionAdButton.isHidden = true
+            rewardTranslationAdButton.isHidden = true
+
+            // 주간 사용량 업데이트
+            premiumCorrNumLabel.text = "\(StatsManager.shared.weeklyCorrections)"
+            premiumTransNumLabel.text = "\(StatsManager.shared.weeklyTranslations)"
+
+            // AI 작성 주간 카운트
+            var calendar = Calendar.current
+            calendar.firstWeekday = 2  // Monday
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+            let monday = calendar.date(from: components) ?? Date()
+            let weeklyComposeCount = ComposeHistoryManager.shared.items.filter { $0.timestamp >= monday }.count
+            premiumComposeNumLabel.text = "\(weeklyComposeCount)"
+
+            // 타일 topLine 프레임 보정
+            DispatchQueue.main.async { [weak self] in
+                self?.updateTileTopLines()
+            }
         } else {
+            // ── Free/Pro: 원형 링 표시, 타일 숨김 ──
+            NSLayoutConstraint.deactivate(premiumTilesConstraints)
+            NSLayoutConstraint.activate(circlesStackConstraints)
+            circlesStack.isHidden = false
+            premiumTilesStack.isHidden = true
+
             corrCenterLabel.text = "\(corrUsed)/\(corrTotal)"
             corrCenterLabel.font = .systemFont(ofSize: 15, weight: .bold)
             transCenterLabel.text = "\(transUsed)/\(transTotal)"
@@ -806,6 +954,11 @@ class HomeViewController: UIViewController {
             let usageBounds = usageContainer.bounds
             if usageBounds.width > 0 && usageBounds.height > 0 {
                 usageBgGradient.frame = usageBounds
+            }
+
+            // Premium 타일 topLine gradient 리사이즈
+            if !premiumTilesStack.isHidden {
+                updateTileTopLines()
             }
 
             CATransaction.commit()

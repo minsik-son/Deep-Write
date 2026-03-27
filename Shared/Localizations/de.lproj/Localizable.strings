@@ -611,3 +611,5 @@
 "settings.restore.success" = "%@-Plan wurde erfolgreich wiederhergestellt.";
 "settings.restore.error_title" = "Wiederherstellung fehlgeschlagen";
 "settings.restore.error_message" = "Käufe konnten nicht wiederhergestellt werden. Bitte erneut versuchen.";
+
+"home.tile.ai_compose" = "KI";

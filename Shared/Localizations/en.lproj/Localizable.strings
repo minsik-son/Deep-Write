@@ -611,3 +611,5 @@
 "settings.restore.success" = "%@ plan has been restored successfully.";
 "settings.restore.error_title" = "Restore Failed";
 "settings.restore.error_message" = "Unable to restore purchases. Please try again.";
+
+"home.tile.ai_compose" = "AI Compose";
