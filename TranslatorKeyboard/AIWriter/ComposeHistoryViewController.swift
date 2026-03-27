@@ -28,6 +28,11 @@ class ComposeHistoryViewController: UIViewController {
         reloadData()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        reloadData()
+    }
+
     // MARK: - Setup
 
     private func setupNavigation() {

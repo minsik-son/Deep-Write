@@ -42,5 +42,8 @@ final class SubscriptionStatus {
         if let expiry = expiryDate {
             appGroup.set(expiry, forKey: AppConstants.UserDefaultsKeys.subscriptionExpiry)
         }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: Notification.Name("subscriptionStatusDidChange"), object: nil)
+        }
     }
 }

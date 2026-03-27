@@ -56,6 +56,8 @@ class HomeViewController: UIViewController {
     private let premiumComposeNumLabel = UILabel()
     private var circlesStackConstraints: [NSLayoutConstraint] = []
     private var premiumTilesConstraints: [NSLayoutConstraint] = []
+    private let upgradeShimmerLayer = CAGradientLayer()
+    private let upgradeGradientContainer = UIView()
 
     // MARK: - AI Writer Banner
 
@@ -294,15 +296,89 @@ class HomeViewController: UIViewController {
 
         topRow.addArrangedSubview(badgeWrapper)
 
-        // Pro link button
-        proLinkButton.setImage(UIImage(named: "ProIcon")?.withRenderingMode(.alwaysOriginal), for: .normal)
-        proLinkButton.imageView?.contentMode = .scaleAspectFit
-        proLinkButton.setTitle(nil, for: .normal)
-        proLinkButton.addTarget(self, action: #selector(subscribeTapped), for: .touchUpInside)
+        // Upgrade button (Free tier only — shimmer gradient pill)
         proLinkButton.translatesAutoresizingMaskIntoConstraints = false
+        proLinkButton.addTarget(self, action: #selector(subscribeTapped), for: .touchUpInside)
+
+        proLinkButton.backgroundColor = .clear
+        proLinkButton.layer.cornerRadius = 16
+        proLinkButton.layer.shadowColor = UIColor(red: 0.290, green: 0.102, blue: 0.541, alpha: 1).cgColor
+        proLinkButton.layer.shadowOpacity = 0.35
+        proLinkButton.layer.shadowRadius = 8
+        proLinkButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+
+        upgradeGradientContainer.layer.cornerRadius = 16
+        upgradeGradientContainer.clipsToBounds = true
+        upgradeGradientContainer.isUserInteractionEnabled = false
+        upgradeGradientContainer.translatesAutoresizingMaskIntoConstraints = false
+        proLinkButton.addSubview(upgradeGradientContainer)
+
+        let upgradeGradient = CAGradientLayer()
+        upgradeGradient.colors = [
+            UIColor(red: 0.290, green: 0.102, blue: 0.541, alpha: 1).cgColor,
+            UIColor(red: 0.420, green: 0.247, blue: 0.627, alpha: 1).cgColor,
+            UIColor(red: 0.545, green: 0.361, blue: 0.784, alpha: 1).cgColor,
+        ]
+        upgradeGradient.startPoint = CGPoint(x: 0, y: 0)
+        upgradeGradient.endPoint = CGPoint(x: 1, y: 1)
+        upgradeGradientContainer.layer.addSublayer(upgradeGradient)
+
+        let highlightLine = UIView()
+        highlightLine.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        highlightLine.translatesAutoresizingMaskIntoConstraints = false
+        highlightLine.isUserInteractionEnabled = false
+        upgradeGradientContainer.addSubview(highlightLine)
+
+        upgradeShimmerLayer.colors = [
+            UIColor.clear.cgColor,
+            UIColor.white.withAlphaComponent(0.12).cgColor,
+            UIColor.clear.cgColor,
+        ]
+        upgradeShimmerLayer.locations = [0, 0.5, 1]
+        upgradeShimmerLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        upgradeShimmerLayer.endPoint = CGPoint(x: 1, y: 0.5)
+        upgradeGradientContainer.layer.addSublayer(upgradeShimmerLayer)
+
+        let crownView = UIImageView(image: UIImage(named: "CrownIcon")?.withRenderingMode(.alwaysTemplate))
+        crownView.tintColor = .systemYellow
+        crownView.contentMode = .scaleAspectFit
+        crownView.translatesAutoresizingMaskIntoConstraints = false
+        crownView.isUserInteractionEnabled = false
+        proLinkButton.addSubview(crownView)
+
+        let upgradeLabel = UILabel()
+        upgradeLabel.text = L("settings.plan.upgrade")
+        upgradeLabel.font = .systemFont(ofSize: 12, weight: .bold)
+        upgradeLabel.textColor = .white
+        upgradeLabel.numberOfLines = 1
+        upgradeLabel.adjustsFontSizeToFitWidth = true
+        upgradeLabel.minimumScaleFactor = 0.8
+        upgradeLabel.translatesAutoresizingMaskIntoConstraints = false
+        upgradeLabel.isUserInteractionEnabled = false
+        proLinkButton.addSubview(upgradeLabel)
+
         NSLayoutConstraint.activate([
-            proLinkButton.heightAnchor.constraint(equalToConstant: 40),
-            proLinkButton.widthAnchor.constraint(equalToConstant: 78)
+            proLinkButton.heightAnchor.constraint(equalToConstant: 32),
+            proLinkButton.widthAnchor.constraint(lessThanOrEqualToConstant: 120),
+
+            upgradeGradientContainer.topAnchor.constraint(equalTo: proLinkButton.topAnchor),
+            upgradeGradientContainer.leadingAnchor.constraint(equalTo: proLinkButton.leadingAnchor),
+            upgradeGradientContainer.trailingAnchor.constraint(equalTo: proLinkButton.trailingAnchor),
+            upgradeGradientContainer.bottomAnchor.constraint(equalTo: proLinkButton.bottomAnchor),
+
+            highlightLine.topAnchor.constraint(equalTo: upgradeGradientContainer.topAnchor),
+            highlightLine.leadingAnchor.constraint(equalTo: upgradeGradientContainer.leadingAnchor),
+            highlightLine.trailingAnchor.constraint(equalTo: upgradeGradientContainer.trailingAnchor),
+            highlightLine.heightAnchor.constraint(equalToConstant: 1),
+
+            crownView.leadingAnchor.constraint(equalTo: proLinkButton.leadingAnchor, constant: 12),
+            crownView.centerYAnchor.constraint(equalTo: proLinkButton.centerYAnchor),
+            crownView.widthAnchor.constraint(equalToConstant: 14),
+            crownView.heightAnchor.constraint(equalToConstant: 14),
+
+            upgradeLabel.leadingAnchor.constraint(equalTo: crownView.trailingAnchor, constant: 5),
+            upgradeLabel.centerYAnchor.constraint(equalTo: proLinkButton.centerYAnchor),
+            upgradeLabel.trailingAnchor.constraint(equalTo: proLinkButton.trailingAnchor, constant: -14),
         ])
         topRow.addArrangedSubview(proLinkButton)
 
@@ -609,7 +685,7 @@ class HomeViewController: UIViewController {
         // Badge — tier별 색상 + PNG 아이콘 적용
         switch tier {
         case .free:
-            planBadgeLabel.text = "Free Plan"
+            planBadgeLabel.text = L("home.plan.free")
             planBadgeLabel.textColor = AppColors.tierAccent
             planBadgeContainer.backgroundColor = AppColors.tierAccentSoft
             planBadgeIconView.image = nil
@@ -617,25 +693,28 @@ class HomeViewController: UIViewController {
             badgeLabelLeadingToIcon.isActive = false
             badgeLabelLeadingToContainer.isActive = true
             proLinkButton.isHidden = false
+            startUpgradeShimmer()
         case .pro:
-            planBadgeLabel.text = "Pro Plan"
+            planBadgeLabel.text = L("home.plan.pro")
             planBadgeLabel.textColor = AppColors.gold
             planBadgeContainer.backgroundColor = AppColors.goldSoft
             planBadgeIconView.image = UIImage(named: "CrownIcon")
             planBadgeIconView.isHidden = false
             badgeLabelLeadingToContainer.isActive = false
             badgeLabelLeadingToIcon.isActive = true
+            stopUpgradeShimmer()
             proLinkButton.isHidden = true
             rewardCorrectionAdButton.isHidden = true
             rewardTranslationAdButton.isHidden = true
         case .premium:
-            planBadgeLabel.text = "Premium Plan"
+            planBadgeLabel.text = L("home.plan.premium")
             planBadgeLabel.textColor = AppColors.purple
             planBadgeContainer.backgroundColor = AppColors.purpleSoft
             planBadgeIconView.image = UIImage(named: "DiamondIcon")
             planBadgeIconView.isHidden = false
             badgeLabelLeadingToContainer.isActive = false
             badgeLabelLeadingToIcon.isActive = true
+            stopUpgradeShimmer()
             proLinkButton.isHidden = true
             rewardCorrectionAdButton.isHidden = true
             rewardTranslationAdButton.isHidden = true
@@ -961,6 +1040,17 @@ class HomeViewController: UIViewController {
                 updateTileTopLines()
             }
 
+            // Upgrade button gradient + shimmer frame
+            if !proLinkButton.isHidden,
+               upgradeGradientContainer.bounds.width > 0 {
+                let bounds = upgradeGradientContainer.bounds
+                if let bgGradient = upgradeGradientContainer.layer.sublayers?.first as? CAGradientLayer {
+                    bgGradient.frame = bounds
+                }
+                upgradeShimmerLayer.frame = bounds
+                startUpgradeShimmer()
+            }
+
             CATransaction.commit()
         }
     }
@@ -1220,6 +1310,31 @@ class HomeViewController: UIViewController {
 
     // MARK: - Actions
 
+    private func startUpgradeShimmer() {
+        guard !proLinkButton.isHidden else { return }
+        guard upgradeShimmerLayer.animation(forKey: "shimmerAnim") == nil else { return }
+        guard upgradeGradientContainer.bounds.width > 0 else { return }
+
+        let bounds = upgradeGradientContainer.bounds
+
+        if let bgGradient = upgradeGradientContainer.layer.sublayers?.first as? CAGradientLayer {
+            bgGradient.frame = bounds
+        }
+        upgradeShimmerLayer.frame = bounds
+
+        let anim = CABasicAnimation(keyPath: "transform.translation.x")
+        anim.fromValue = -bounds.width
+        anim.toValue = bounds.width
+        anim.duration = 3.0
+        anim.repeatCount = .infinity
+        anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        upgradeShimmerLayer.add(anim, forKey: "shimmerAnim")
+    }
+
+    private func stopUpgradeShimmer() {
+        upgradeShimmerLayer.removeAnimation(forKey: "shimmerAnim")
+    }
+
     @objc private func subscribeTapped() {
         let paywallVC = PaywallViewController()
         paywallVC.modalPresentationStyle = .pageSheet
@@ -1288,6 +1403,7 @@ class HomeViewController: UIViewController {
     @objc private func handleAppWillEnterForeground() {
         StatsManager.shared.checkAndResetWeeklyStats()
         refreshStats()
+        startUpgradeShimmer()
     }
 
     @objc private func handleLanguageChange() {
@@ -1295,6 +1411,10 @@ class HomeViewController: UIViewController {
         contentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         planCard.subviews.forEach { $0.removeFromSuperview() }
         planCard.layer.sublayers?.removeAll()
+        // proLinkButton 내부 서브뷰/레이어 정리 (rebuild 시 중복 방지)
+        proLinkButton.subviews.forEach { $0.removeFromSuperview() }
+        proLinkButton.layer.sublayers?.removeAll()
+        stopUpgradeShimmer()
         aiWriterBanner.subviews.forEach { $0.removeFromSuperview() }
         aiWriterBanner.layer.sublayers?.removeAll()
         pasteGuideBanner.subviews.forEach { $0.removeFromSuperview() }

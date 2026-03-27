@@ -163,6 +163,7 @@ class AIWriterViewController: UIViewController {
     private var resultScrollViewHeightConstraint: NSLayoutConstraint?
     private var resultCards: [UIView] = []
     private var resultLabels: [UILabel] = []
+    private var lastSavedItemId: String?
     private let pageControl = UIPageControl()
 
     // Bottom bar
@@ -761,7 +762,7 @@ class AIWriterViewController: UIViewController {
             btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
             btn.setTitleColor(AppColors.text, for: .normal)
             btn.backgroundColor = AppColors.card
-            btn.layer.cornerRadius = 20
+            btn.layer.cornerRadius = 18
             btn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
             btn.layer.shadowColor = UIColor.black.cgColor
             btn.layer.shadowOpacity = 0.04
@@ -1039,7 +1040,7 @@ class AIWriterViewController: UIViewController {
             copyBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
             copyBtn.setTitleColor(AppColors.tierAccent, for: .normal)
             copyBtn.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.08)
-            copyBtn.layer.cornerRadius = 20
+            copyBtn.layer.cornerRadius = 16
             copyBtn.layer.borderWidth = 1.5
             copyBtn.layer.borderColor = AppColors.tierAccent.cgColor
             copyBtn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
@@ -1051,7 +1052,7 @@ class AIWriterViewController: UIViewController {
             regenerateBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
             regenerateBtn.setTitleColor(AppColors.textSub, for: .normal)
             regenerateBtn.backgroundColor = .clear
-            regenerateBtn.layer.cornerRadius = 20
+            regenerateBtn.layer.cornerRadius = 16
             regenerateBtn.layer.borderWidth = 1.5
             regenerateBtn.layer.borderColor = AppColors.border.cgColor
             regenerateBtn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
@@ -2039,6 +2040,13 @@ class AIWriterViewController: UIViewController {
         let isFilled = sender.currentImage == UIImage(systemName: "star.fill")
         sender.setImage(UIImage(systemName: isFilled ? "star" : "star.fill"), for: .normal)
         sender.tintColor = isFilled ? AppColors.textMuted : .systemYellow
+
+        guard let itemId = lastSavedItemId else {
+            sender.setImage(UIImage(systemName: isFilled ? "star.fill" : "star"), for: .normal)
+            sender.tintColor = isFilled ? .systemYellow : AppColors.textMuted
+            return
+        }
+        ComposeHistoryManager.shared.toggleFavorite(id: itemId)
     }
 
     // MARK: - Character Counter
@@ -2141,6 +2149,7 @@ class AIWriterViewController: UIViewController {
             result: result
         )
         ComposeHistoryManager.shared.addItem(item)
+        lastSavedItemId = item.id
     }
 
     // MARK: - API
@@ -2218,11 +2227,11 @@ class AIWriterViewController: UIViewController {
                 }
 
                 if let messages = json["messages"] as? [String], !messages.isEmpty {
-                    self?.displayResults(messages)
                     self?.saveToHistory(prompt: prompt, result: messages[0], body: body)
+                    self?.displayResults(messages)
                 } else if let message = json["message"] as? String {
-                    self?.displayResults([message])
                     self?.saveToHistory(prompt: prompt, result: message, body: body)
+                    self?.displayResults([message])
                 } else {
                     self?.displayResults([L("ai_writer.error_generate")])
                     return

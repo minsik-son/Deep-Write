@@ -544,19 +544,77 @@ private class PlanBannerCell: UITableViewCell {
 
     private let planNameLabel: UILabel = {
         let label = UILabel()
-        label.text = "Free Plan"
+        label.text = ""
         label.font = .systemFont(ofSize: 17, weight: .semibold)
         label.textColor = AppColors.text
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
 
-    private let upgradeImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.image = UIImage(named: "ProIcon")
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
+    private let upgradeContainerView: UIView = {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let gradientContainer = UIView()
+        gradientContainer.layer.cornerRadius = 16
+        gradientContainer.clipsToBounds = true
+        gradientContainer.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(gradientContainer)
+
+        let gradient = CAGradientLayer()
+        gradient.colors = [
+            UIColor(red: 0.290, green: 0.102, blue: 0.541, alpha: 1).cgColor,
+            UIColor(red: 0.420, green: 0.247, blue: 0.627, alpha: 1).cgColor,
+            UIColor(red: 0.545, green: 0.361, blue: 0.784, alpha: 1).cgColor,
+        ]
+        gradient.startPoint = CGPoint(x: 0, y: 0)
+        gradient.endPoint = CGPoint(x: 1, y: 1)
+        gradient.frame = CGRect(x: 0, y: 0, width: 200, height: 32)
+        gradientContainer.layer.addSublayer(gradient)
+
+        let highlightLine = UIView()
+        highlightLine.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        highlightLine.translatesAutoresizingMaskIntoConstraints = false
+        gradientContainer.addSubview(highlightLine)
+
+        let crownView = UIImageView(image: UIImage(named: "CrownIcon")?.withRenderingMode(.alwaysTemplate))
+        crownView.tintColor = .systemYellow
+        crownView.contentMode = .scaleAspectFit
+        crownView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(crownView)
+
+        let upgradeLabel = UILabel()
+        upgradeLabel.text = L("settings.plan.upgrade")
+        upgradeLabel.font = .systemFont(ofSize: 12, weight: .bold)
+        upgradeLabel.textColor = .white
+        upgradeLabel.numberOfLines = 1
+        upgradeLabel.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(upgradeLabel)
+
+        NSLayoutConstraint.activate([
+            container.heightAnchor.constraint(equalToConstant: 32),
+
+            gradientContainer.topAnchor.constraint(equalTo: container.topAnchor),
+            gradientContainer.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            gradientContainer.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            gradientContainer.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            highlightLine.topAnchor.constraint(equalTo: gradientContainer.topAnchor),
+            highlightLine.leadingAnchor.constraint(equalTo: gradientContainer.leadingAnchor),
+            highlightLine.trailingAnchor.constraint(equalTo: gradientContainer.trailingAnchor),
+            highlightLine.heightAnchor.constraint(equalToConstant: 1),
+
+            crownView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            crownView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            crownView.widthAnchor.constraint(equalToConstant: 14),
+            crownView.heightAnchor.constraint(equalToConstant: 14),
+
+            upgradeLabel.leadingAnchor.constraint(equalTo: crownView.trailingAnchor, constant: 5),
+            upgradeLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            upgradeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -14),
+        ])
+
+        return container
     }()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -568,6 +626,15 @@ private class PlanBannerCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if let gradientContainer = upgradeContainerView.subviews.first,
+           let gradient = gradientContainer.layer.sublayers?.first as? CAGradientLayer,
+           gradientContainer.bounds.width > 0 {
+            gradient.frame = gradientContainer.bounds
+        }
+    }
+
     private func setupUI() {
         let leftStack = UIStackView(arrangedSubviews: [planTitleLabel, planNameLabel])
         leftStack.axis = .vertical
@@ -575,7 +642,7 @@ private class PlanBannerCell: UITableViewCell {
         leftStack.translatesAutoresizingMaskIntoConstraints = false
 
         contentView.addSubview(leftStack)
-        contentView.addSubview(upgradeImageView)
+        contentView.addSubview(upgradeContainerView)
 
         NSLayoutConstraint.activate([
             leftStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -583,10 +650,8 @@ private class PlanBannerCell: UITableViewCell {
             leftStack.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 12),
             leftStack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -12),
 
-            upgradeImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            upgradeImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            upgradeImageView.heightAnchor.constraint(equalToConstant: 40),
-            upgradeImageView.widthAnchor.constraint(equalToConstant: 78)
+            upgradeContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            upgradeContainerView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
         ])
 
         updatePlanStatus()
@@ -597,13 +662,13 @@ private class PlanBannerCell: UITableViewCell {
         switch tier {
         case .free:
             planNameLabel.text = L("home.plan.free")
-            upgradeImageView.isHidden = false
+            upgradeContainerView.isHidden = false
         case .pro:
             planNameLabel.text = L("home.plan.pro")
-            upgradeImageView.isHidden = true
+            upgradeContainerView.isHidden = true
         case .premium:
             planNameLabel.text = L("home.plan.premium")
-            upgradeImageView.isHidden = true
+            upgradeContainerView.isHidden = true
         }
     }
 }
