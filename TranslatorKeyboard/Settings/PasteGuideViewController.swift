@@ -58,7 +58,7 @@ class PasteGuideViewController: UIViewController {
         let openSettingsButton = UIButton(type: .system)
         openSettingsButton.setTitle(L("paste_guide.open_settings"), for: .normal)
         openSettingsButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        openSettingsButton.backgroundColor = AppColors.accent
+        openSettingsButton.backgroundColor = AppColors.tierAccent
         openSettingsButton.setTitleColor(.white, for: .normal)
         openSettingsButton.layer.cornerRadius = 12
         openSettingsButton.translatesAutoresizingMaskIntoConstraints = false
@@ -79,7 +79,7 @@ class PasteGuideViewController: UIViewController {
         badge.font = .systemFont(ofSize: 14, weight: .bold)
         badge.textColor = .white
         badge.textAlignment = .center
-        badge.backgroundColor = AppColors.accent
+        badge.backgroundColor = AppColors.tierAccent
         badge.layer.cornerRadius = 12
         badge.layer.masksToBounds = true
         badge.translatesAutoresizingMaskIntoConstraints = false

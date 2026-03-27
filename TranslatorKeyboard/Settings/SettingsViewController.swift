@@ -38,7 +38,7 @@ class SettingsViewController: UITableViewController {
                 title: nil,
                 items: [
                     SettingsItem(title: "", iconName: "", iconBackgroundColor: .clear, accessory: .subscriptionStatus),
-                    SettingsItem(title: L("settings.manage_subscription"), iconName: "gear", iconBackgroundColor: AppColors.accent, accessory: .chevron),
+                    SettingsItem(title: L("settings.manage_subscription"), iconName: "gear", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
                     SettingsItem(title: L("settings.restore_purchases"), iconName: "arrow.counterclockwise", iconBackgroundColor: .systemGray, accessory: .chevron),
                 ]
             ))
@@ -65,10 +65,10 @@ class SettingsViewController: UITableViewController {
             (
                 title: L("settings.section.keyboard"),
                 items: [
-                    SettingsItem(title: L("settings.language"), iconName: "globe", iconBackgroundColor: AppColors.accent, accessory: .chevron),
+                    SettingsItem(title: L("settings.language"), iconName: "globe", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
                     SettingsItem(title: L("settings.layout"), iconName: "keyboard", iconBackgroundColor: AppColors.green, accessory: .chevron),
                     SettingsItem(title: L("settings.autocomplete"), iconName: "text.badge.checkmark", iconBackgroundColor: .systemGreen, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoComplete)),
-                    SettingsItem(title: L("settings.auto_capitalize"), iconName: "textformat.size", iconBackgroundColor: AppColors.blue, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoCapitalize)),
+                    SettingsItem(title: L("settings.auto_capitalize"), iconName: "textformat.size", iconBackgroundColor: AppColors.tierBlue, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoCapitalize)),
                     SettingsItem(title: L("settings.haptic"), iconName: "iphone.radiowaves.left.and.right", iconBackgroundColor: AppColors.pink, accessory: .toggle(key: AppConstants.UserDefaultsKeys.hapticFeedback)),
                     SettingsItem(title: L("settings.quick_notes"), iconName: "note.text", iconBackgroundColor: .systemYellow, accessory: .chevron),
                 ]
@@ -77,7 +77,7 @@ class SettingsViewController: UITableViewController {
             (
                 title: L("settings.section.ai"),
                 items: [
-                    SettingsItem(title: L("settings.ai_correction"), iconName: "wand.and.stars", iconBackgroundColor: AppColors.accent, accessory: .chevron),
+                    SettingsItem(title: L("settings.ai_correction"), iconName: "wand.and.stars", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
                     SettingsItem(title: L("settings.ai_translation"), iconName: "arrow.right.arrow.left", iconBackgroundColor: AppColors.green, accessory: .chevron),
                 ]
             ),
@@ -86,7 +86,7 @@ class SettingsViewController: UITableViewController {
                 title: L("settings.section.privacy"),
                 items: [
                     SettingsItem(title: L("settings.privacy_dashboard"), iconName: "shield.checkered", iconBackgroundColor: AppColors.green, accessory: .chevron),
-                    SettingsItem(title: L("settings.full_access_explain"), iconName: "lock.open", iconBackgroundColor: AppColors.accent, accessory: .chevron),
+                    SettingsItem(title: L("settings.full_access_explain"), iconName: "lock.open", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
                 ]
             ),
             // About

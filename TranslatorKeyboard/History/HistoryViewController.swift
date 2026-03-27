@@ -25,6 +25,19 @@ class HistoryViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleAppWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleSavedPhrasesChange), name: .savedPhrasesDidChange, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleSubscriptionChange),
+            name: .subscriptionStatusDidChange, object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func handleSubscriptionChange() {
+        updateFilterAppearance()
+        tableView.reloadData()
     }
 
     @objc private func handleAppWillEnterForeground() {
@@ -161,7 +174,7 @@ class HistoryViewController: UIViewController {
                 isSelected = !showingSavedPhrases && filters[btn.tag] == selectedFilter
             }
             if isSelected {
-                btn.backgroundColor = AppColors.accent
+                btn.backgroundColor = AppColors.tierAccent
                 btn.setTitleColor(.white, for: .normal)
                 btn.transform = CGAffineTransform(scaleX: 1.04, y: 1.04)
             } else {
@@ -475,7 +488,7 @@ class HistoryCell: UITableViewCell {
         switch item.type {
         case .translation:
             tagLabel.text = " \(item.metadata ?? "KO \u{2192} EN") "
-            tagLabel.backgroundColor = AppColors.accent
+            tagLabel.backgroundColor = AppColors.tierAccent
             originalLabel.textColor = AppColors.textSub
             resultLabel.text = item.resultText
             separator.isHidden = false

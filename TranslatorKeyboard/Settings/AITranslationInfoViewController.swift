@@ -39,7 +39,7 @@ class AITranslationInfoViewController: UIViewController {
         let iconView = UIImageView()
         let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .medium)
         iconView.image = UIImage(systemName: "globe", withConfiguration: config)
-        iconView.tintColor = AppColors.blue
+        iconView.tintColor = AppColors.tierBlue
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconContainer.addSubview(iconView)

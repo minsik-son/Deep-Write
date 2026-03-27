@@ -86,7 +86,7 @@ class PaywallViewController: UIViewController {
         let btn = UIButton(type: .system)
         btn.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
         btn.setTitleColor(.white, for: .normal)
-        btn.backgroundColor = AppColors.accent
+        btn.backgroundColor = AppColors.tierAccent
         btn.layer.cornerRadius = 16
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
@@ -182,7 +182,7 @@ class PaywallViewController: UIViewController {
         // Bolt icon
         let iconConfig = UIImage.SymbolConfiguration(pointSize: 48, weight: .medium)
         let iconView = UIImageView(image: UIImage(systemName: "bolt.fill", withConfiguration: iconConfig))
-        iconView.tintColor = AppColors.accent
+        iconView.tintColor = AppColors.tierAccent
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -392,7 +392,7 @@ class PaywallViewController: UIViewController {
         ])
 
         let radioInner = UIView()
-        radioInner.backgroundColor = AppColors.accent
+        radioInner.backgroundColor = AppColors.tierAccent
         radioInner.layer.cornerRadius = 6
         radioInner.translatesAutoresizingMaskIntoConstraints = false
         radioInner.isHidden = true
@@ -467,7 +467,7 @@ class PaywallViewController: UIViewController {
         let promoButton = UIButton(type: .system)
         promoButton.setTitle(L("paywall.promo_code"), for: .normal)
         promoButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-        promoButton.setTitleColor(AppColors.accent, for: .normal)
+        promoButton.setTitleColor(AppColors.tierAccent, for: .normal)
         contentStack.addArrangedSubview(promoButton)
     }
 
@@ -527,15 +527,15 @@ class PaywallViewController: UIViewController {
         for (card, radio, plan) in cards {
             let isSelected = plan == selectedPlan
             card.layer.borderWidth = 2
-            card.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+            card.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
             let selectedCardBg = UIColor { $0.userInterfaceStyle == .dark
-                ? AppColors.accent.withAlphaComponent(0.15)
-                : AppColors.accentSoft
+                ? AppColors.tierAccent.withAlphaComponent(0.15)
+                : AppColors.tierAccentSoft
             }
             card.backgroundColor = isSelected ? selectedCardBg : AppColors.card
 
             // Radio fill
-            radio.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.textMuted.cgColor
+            radio.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.textMuted.cgColor
             if let inner = radio.subviews.first {
                 inner.isHidden = !isSelected
             }

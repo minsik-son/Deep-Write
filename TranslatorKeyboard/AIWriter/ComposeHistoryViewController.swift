@@ -42,7 +42,7 @@ class ComposeHistoryViewController: UIViewController {
 
     private func setupUI() {
         segmentedControl.selectedSegmentIndex = 0
-        segmentedControl.selectedSegmentTintColor = AppColors.accent
+        segmentedControl.selectedSegmentTintColor = AppColors.tierAccent
         segmentedControl.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
         segmentedControl.setTitleTextAttributes([.foregroundColor: AppColors.textMuted], for: .normal)
         segmentedControl.backgroundColor = AppColors.card
@@ -224,8 +224,8 @@ class ComposeHistoryCell: UITableViewCell {
         resultPreview.numberOfLines = 2
 
         tonePill.font = .systemFont(ofSize: 11, weight: .medium)
-        tonePill.textColor = AppColors.accent
-        tonePill.backgroundColor = AppColors.accent.withAlphaComponent(0.1)
+        tonePill.textColor = AppColors.tierAccent
+        tonePill.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.1)
         tonePill.layer.cornerRadius = 8
         tonePill.clipsToBounds = true
         tonePill.textAlignment = .center

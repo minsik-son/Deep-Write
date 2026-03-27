@@ -28,6 +28,7 @@
 		3BB993A72F7328A1002EA7C3 /* KeyPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993A62F7328A1002EA7C3 /* KeyPreviewView.swift */; };
 		3BB993BB2F749811002EA7C3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BB993BA2F749811002EA7C3 /* StoreKit.framework */; };
 		3BB993BE2F7498B2002EA7C3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3BB993BD2F7498B2002EA7C3 /* Products.storekit */; };
+		3BB993C12F7618A3002EA7C3 /* AppColors+Tier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -187,6 +188,7 @@
 		3BB993A62F7328A1002EA7C3 /* KeyPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPreviewView.swift; sourceTree = "<group>"; };
 		3BB993BA2F749811002EA7C3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		3BB993BD2F7498B2002EA7C3 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppColors+Tier.swift"; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 		4230CE9937E4FE53729BBD96 /* TranslatorKeyboard */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */,
 				3B89DA202F71DB4000D2D4F9 /* AIWriterTemplates.swift */,
 				3B89DA1B2F7116F800D2D4F9 /* ComposeHistoryManager.swift */,
 				3B89DA1C2F7116F800D2D4F9 /* ComposeHistoryViewController.swift */,
@@ -770,6 +773,7 @@
 				CC33DD44EE5500080001 /* ThemeSelectionViewController.swift in Sources */,
 				CC33DD44EE5500080003 /* KeyboardTheme.swift in Sources */,
 				TP01AA11BB22CC33DD550003 /* ThemePatternRenderer.swift in Sources */,
+				3BB993C12F7618A3002EA7C3 /* AppColors+Tier.swift in Sources */,
 				FF00AA11BB22CC33DD440003 /* UIColor+Hex.swift in Sources */,
 				EE11FF22003344550066AA03 /* LanguageSettingsViewController.swift in Sources */,
 				EE11FF22003344550066AA04 /* LayoutSettingsViewController.swift in Sources */,

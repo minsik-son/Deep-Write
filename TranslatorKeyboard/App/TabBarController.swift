@@ -61,18 +61,35 @@ class TabBarController: UITabBarController {
     }
 
     private func setupAppearance() {
+        updateTabBarColors()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleSubscriptionChange),
+            name: .subscriptionStatusDidChange, object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func handleSubscriptionChange() {
+        updateTabBarColors()
+    }
+
+    private func updateTabBarColors() {
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
         appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
         appearance.backgroundColor = UIColor.white.withAlphaComponent(0.92)
 
         let normalAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: AppColors.textMuted]
-        let selectedAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: AppColors.accent]
+        let selectedAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: AppColors.tierAccent]
 
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttrs
         appearance.stackedLayoutAppearance.normal.iconColor = AppColors.textMuted
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttrs
-        appearance.stackedLayoutAppearance.selected.iconColor = AppColors.accent
+        appearance.stackedLayoutAppearance.selected.iconColor = AppColors.tierAccent
 
         tabBar.standardAppearance = appearance
         tabBar.scrollEdgeAppearance = appearance

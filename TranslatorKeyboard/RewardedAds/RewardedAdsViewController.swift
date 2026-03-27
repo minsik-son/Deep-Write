@@ -26,7 +26,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
 
     private let iconContainer: UIView = {
         let v = UIView()
-        v.backgroundColor = AppColors.accent.withAlphaComponent(0.12)
+        v.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.12)
         v.layer.cornerRadius = 48
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
@@ -36,7 +36,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         let iv = UIImageView()
         let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .medium)
         iv.image = UIImage(systemName: "gift.fill", withConfiguration: config)
-        iv.tintColor = AppColors.accent
+        iv.tintColor = AppColors.tierAccent
         iv.contentMode = .scaleAspectFit
         iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
@@ -85,7 +85,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         let btn = UIButton(type: .system)
         btn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         btn.setTitleColor(.white, for: .normal)
-        btn.backgroundColor = AppColors.accent
+        btn.backgroundColor = AppColors.tierAccent
         btn.layer.cornerRadius = 14
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
@@ -253,7 +253,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         // Dots
         for (i, dot) in dotViews.enumerated() {
             if i < watched {
-                dot.backgroundColor = AppColors.accent
+                dot.backgroundColor = AppColors.tierAccent
             } else {
                 dot.backgroundColor = AppColors.border
             }
@@ -265,7 +265,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         // CTA
         if canWatch {
             ctaButton.setTitle(L("reward.cta_watch"), for: .normal)
-            ctaButton.backgroundColor = AppColors.accent
+            ctaButton.backgroundColor = AppColors.tierAccent
             ctaButton.isEnabled = true
         } else {
             ctaButton.setTitle(L("reward.cta_done"), for: .normal)
@@ -314,7 +314,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         if dotIndex >= 0, dotIndex < dotViews.count {
             let dot = dotViews[dotIndex]
             dot.transform = CGAffineTransform(scaleX: 0.3, y: 0.3)
-            dot.backgroundColor = AppColors.accent
+            dot.backgroundColor = AppColors.tierAccent
             UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.8) {
                 dot.transform = .identity
             }

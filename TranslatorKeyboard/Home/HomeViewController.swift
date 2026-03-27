@@ -402,17 +402,17 @@ class HomeViewController: UIViewController {
     }
 
     private func configureRewardButton(_ button: UIButton, action: Selector) {
-        button.backgroundColor = AppColors.accentSoft
+        button.backgroundColor = AppColors.tierAccentSoft
         button.layer.cornerRadius = AppRadius.sm
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-        button.setTitleColor(AppColors.accent, for: .normal)
+        button.setTitleColor(AppColors.tierAccent, for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
 
         let playIcon = UIImage(systemName: "play.fill")?.withConfiguration(
             UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)
         )
         button.setImage(playIcon, for: .normal)
-        button.tintColor = AppColors.accent
+        button.tintColor = AppColors.tierAccent
         button.semanticContentAttribute = .forceLeftToRight
         button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -4, bottom: 0, right: 4)
         button.addTarget(self, action: action, for: .touchUpInside)
@@ -486,8 +486,8 @@ class HomeViewController: UIViewController {
         switch tier {
         case .free:
             planBadgeLabel.text = "Free Plan"
-            planBadgeLabel.textColor = AppColors.accent
-            planBadgeContainer.backgroundColor = AppColors.accentSoft
+            planBadgeLabel.textColor = AppColors.tierAccent
+            planBadgeContainer.backgroundColor = AppColors.tierAccentSoft
             planBadgeIconView.image = nil
             planBadgeIconView.isHidden = true
             badgeLabelLeadingToIcon.isActive = false
@@ -640,7 +640,7 @@ class HomeViewController: UIViewController {
                 transRingColor = AppColors.purple
             case .free:
                 corrRingColor = AppColors.orange
-                transRingColor = AppColors.accent
+                transRingColor = AppColors.tierAccent
             }
 
             setupCircle(container: corrProgressContainer, trackLayer: &corrTrackLayer, progressLayer: &corrProgressLayer, used: corrUsed, total: corrTotal, color: corrRingColor, isPremiumTrack: isPremiumTier)

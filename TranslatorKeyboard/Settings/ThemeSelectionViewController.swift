@@ -279,7 +279,7 @@ class ThemeSelectionViewController: UIViewController {
             let isSelected = category == selectedCategory
 
             if isSelected {
-                button.backgroundColor = AppColors.accent
+                button.backgroundColor = AppColors.tierAccent
                 button.setTitleColor(.white, for: .normal)
                 button.layer.borderWidth = 0
             } else {
@@ -488,7 +488,7 @@ private class ThemeSectionHeader: UICollectionReusableView {
         l.text = "PRO"
         l.font = .systemFont(ofSize: 10, weight: .heavy)
         l.textColor = .white
-        l.backgroundColor = AppColors.accent
+        l.backgroundColor = AppColors.tierAccent
         l.textAlignment = .center
         l.layer.cornerRadius = 4
         l.clipsToBounds = true
@@ -570,7 +570,7 @@ private class ThemeCell: UICollectionViewCell {
     private let checkmark: UIImageView = {
         let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
         let iv = UIImageView(image: UIImage(systemName: "checkmark.circle.fill", withConfiguration: config))
-        iv.tintColor = AppColors.accent
+        iv.tintColor = AppColors.tierAccent
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.isHidden = true
         return iv
@@ -753,7 +753,7 @@ private class ThemeCell: UICollectionViewCell {
         } else {
             nameLabel.textColor = AppColors.text
             checkmark.isHidden = !isSelected
-            cardView.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+            cardView.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
             cardView.layer.borderWidth = isSelected ? 2 : 1
         }
 
@@ -919,7 +919,7 @@ private class PremiumThemeCell: UICollectionViewCell {
     private let checkmark: UIImageView = {
         let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
         let iv = UIImageView(image: UIImage(systemName: "checkmark.circle.fill", withConfiguration: config))
-        iv.tintColor = AppColors.accent
+        iv.tintColor = AppColors.tierAccent
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.isHidden = true
         return iv
@@ -1479,7 +1479,7 @@ private class PremiumThemeCell: UICollectionViewCell {
             cardView.layer.borderColor = AppColors.border.cgColor
             cardView.layer.borderWidth = 1
         } else {
-            cardView.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+            cardView.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
             cardView.layer.borderWidth = isSelected ? 2.5 : 1
         }
 

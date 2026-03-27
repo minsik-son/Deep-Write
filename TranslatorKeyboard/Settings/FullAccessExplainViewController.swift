@@ -126,7 +126,7 @@ class FullAccessExplainViewController: UIViewController {
             let settingsButton = UIButton(type: .system)
             settingsButton.setTitle(L("full_access.go_settings"), for: .normal)
             settingsButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-            settingsButton.backgroundColor = AppColors.accent
+            settingsButton.backgroundColor = AppColors.tierAccent
             settingsButton.setTitleColor(.white, for: .normal)
             settingsButton.layer.cornerRadius = 12
             settingsButton.translatesAutoresizingMaskIntoConstraints = false
@@ -154,7 +154,7 @@ class FullAccessExplainViewController: UIViewController {
         let iconView = UIImageView()
         let symbolConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
         iconView.image = UIImage(systemName: icon, withConfiguration: symbolConfig)
-        iconView.tintColor = AppColors.accent
+        iconView.tintColor = AppColors.tierAccent
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -212,7 +212,7 @@ class FullAccessExplainViewController: UIViewController {
         badge.font = .systemFont(ofSize: 14, weight: .bold)
         badge.textColor = .white
         badge.textAlignment = .center
-        badge.backgroundColor = AppColors.accent
+        badge.backgroundColor = AppColors.tierAccent
         badge.layer.cornerRadius = 12
         badge.layer.masksToBounds = true
         badge.translatesAutoresizingMaskIntoConstraints = false

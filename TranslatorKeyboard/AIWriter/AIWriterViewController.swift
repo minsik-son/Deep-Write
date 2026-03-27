@@ -176,7 +176,7 @@ class AIWriterViewController: UIViewController {
     // Clipboard banner
     private lazy var clipboardBanner: UIView = {
         let banner = UIView()
-        banner.backgroundColor = AppColors.accent.withAlphaComponent(0.1)
+        banner.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.1)
         banner.layer.cornerRadius = 10
         banner.isHidden = true
         banner.translatesAutoresizingMaskIntoConstraints = false
@@ -193,7 +193,7 @@ class AIWriterViewController: UIViewController {
 
         clipboardBannerUseButton.setTitle(L("ai_writer.clipboard_use"), for: .normal)
         clipboardBannerUseButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        clipboardBannerUseButton.setTitleColor(AppColors.accent, for: .normal)
+        clipboardBannerUseButton.setTitleColor(AppColors.tierAccent, for: .normal)
         clipboardBannerUseButton.addTarget(self, action: #selector(acceptClipboard), for: .touchUpInside)
         clipboardBannerUseButton.translatesAutoresizingMaskIntoConstraints = false
 
@@ -233,6 +233,10 @@ class AIWriterViewController: UIViewController {
         setupUI()
         updateGenerateButton()
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleSubscriptionChange),
+            name: .subscriptionStatusDidChange, object: nil
+        )
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -263,6 +267,7 @@ class AIWriterViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: .languageDidChange, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .subscriptionStatusDidChange, object: nil)
     }
 
     // MARK: - Setup
@@ -333,6 +338,18 @@ class AIWriterViewController: UIViewController {
 
     @objc private func dismissKeyboard() {
         view.endEditing(true)
+    }
+
+    @objc private func handleSubscriptionChange() {
+        clipboardBanner.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.1)
+        clipboardBannerUseButton.setTitleColor(AppColors.tierAccent, for: .normal)
+        inputTextView.tintColor = AppColors.tierAccent
+        contextToggleButton.tintColor = AppColors.tierAccent
+        contextToggleButton.setTitleColor(AppColors.tierAccent, for: .normal)
+        contextTextView.tintColor = AppColors.tierAccent
+        generateButton.backgroundColor = AppColors.tierAccent
+        loadingIndicator.color = AppColors.tierAccent
+        pageControl.currentPageIndicatorTintColor = AppColors.tierAccent
     }
 
     @objc private func handleLanguageChange() {
@@ -557,7 +574,7 @@ class AIWriterViewController: UIViewController {
         inputTextView.backgroundColor = .clear
         inputTextView.font = .systemFont(ofSize: 15)
         inputTextView.textColor = AppColors.text
-        inputTextView.tintColor = AppColors.accent
+        inputTextView.tintColor = AppColors.tierAccent
         inputTextView.delegate = self
         inputTextView.isScrollEnabled = false
         inputTextView.textContainer.lineFragmentPadding = 0
@@ -566,10 +583,10 @@ class AIWriterViewController: UIViewController {
         // Reply toggle button (Fix 2: SF Symbol + new text)
         let chatIcon = UIImage(systemName: "bubble.left", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .medium))
         contextToggleButton.setImage(chatIcon, for: .normal)
-        contextToggleButton.tintColor = AppColors.accent
+        contextToggleButton.tintColor = AppColors.tierAccent
         contextToggleButton.setTitle(" " + L("ai_writer.reply_paste"), for: .normal)
         contextToggleButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-        contextToggleButton.setTitleColor(AppColors.accent, for: .normal)
+        contextToggleButton.setTitleColor(AppColors.tierAccent, for: .normal)
         contextToggleButton.contentHorizontalAlignment = .leading
         contextToggleButton.addTarget(self, action: #selector(toggleContext), for: .touchUpInside)
         contextToggleButton.translatesAutoresizingMaskIntoConstraints = false
@@ -660,7 +677,7 @@ class AIWriterViewController: UIViewController {
         contextTextView.backgroundColor = .clear
         contextTextView.font = .systemFont(ofSize: 13)
         contextTextView.textColor = AppColors.text
-        contextTextView.tintColor = AppColors.accent
+        contextTextView.tintColor = AppColors.tierAccent
         contextTextView.delegate = self
         contextTextView.isScrollEnabled = false
         contextTextView.textContainer.lineFragmentPadding = 0
@@ -916,7 +933,7 @@ class AIWriterViewController: UIViewController {
 
         generateButton.setTitle(L("ai_writer.generate"), for: .normal)
         generateButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        generateButton.backgroundColor = AppColors.accent
+        generateButton.backgroundColor = AppColors.tierAccent
         generateButton.setTitleColor(.white, for: .normal)
         generateButton.layer.cornerRadius = 16
         generateButton.translatesAutoresizingMaskIntoConstraints = false
@@ -955,7 +972,7 @@ class AIWriterViewController: UIViewController {
     // MARK: - Result Area
 
     private func setupResultArea() {
-        loadingIndicator.color = AppColors.accent
+        loadingIndicator.color = AppColors.tierAccent
         loadingIndicator.hidesWhenStopped = true
         loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         contentStack.addArrangedSubview(loadingIndicator)
@@ -966,7 +983,7 @@ class AIWriterViewController: UIViewController {
         resultScrollView.delegate = self
         resultScrollView.translatesAutoresizingMaskIntoConstraints = false
 
-        pageControl.currentPageIndicatorTintColor = AppColors.accent
+        pageControl.currentPageIndicatorTintColor = AppColors.tierAccent
         pageControl.pageIndicatorTintColor = AppColors.border
         pageControl.isHidden = true
         pageControl.translatesAutoresizingMaskIntoConstraints = false
@@ -998,7 +1015,7 @@ class AIWriterViewController: UIViewController {
 
             // Left accent bar
             let accentBar = UIView()
-            accentBar.backgroundColor = AppColors.accent
+            accentBar.backgroundColor = AppColors.tierAccent
             accentBar.layer.cornerRadius = 1.5
             accentBar.translatesAutoresizingMaskIntoConstraints = false
             card.addSubview(accentBar)
@@ -1007,7 +1024,7 @@ class AIWriterViewController: UIViewController {
             let resultHeaderLabel = UILabel()
             resultHeaderLabel.text = L("ai_writer.result_label")
             resultHeaderLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-            resultHeaderLabel.textColor = AppColors.accent
+            resultHeaderLabel.textColor = AppColors.tierAccent
             resultHeaderLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let label = UILabel()
@@ -1020,11 +1037,11 @@ class AIWriterViewController: UIViewController {
             let copyBtn = UIButton(type: .system)
             copyBtn.setTitle(L("ai_writer.copy"), for: .normal)
             copyBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-            copyBtn.setTitleColor(AppColors.accent, for: .normal)
-            copyBtn.backgroundColor = AppColors.accent.withAlphaComponent(0.08)
+            copyBtn.setTitleColor(AppColors.tierAccent, for: .normal)
+            copyBtn.backgroundColor = AppColors.tierAccent.withAlphaComponent(0.08)
             copyBtn.layer.cornerRadius = 20
             copyBtn.layer.borderWidth = 1.5
-            copyBtn.layer.borderColor = AppColors.accent.cgColor
+            copyBtn.layer.borderColor = AppColors.tierAccent.cgColor
             copyBtn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
             copyBtn.tag = i
             copyBtn.addTarget(self, action: #selector(copyVariation(_:)), for: .touchUpInside)
@@ -1230,14 +1247,14 @@ class AIWriterViewController: UIViewController {
                 btn.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
                 btn.titleLabel?.numberOfLines = 2
                 btn.titleLabel?.textAlignment = .center
-                btn.setTitleColor(isSelected ? AppColors.accent : AppColors.textSub, for: .normal)
+                btn.setTitleColor(isSelected ? AppColors.tierAccent : AppColors.textSub, for: .normal)
                 btn.backgroundColor = isSelected
-                    ? AppColors.accent.withAlphaComponent(0.08)
+                    ? AppColors.tierAccent.withAlphaComponent(0.08)
                     : AppColors.bg
                 btn.layer.cornerRadius = 16
                 btn.layer.borderWidth = 1.5
                 btn.layer.borderColor = isSelected
-                    ? AppColors.accent.cgColor
+                    ? AppColors.tierAccent.cgColor
                     : AppColors.bg.cgColor
                 btn.heightAnchor.constraint(equalToConstant: 72).isActive = true
                 btn.accessibilityIdentifier = item.id
@@ -1282,12 +1299,12 @@ class AIWriterViewController: UIViewController {
                 for case let btn as UIButton in rowStack.arrangedSubviews {
                     UIView.animate(withDuration: 0.2) {
                         btn.backgroundColor = (btn === sender)
-                            ? AppColors.accent.withAlphaComponent(0.08)
+                            ? AppColors.tierAccent.withAlphaComponent(0.08)
                             : AppColors.bg
                         btn.layer.borderColor = (btn === sender)
-                            ? AppColors.accent.cgColor
+                            ? AppColors.tierAccent.cgColor
                             : AppColors.bg.cgColor
-                        btn.setTitleColor((btn === sender) ? AppColors.accent : AppColors.textSub, for: .normal)
+                        btn.setTitleColor((btn === sender) ? AppColors.tierAccent : AppColors.textSub, for: .normal)
                     }
                 }
             }
@@ -1350,10 +1367,10 @@ class AIWriterViewController: UIViewController {
 
     private func makeLengthSheetRow(id: String, icon: String, name: String, desc: String, isSelected: Bool) -> UIView {
         let row = UIView()
-        row.backgroundColor = isSelected ? AppColors.accent.withAlphaComponent(0.08) : AppColors.bg
+        row.backgroundColor = isSelected ? AppColors.tierAccent.withAlphaComponent(0.08) : AppColors.bg
         row.layer.cornerRadius = 16
         row.layer.borderWidth = 1.5
-        row.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.bg.cgColor
+        row.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.bg.cgColor
         row.translatesAutoresizingMaskIntoConstraints = false
         row.heightAnchor.constraint(equalToConstant: 64).isActive = true
         row.accessibilityIdentifier = id
@@ -1369,7 +1386,7 @@ class AIWriterViewController: UIViewController {
         let nameLabel = UILabel()
         nameLabel.text = name
         nameLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+        nameLabel.textColor = isSelected ? AppColors.tierAccent : AppColors.text
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
         let descLabel = UILabel()
@@ -1381,8 +1398,8 @@ class AIWriterViewController: UIViewController {
         let checkView = UIView()
         checkView.layer.cornerRadius = 11
         checkView.layer.borderWidth = 2
-        checkView.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
-        checkView.backgroundColor = isSelected ? AppColors.accent : .clear
+        checkView.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
+        checkView.backgroundColor = isSelected ? AppColors.tierAccent : .clear
         checkView.translatesAutoresizingMaskIntoConstraints = false
 
         if isSelected {
@@ -1438,17 +1455,17 @@ class AIWriterViewController: UIViewController {
                 let isSelected = (row === selectedRow)
                 UIView.animate(withDuration: 0.2) {
                     row.backgroundColor = isSelected
-                        ? AppColors.accent.withAlphaComponent(0.08)
+                        ? AppColors.tierAccent.withAlphaComponent(0.08)
                         : AppColors.bg
                     row.layer.borderColor = isSelected
-                        ? AppColors.accent.cgColor
+                        ? AppColors.tierAccent.cgColor
                         : AppColors.bg.cgColor
                 }
                 // 체크마크 업데이트
                 if let checkView = row.subviews.last {
                     UIView.animate(withDuration: 0.2) {
-                        checkView.backgroundColor = isSelected ? AppColors.accent : .clear
-                        checkView.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+                        checkView.backgroundColor = isSelected ? AppColors.tierAccent : .clear
+                        checkView.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
                     }
                     if isSelected && checkView.subviews.isEmpty {
                         let checkmark = UIImageView(image: UIImage(systemName: "checkmark"))
@@ -1467,7 +1484,7 @@ class AIWriterViewController: UIViewController {
                 }
                 // 이름 라벨 색상 업데이트
                 if let nameLabel = row.subviews.first(where: { ($0 as? UILabel)?.font.pointSize == 15 }) as? UILabel {
-                    nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+                    nameLabel.textColor = isSelected ? AppColors.tierAccent : AppColors.text
                 }
             }
         }
@@ -1494,7 +1511,7 @@ class AIWriterViewController: UIViewController {
         let navigationController = UINavigationController(rootViewController: selectionViewController)
         navigationController.modalPresentationStyle = .fullScreen
         navigationController.navigationBar.prefersLargeTitles = false
-        navigationController.navigationBar.tintColor = AppColors.accent
+        navigationController.navigationBar.tintColor = AppColors.tierAccent
         navigationController.navigationBar.standardAppearance = appearance
         navigationController.navigationBar.scrollEdgeAppearance = appearance
 
@@ -1528,7 +1545,7 @@ class AIWriterViewController: UIViewController {
             row.backgroundColor = AppColors.card
             row.layer.cornerRadius = 18
             row.layer.borderWidth = 1
-            row.layer.borderColor = isSelected ? AppColors.accent.cgColor : AppColors.border.cgColor
+            row.layer.borderColor = isSelected ? AppColors.tierAccent.cgColor : AppColors.border.cgColor
             row.translatesAutoresizingMaskIntoConstraints = false
             row.heightAnchor.constraint(equalToConstant: 60).isActive = true
 
@@ -1546,11 +1563,11 @@ class AIWriterViewController: UIViewController {
             let nameLabel = UILabel()
             nameLabel.text = displayName
             nameLabel.font = .systemFont(ofSize: 16, weight: isSelected ? .semibold : .medium)
-            nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+            nameLabel.textColor = isSelected ? AppColors.tierAccent : AppColors.text
             nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let checkImage = UIImageView(image: UIImage(systemName: "checkmark"))
-            checkImage.tintColor = AppColors.accent
+            checkImage.tintColor = AppColors.tierAccent
             checkImage.isHidden = !isSelected
             checkImage.translatesAutoresizingMaskIntoConstraints = false
 
@@ -1608,7 +1625,7 @@ class AIWriterViewController: UIViewController {
 
                 UIView.animate(withDuration: 0.2) {
                     row.backgroundColor = isSelected
-                        ? AppColors.accent.withAlphaComponent(0.06)
+                        ? AppColors.tierAccent.withAlphaComponent(0.06)
                         : .clear
                 }
 
@@ -1618,7 +1635,7 @@ class AIWriterViewController: UIViewController {
 
                 if isSelected {
                     let check = UIImageView(image: UIImage(systemName: "checkmark"))
-                    check.tintColor = AppColors.accent
+                    check.tintColor = AppColors.tierAccent
                     check.translatesAutoresizingMaskIntoConstraints = false
                     row.addSubview(check)
                     NSLayoutConstraint.activate([
@@ -1630,7 +1647,7 @@ class AIWriterViewController: UIViewController {
 
                 if let nameLabel = row.subviews.compactMap({ $0 as? UILabel }).first(where: { $0.font.pointSize == 15 }) {
                     nameLabel.font = .systemFont(ofSize: 15, weight: isSelected ? .semibold : .medium)
-                    nameLabel.textColor = isSelected ? AppColors.accent : AppColors.text
+                    nameLabel.textColor = isSelected ? AppColors.tierAccent : AppColors.text
                 }
             }
         }
@@ -1724,7 +1741,7 @@ class AIWriterViewController: UIViewController {
             textField.translatesAutoresizingMaskIntoConstraints = false
             textField.font = .systemFont(ofSize: 15)
             textField.textColor = AppColors.text
-            textField.tintColor = AppColors.accent
+            textField.tintColor = AppColors.tierAccent
             textField.backgroundColor = AppColors.bg
             textField.layer.cornerRadius = 10
             textField.layer.borderWidth = 1
@@ -1955,7 +1972,7 @@ class AIWriterViewController: UIViewController {
         generateButton.removeTarget(self, action: #selector(watchAdTapped), for: .touchUpInside)
         generateButton.addTarget(self, action: #selector(generateTapped), for: .touchUpInside)
         generateButton.setTitle(L("ai_writer.generate"), for: .normal)
-        generateButton.backgroundColor = AppColors.accent
+        generateButton.backgroundColor = AppColors.tierAccent
 
         if let remaining = remaining {
             remainingBadge.isHidden = false
