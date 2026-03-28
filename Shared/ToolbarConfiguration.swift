@@ -38,9 +38,7 @@ struct ToolbarConfiguration {
             return defaultItems
         }
 
-        // settings always first
-        items.removeAll { $0 == .settings }
-        items.insert(.settings, at: 0)
+        // settings is now user-customizable like any other item
 
         return items
     }

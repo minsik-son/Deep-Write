@@ -6,7 +6,7 @@ final class ToolbarCustomizationViewController: UIViewController {
 
     private var currentItems: [ToolbarItemType] = []
     private var originalItems: [ToolbarItemType] = []
-    private let allAvailableItems: [ToolbarItemType] = ToolbarItemType.allCases.filter { $0 != .settings }
+    private let allAvailableItems: [ToolbarItemType] = ToolbarItemType.allCases
     private var isEditMode = false
     private let maxSlots = 8
 
@@ -178,8 +178,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         switch gesture.state {
         case .began:
             guard let indexPath = previewCollectionView.indexPathForItem(at: location),
-                  indexPath.item < currentItems.count,
-                  currentItems[indexPath.item] != .settings else { return }
+                  indexPath.item < currentItems.count else { return }
 
             draggedIndexPath = indexPath
 
@@ -206,8 +205,7 @@ final class ToolbarCustomizationViewController: UIViewController {
             guard let targetIndexPath = previewCollectionView.indexPathForItem(at: previewLocation),
                   let sourceIndexPath = draggedIndexPath,
                   targetIndexPath != sourceIndexPath,
-                  targetIndexPath.item < currentItems.count,
-                  targetIndexPath.item != 0
+                  targetIndexPath.item < currentItems.count
             else { return }
 
             let item = currentItems.remove(at: sourceIndexPath.item)
@@ -260,7 +258,7 @@ extension ToolbarCustomizationViewController: UICollectionViewDataSource {
                 let item = currentItems[indexPath.item]
                 cell.configure(
                     iconName: iconName(for: item),
-                    showDeleteBadge: isEditMode && item != .settings
+                    showDeleteBadge: isEditMode
                 )
                 return cell
             } else {
@@ -284,8 +282,7 @@ extension ToolbarCustomizationViewController: UICollectionViewDelegate {
         guard isEditMode else { return false }
 
         if collectionView === previewCollectionView {
-            guard indexPath.item < currentItems.count else { return false }
-            return currentItems[indexPath.item] != .settings
+            return indexPath.item < currentItems.count
         }
         return true
     }
@@ -295,8 +292,7 @@ extension ToolbarCustomizationViewController: UICollectionViewDelegate {
 
         if collectionView === previewCollectionView {
             guard indexPath.item < currentItems.count else { return false }
-            guard currentItems[indexPath.item] != .settings else { return false }
-            guard currentItems.count > 2 else { return false }
+            guard currentItems.count > 1 else { return false }
             return true
         }
         return true
