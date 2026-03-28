@@ -641,6 +641,10 @@
 "chatreply.direction.title" = "방향";
 "chatreply.direction.placeholder" = "답변 방향을 입력하세요";
 "chatreply.skip" = "또는 건너뛰고 생성";
+"chatreply.generate" = "답장 생성";
+"chatreply.style.short" = "짧게";
+"chatreply.style.warm" = "따뜻하게";
+"chatreply.style.creative" = "센스있게";
 "chatreply.loading" = "답변 생성 중...";
 "chatreply.regenerate" = "재생성";
 "chatreply.retry" = "재시도";

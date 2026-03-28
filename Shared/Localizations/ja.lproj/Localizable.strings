@@ -641,6 +641,10 @@
 "chatreply.direction.title" = "方向";
 "chatreply.direction.placeholder" = "返信の方向を入力";
 "chatreply.skip" = "またはスキップして生成";
+"chatreply.generate" = "返信を生成";
+"chatreply.style.short" = "短く";
+"chatreply.style.warm" = "温かく";
+"chatreply.style.creative" = "ユニーク";
 "chatreply.loading" = "返信を生成中...";
 "chatreply.regenerate" = "再生成";
 "chatreply.retry" = "リトライ";

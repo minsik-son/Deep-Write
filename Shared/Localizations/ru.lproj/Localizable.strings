@@ -641,6 +641,10 @@
 "chatreply.direction.title" = "Направление";
 "chatreply.direction.placeholder" = "Направление ответа";
 "chatreply.skip" = "или пропустить и сгенерировать";
+"chatreply.generate" = "Сгенерировать ответ";
+"chatreply.style.short" = "Кратко";
+"chatreply.style.warm" = "Тепло";
+"chatreply.style.creative" = "Креативно";
 "chatreply.loading" = "Генерация ответов...";
 "chatreply.regenerate" = "Перегенерировать";
 "chatreply.retry" = "Повторить";

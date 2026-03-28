@@ -641,6 +641,10 @@
 "chatreply.direction.title" = "Dirección";
 "chatreply.direction.placeholder" = "Dirección de respuesta";
 "chatreply.skip" = "o saltar y generar";
+"chatreply.generate" = "Generar respuesta";
+"chatreply.style.short" = "Breve";
+"chatreply.style.warm" = "Cálido";
+"chatreply.style.creative" = "Creativo";
 "chatreply.loading" = "Generando respuestas...";
 "chatreply.regenerate" = "Regenerar";
 "chatreply.retry" = "Reintentar";

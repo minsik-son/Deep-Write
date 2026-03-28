@@ -641,6 +641,10 @@
 "chatreply.direction.title" = "方向";
 "chatreply.direction.placeholder" = "输入回复方向";
 "chatreply.skip" = "或跳过直接生成";
+"chatreply.generate" = "生成回复";
+"chatreply.style.short" = "简短";
+"chatreply.style.warm" = "温暖";
+"chatreply.style.creative" = "创意";
 "chatreply.loading" = "正在生成回复...";
 "chatreply.regenerate" = "重新生成";
 "chatreply.retry" = "重试";

@@ -21,12 +21,12 @@ final class ChatReplyManager {
 
     // MARK: - Public
 
-    func generate(request: ChatReplyRequest) {
+    func generate(request: ChatReplyRequest, skipCache: Bool = false) {
         cancelPending()
         retryCount = 0
         generationCounter += 1
 
-        if let cached = ChatReplyCache.shared.get(
+        if !skipCache, let cached = ChatReplyCache.shared.get(
             context: request.context,
             tone: request.tone,
             direction: request.direction

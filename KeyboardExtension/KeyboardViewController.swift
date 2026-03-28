@@ -66,6 +66,7 @@ class KeyboardViewController: UIInputViewController {
     private var chatReplyView: ChatReplyGeneratorView?
     private var chatReplyManager: ChatReplyManager?
     private var isShowingChatReply: Bool = false
+    private var chatReplyExpandedHeight: CGFloat = 0
 
     // MARK: - Logic Managers
 
@@ -675,7 +676,17 @@ class KeyboardViewController: UIInputViewController {
                 newHeight = Heights.topPadding + editH + keyArea
             }
         case .chatReplyMode:
-            newHeight = Heights.topPadding + Heights.toolbar + keyArea
+            if chatReplyExpandedHeight > 0 {
+                // Results 상태: 키보드 숨기고 콘텐츠에 맞게 확장
+                let maxH = UIScreen.main.bounds.height * 0.55
+                let defaultH = Heights.topPadding + Heights.toolbar + keyArea
+                let expandedH = chatReplyExpandedHeight + Heights.topPadding + 8
+                // 짧은 답장이어도 기본 높이 이하로 줄어들지 않도록 (Patch #1)
+                newHeight = min(max(expandedH, defaultH), maxH)
+            } else {
+                // Setup/Loading 상태: 기본 키보드 높이
+                newHeight = Heights.topPadding + Heights.toolbar + keyArea
+            }
         }
 
         heightConstraint?.constant = newHeight
@@ -1372,6 +1383,7 @@ class KeyboardViewController: UIInputViewController {
             chatReplyView?.removeFromSuperview()
             chatReplyView = nil
             isShowingChatReply = false
+            chatReplyExpandedHeight = 0
             modeTextInputHandler.clear()
             keyboardLayoutView.isHidden = false
             toolbarView.isHidden = false
@@ -2867,7 +2879,7 @@ extension KeyboardViewController: TextInputHandlerDelegate {
                 quickNoteEditView?.updateCharCount(displayText.count)
             }
         case .chatReplyMode:
-            chatReplyView?.setDirectionText(handler.fullText)
+            break
         case .defaultMode:
             break
         }
@@ -2891,7 +2903,7 @@ extension KeyboardViewController: TextInputHandlerDelegate {
                 quickNoteEditView?.updateCharCount(displayText.count)
             }
         case .chatReplyMode:
-            chatReplyView?.setDirectionText(handler.fullText)
+            break
         case .defaultMode:
             break
         }
@@ -3043,6 +3055,24 @@ extension KeyboardViewController {
         view.onToneChanged = { [weak self] in
             self?.modeTextInputHandler.commitComposing()
         }
+        view.onRequestHeightUpdate = { [weak self] neededHeight in
+            guard let self = self else { return }
+            if neededHeight <= 0 {
+                // 기본 높이로 복귀 (setup 상태)
+                self.chatReplyExpandedHeight = 0
+                self.keyboardLayoutView.isHidden = false
+                self.toolbarView.isHidden = false
+            } else {
+                // Results 상태: 키보드 숨기고 확장
+                self.chatReplyExpandedHeight = neededHeight
+                self.keyboardLayoutView.isHidden = true
+            }
+            self.updateHeight(for: .chatReplyMode, animated: true)
+        }
+        view.onBack = { [weak self] in
+            guard let self = self else { return }
+            self.chatReplyView?.showSubState(.setup)
+        }
 
         let manager = ChatReplyManager()
         manager.delegate = self
@@ -3132,34 +3162,8 @@ extension KeyboardViewController {
     }
 
     private func handleChatReplyModeKey(_ key: String) {
-        guard chatReplyView?.currentSubState == .setup else { return }
-
-        switch key {
-        case KeyboardLayoutView.backKey:
-            modeTextInputHandler.handleBackspace()
-        case KeyboardLayoutView.returnKey:
-            modeTextInputHandler.commitComposing()
-            let direction = modeTextInputHandler.fullText
-            let tone = ChatReplyGeneratorView.toneAPIValues[safe: chatReplyView?.selectedToneIndex ?? 0] ?? "Friendly"
-            let request = ChatReplyRequest(
-                context: chatReplyView?.contextMessage ?? "",
-                tone: tone,
-                direction: direction,
-                language: ""
-            )
-            triggerChatReplyGeneration(request: request)
-        case " ":
-            modeTextInputHandler.handleSpace()
-        default:
-            guard modeTextInputHandler.totalLength < 150 else {
-                hapticFeedback.impactOccurred()
-                return
-            }
-            let isKorean = isKoreanJamo(key)
-            if let char = key.first {
-                modeTextInputHandler.handleKey(char, isKorean: isKorean)
-            }
-        }
+        // v3.1: Direction 입력 제거 — 키보드 숨김 상태에서 호출되지 않음
+        return
     }
 
     private func triggerChatReplyGeneration(request: ChatReplyRequest) {
@@ -3171,7 +3175,7 @@ extension KeyboardViewController {
         let finalRequest = ChatReplyRequest(
             context: request.context,
             tone: request.tone,
-            direction: request.direction.isEmpty ? modeTextInputHandler.fullText : request.direction,
+            direction: "",
             language: language
         )
 
@@ -3187,12 +3191,12 @@ extension KeyboardViewController {
         let request = ChatReplyRequest(
             context: view.contextMessage,
             tone: tone,
-            direction: modeTextInputHandler.fullText,
+            direction: "",
             language: detectLanguage(view.contextMessage)
         )
 
         view.showSubState(.loading)
-        chatReplyManager?.generate(request: request)
+        chatReplyManager?.generate(request: request, skipCache: true)
     }
 
     private func detectLanguage(_ text: String) -> String {

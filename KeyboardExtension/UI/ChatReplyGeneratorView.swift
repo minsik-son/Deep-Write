@@ -20,6 +20,8 @@ final class ChatReplyGeneratorView: UIView {
     var onRequestRegenerate: (() -> Void)?
     var onToneChanged: (() -> Void)?
     var onCopy: ((String) -> Void)?
+    var onBack: (() -> Void)?
+    var onRequestHeightUpdate: ((CGFloat) -> Void)?
 
     // MARK: - AI Disclosure (Apple Guideline 4.7)
     private let aiDisclosureLabel = UILabel()
@@ -36,7 +38,6 @@ final class ChatReplyGeneratorView: UIView {
 
     // MARK: - Session State
     private(set) var selectedToneIndex: Int = 0
-    private var directionText: String = ""
     private(set) var contextMessage: String = ""
     private var currentReplies: [String] = []
 
@@ -57,6 +58,13 @@ final class ChatReplyGeneratorView: UIView {
         "Professional", "Romantic", "Direct", "Thoughtful"
     ]
 
+    // 카드별 스타일 라벨 (서버의 STYLE_VARIATIONS 순서와 일치)
+    static let styleDisplayKeys: [String] = [
+        "chatreply.style.short",
+        "chatreply.style.warm",
+        "chatreply.style.creative"
+    ]
+
     private var cachedToneDisplayNames: [String] = []
 
     // MARK: - UI Components — Context Banner
@@ -70,14 +78,8 @@ final class ChatReplyGeneratorView: UIView {
     private let toneGridStack = UIStackView()
     private var toneButtons: [UIButton] = []
 
-    // MARK: - UI Components — Direction Input
-    private let directionSectionLabel = UILabel()
-    private let directionInputContainer = UIView()
-    private let directionDisplayLabel = UILabel()
-    private let directionCursorView = UIView()
-    private let directionPlaceholder = UILabel()
-    private let directionSendButton = UIButton(type: .custom)
-    private let skipLabel = UILabel()
+    // MARK: - UI Components — Generate Button
+    private let generateButton = UIButton(type: .custom)
 
     // MARK: - UI Components — Loading
     private let loadingContainer = UIView()
@@ -87,12 +89,17 @@ final class ChatReplyGeneratorView: UIView {
 
     // MARK: - UI Components — Reply Cards
     private let replyContainer = UIView()
+    private let replyScrollView = UIScrollView()
+    private let replyScrollContent = UIView()
     private let replyCardsStack = UIStackView()
     private var replyCards: [ChatReplyCard] = []
-    private let directionTagView = UIView()
-    private let directionTagLabel = UILabel()
     private let toneBadge = UIButton(type: .custom)
     private let regenerateButton = UIButton(type: .custom)
+    private let backButton = UIButton(type: .custom)
+    private let replyHeaderView = UIView()
+    private let replyContextLabel = UILabel()
+    private let replyContextIcon = UIView()
+    private let replyContextBar = UIView()
 
     // MARK: - UI Components — Error
     private let errorContainer = UIView()
@@ -105,9 +112,6 @@ final class ChatReplyGeneratorView: UIView {
 
     // MARK: - Haptic
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .light)
-
-    // MARK: - Cursor Animation
-    private var cursorTimer: Timer?
 
     // MARK: - Init
     override init(frame: CGRect) {
@@ -124,8 +128,6 @@ final class ChatReplyGeneratorView: UIView {
     }
 
     deinit {
-        cursorTimer?.invalidate()
-        cursorTimer = nil
         loadingTimer?.invalidate()
         loadingTimer = nil
     }
@@ -137,15 +139,6 @@ final class ChatReplyGeneratorView: UIView {
         contextMessage = trimmed
         contextLabel.text = trimmed
         contextBannerView.accessibilityValue = contextMessage
-    }
-
-    func setDirectionText(_ text: String) {
-        directionText = text
-        directionDisplayLabel.text = text
-        directionPlaceholder.isHidden = !text.isEmpty
-        directionCursorView.isHidden = text.isEmpty && currentSubState != .setup
-        directionSendButton.isEnabled = true
-        updateDirectionSendButtonAppearance()
     }
 
     func displayReplies(_ replies: [String]) {
@@ -174,8 +167,6 @@ final class ChatReplyGeneratorView: UIView {
     }
 
     func prepareForDismiss() {
-        cursorTimer?.invalidate()
-        cursorTimer = nil
         loadingTimer?.invalidate()
         loadingTimer = nil
 
@@ -186,6 +177,11 @@ final class ChatReplyGeneratorView: UIView {
         replyCardsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         currentReplies.removeAll()
         aiDisclosureLabel.removeFromSuperview()
+        // v2: replyContainer 내 context bar 정리
+        replyContextBar.removeFromSuperview()
+        // 콜백 정리
+        onBack = nil
+        onRequestHeightUpdate = nil
     }
 }
 
@@ -235,18 +231,18 @@ extension ChatReplyGeneratorView {
         toneGridStack.distribution = .fillEqually
         addSubview(toneGridStack)
 
-        for row in 0..<4 {
+        for row in 0..<2 {
             let rowStack = UIStackView()
             rowStack.axis = .horizontal
             rowStack.spacing = 8
             rowStack.distribution = .fillEqually
 
-            for col in 0..<2 {
-                let index = row * 2 + col
+            for col in 0..<4 {
+                let index = row * 4 + col
                 let btn = UIButton(type: .custom)
                 btn.tag = index
                 btn.setTitle(cachedToneDisplayNames[safe: index] ?? Self.toneAPIValues[safe: index] ?? "", for: .normal)
-                btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+                btn.titleLabel?.font = .systemFont(ofSize: 12, weight: .medium)
                 btn.layer.cornerRadius = 10
                 btn.clipsToBounds = true
                 btn.addTarget(self, action: #selector(toneTapped(_:)), for: .touchUpInside)
@@ -260,50 +256,18 @@ extension ChatReplyGeneratorView {
         }
         updateToneSelection()
 
-        // ---- Direction Input ----
-        directionSectionLabel.translatesAutoresizingMaskIntoConstraints = false
-        directionSectionLabel.text = L("chatreply.direction.title")
-        directionSectionLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        directionSectionLabel.accessibilityTraits = .header
-        addSubview(directionSectionLabel)
-
-        directionInputContainer.translatesAutoresizingMaskIntoConstraints = false
-        directionInputContainer.layer.cornerRadius = 12
-        directionInputContainer.clipsToBounds = true
-        addSubview(directionInputContainer)
-
-        directionDisplayLabel.translatesAutoresizingMaskIntoConstraints = false
-        directionDisplayLabel.font = .systemFont(ofSize: 14)
-        directionDisplayLabel.numberOfLines = 1
-        directionInputContainer.addSubview(directionDisplayLabel)
-
-        directionCursorView.translatesAutoresizingMaskIntoConstraints = false
-        directionCursorView.backgroundColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1)
-        directionInputContainer.addSubview(directionCursorView)
-
-        directionPlaceholder.translatesAutoresizingMaskIntoConstraints = false
-        directionPlaceholder.text = L("chatreply.direction.placeholder")
-        directionPlaceholder.font = .systemFont(ofSize: 14)
-        directionPlaceholder.alpha = 0.4
-        directionInputContainer.addSubview(directionPlaceholder)
-
-        directionSendButton.translatesAutoresizingMaskIntoConstraints = false
-        directionSendButton.setTitle("\u{2192}", for: .normal)
-        directionSendButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
-        directionSendButton.layer.cornerRadius = 16
-        directionSendButton.clipsToBounds = true
-        directionInputContainer.addSubview(directionSendButton)
-
-        skipLabel.translatesAutoresizingMaskIntoConstraints = false
-        skipLabel.text = L("chatreply.skip")
-        skipLabel.font = .systemFont(ofSize: 12)
-        skipLabel.alpha = 0.5
-        skipLabel.textAlignment = .center
-        skipLabel.isUserInteractionEnabled = true
-        skipLabel.isAccessibilityElement = true
-        skipLabel.accessibilityLabel = L("chatreply.skip")
-        skipLabel.accessibilityTraits = .button
-        addSubview(skipLabel)
+        // ---- Generate Button ----
+        generateButton.translatesAutoresizingMaskIntoConstraints = false
+        generateButton.setTitle(L("chatreply.generate"), for: .normal)
+        generateButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        generateButton.backgroundColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1)
+        generateButton.setTitleColor(.white, for: .normal)
+        generateButton.layer.cornerRadius = 14
+        generateButton.clipsToBounds = true
+        generateButton.isAccessibilityElement = true
+        generateButton.accessibilityLabel = L("chatreply.generate")
+        generateButton.accessibilityTraits = .button
+        addSubview(generateButton)
 
         // ---- Loading Container ----
         loadingContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -343,20 +307,76 @@ extension ChatReplyGeneratorView {
         replyContainer.translatesAutoresizingMaskIntoConstraints = false
         addSubview(replyContainer)
 
-        replyCardsStack.translatesAutoresizingMaskIntoConstraints = false
-        replyCardsStack.axis = .vertical
-        replyCardsStack.spacing = 10
-        replyCardsStack.distribution = .fillEqually
-        replyContainer.addSubview(replyCardsStack)
+        // Context bar inside replyContainer (results 상태에서 원본 메시지 표시)
+        replyContextBar.translatesAutoresizingMaskIntoConstraints = false
+        replyContextBar.backgroundColor = UIColor(white: 1, alpha: 0.06)
+        replyContextBar.layer.cornerRadius = 10
+        replyContextBar.clipsToBounds = true
+        replyContainer.addSubview(replyContextBar)
 
+        replyContextIcon.translatesAutoresizingMaskIntoConstraints = false
+        replyContextIcon.backgroundColor = UIColor(red: 0.0, green: 0.75, blue: 0.65, alpha: 1)
+        replyContextIcon.layer.cornerRadius = 3
+        replyContextBar.addSubview(replyContextIcon)
+
+        replyContextLabel.translatesAutoresizingMaskIntoConstraints = false
+        replyContextLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        replyContextLabel.textColor = UIColor(white: 0.7, alpha: 1)
+        replyContextLabel.numberOfLines = 1
+        replyContextLabel.lineBreakMode = .byTruncatingTail
+        replyContextBar.addSubview(replyContextLabel)
+
+        // Back button (← 뒤로가기)
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setTitle("←", for: .normal)
+        backButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+        backButton.setTitleColor(UIColor(white: 0.7, alpha: 1), for: .normal)
+        backButton.backgroundColor = UIColor(white: 1, alpha: 0.06)
+        backButton.layer.cornerRadius = 8
+        backButton.clipsToBounds = true
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        backButton.accessibilityLabel = "Back"
+        replyContainer.addSubview(backButton)
+
+        // Reply header (tone badge + regenerate)
+        replyHeaderView.translatesAutoresizingMaskIntoConstraints = false
+        replyContainer.addSubview(replyHeaderView)
+
+        // Tone badge button (기존 toneBadge 프로퍼티 재사용)
+        toneBadge.translatesAutoresizingMaskIntoConstraints = false
+        toneBadge.titleLabel?.font = .systemFont(ofSize: 11, weight: .medium)
+        toneBadge.setTitleColor(UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1), for: .normal)
+        toneBadge.backgroundColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 0.1)
+        toneBadge.layer.cornerRadius = 8
+        toneBadge.layer.borderWidth = 1
+        toneBadge.layer.borderColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 0.2).cgColor
+        toneBadge.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
+        toneBadge.addTarget(self, action: #selector(toneBadgeTapped), for: .touchUpInside)
+        toneBadge.accessibilityLabel = "Current tone"
+        toneBadge.accessibilityHint = "Double tap to change tone"
+        replyHeaderView.addSubview(toneBadge)
+
+        // Regenerate button (replyHeaderView로 이동)
         regenerateButton.translatesAutoresizingMaskIntoConstraints = false
-        regenerateButton.setTitle("\u{21BB} " + L("chatreply.regenerate"), for: .normal)
-        regenerateButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-        regenerateButton.layer.cornerRadius = 16
+        regenerateButton.setTitle("↻ " + L("chatreply.regenerate"), for: .normal)
+        regenerateButton.titleLabel?.font = .systemFont(ofSize: 11, weight: .medium)
+        regenerateButton.layer.cornerRadius = 8
         regenerateButton.clipsToBounds = true
+        regenerateButton.backgroundColor = UIColor(white: 1, alpha: 0.05)
+        regenerateButton.layer.borderWidth = 1
+        regenerateButton.layer.borderColor = UIColor(white: 1, alpha: 0.06).cgColor
+        regenerateButton.setTitleColor(UIColor(white: 0.7, alpha: 1), for: .normal)
+        regenerateButton.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
         regenerateButton.accessibilityLabel = L("chatreply.regenerate")
         regenerateButton.accessibilityHint = L("chatreply.a11y.regenerate_hint")
-        replyContainer.addSubview(regenerateButton)
+        replyHeaderView.addSubview(regenerateButton)
+
+        // Cards stack (replyContainer 직접 자식)
+        replyCardsStack.translatesAutoresizingMaskIntoConstraints = false
+        replyCardsStack.axis = .vertical
+        replyCardsStack.spacing = 6
+        replyCardsStack.distribution = .fill
+        replyContainer.addSubview(replyCardsStack)
 
         // AI Disclosure 라벨 (Apple Guideline 4.7 준수)
         aiDisclosureLabel.text = L("chatreply.ai_disclosure")
@@ -365,7 +385,8 @@ extension ChatReplyGeneratorView {
         aiDisclosureLabel.textAlignment = .center
         aiDisclosureLabel.translatesAutoresizingMaskIntoConstraints = false
         aiDisclosureLabel.isHidden = true
-        addSubview(aiDisclosureLabel)
+        aiDisclosureLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        replyContainer.addSubview(aiDisclosureLabel)
 
         // ---- Error Container ----
         errorContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -436,33 +457,10 @@ extension ChatReplyGeneratorView {
         ])
 
         NSLayoutConstraint.activate([
-            directionSectionLabel.topAnchor.constraint(equalTo: toneGridStack.bottomAnchor, constant: 12),
-            directionSectionLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-
-            directionInputContainer.topAnchor.constraint(equalTo: directionSectionLabel.bottomAnchor, constant: 8),
-            directionInputContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            directionInputContainer.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            directionInputContainer.heightAnchor.constraint(equalToConstant: 44),
-
-            directionDisplayLabel.leadingAnchor.constraint(equalTo: directionInputContainer.leadingAnchor, constant: 14),
-            directionDisplayLabel.centerYAnchor.constraint(equalTo: directionInputContainer.centerYAnchor),
-            directionDisplayLabel.trailingAnchor.constraint(equalTo: directionSendButton.leadingAnchor, constant: -8),
-
-            directionCursorView.leadingAnchor.constraint(equalTo: directionDisplayLabel.trailingAnchor, constant: 1),
-            directionCursorView.centerYAnchor.constraint(equalTo: directionInputContainer.centerYAnchor),
-            directionCursorView.widthAnchor.constraint(equalToConstant: 2),
-            directionCursorView.heightAnchor.constraint(equalToConstant: 18),
-
-            directionPlaceholder.leadingAnchor.constraint(equalTo: directionInputContainer.leadingAnchor, constant: 14),
-            directionPlaceholder.centerYAnchor.constraint(equalTo: directionInputContainer.centerYAnchor),
-
-            directionSendButton.trailingAnchor.constraint(equalTo: directionInputContainer.trailingAnchor, constant: -6),
-            directionSendButton.centerYAnchor.constraint(equalTo: directionInputContainer.centerYAnchor),
-            directionSendButton.widthAnchor.constraint(equalToConstant: 32),
-            directionSendButton.heightAnchor.constraint(equalToConstant: 32),
-
-            skipLabel.topAnchor.constraint(equalTo: directionInputContainer.bottomAnchor, constant: 8),
-            skipLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            generateButton.topAnchor.constraint(equalTo: toneGridStack.bottomAnchor, constant: 16),
+            generateButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            generateButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            generateButton.heightAnchor.constraint(equalToConstant: 48),
         ])
 
         for container in [loadingContainer, replyContainer, errorContainer] {
@@ -475,17 +473,50 @@ extension ChatReplyGeneratorView {
         }
 
         NSLayoutConstraint.activate([
-            replyCardsStack.topAnchor.constraint(equalTo: replyContainer.topAnchor, constant: 12),
-            replyCardsStack.leadingAnchor.constraint(equalTo: replyContainer.leadingAnchor, constant: 16),
-            replyCardsStack.trailingAnchor.constraint(equalTo: replyContainer.trailingAnchor, constant: -16),
+            // Context bar — replyContainer 최상단
+            replyContextBar.topAnchor.constraint(equalTo: replyContainer.topAnchor, constant: 8),
+            replyContextBar.leadingAnchor.constraint(equalTo: replyContainer.leadingAnchor, constant: 10),
+            replyContextBar.trailingAnchor.constraint(equalTo: replyContainer.trailingAnchor, constant: -10),
+            replyContextBar.heightAnchor.constraint(equalToConstant: 36),
 
-            regenerateButton.topAnchor.constraint(equalTo: replyCardsStack.bottomAnchor, constant: 12),
-            regenerateButton.centerXAnchor.constraint(equalTo: replyContainer.centerXAnchor),
-            regenerateButton.widthAnchor.constraint(equalToConstant: 140),
-            regenerateButton.heightAnchor.constraint(equalToConstant: 36),
+            replyContextIcon.leadingAnchor.constraint(equalTo: replyContextBar.leadingAnchor, constant: 10),
+            replyContextIcon.centerYAnchor.constraint(equalTo: replyContextBar.centerYAnchor),
+            replyContextIcon.widthAnchor.constraint(equalToConstant: 3),
+            replyContextIcon.heightAnchor.constraint(equalToConstant: 18),
 
-            aiDisclosureLabel.topAnchor.constraint(equalTo: regenerateButton.bottomAnchor, constant: 4),
-            aiDisclosureLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            replyContextLabel.leadingAnchor.constraint(equalTo: replyContextIcon.trailingAnchor, constant: 8),
+            replyContextLabel.trailingAnchor.constraint(equalTo: replyContextBar.trailingAnchor, constant: -10),
+            replyContextLabel.centerYAnchor.constraint(equalTo: replyContextBar.centerYAnchor),
+
+            // Back button — context bar 아래
+            backButton.topAnchor.constraint(equalTo: replyContextBar.bottomAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: replyContainer.leadingAnchor, constant: 10),
+            backButton.widthAnchor.constraint(equalToConstant: 28),
+            backButton.heightAnchor.constraint(equalToConstant: 28),
+
+            // Reply header — back button 오른쪽에 배치
+            replyHeaderView.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
+            replyHeaderView.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 8),
+            replyHeaderView.trailingAnchor.constraint(equalTo: replyContainer.trailingAnchor, constant: -10),
+            replyHeaderView.heightAnchor.constraint(equalToConstant: 28),
+
+            // Tone badge — header 왼쪽
+            toneBadge.leadingAnchor.constraint(equalTo: replyHeaderView.leadingAnchor),
+            toneBadge.centerYAnchor.constraint(equalTo: replyHeaderView.centerYAnchor),
+
+            // Regenerate — header 오른쪽
+            regenerateButton.trailingAnchor.constraint(equalTo: replyHeaderView.trailingAnchor),
+            regenerateButton.centerYAnchor.constraint(equalTo: replyHeaderView.centerYAnchor),
+
+            // Cards stack — header 아래
+            replyCardsStack.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 8),
+            replyCardsStack.leadingAnchor.constraint(equalTo: replyContainer.leadingAnchor, constant: 10),
+            replyCardsStack.trailingAnchor.constraint(equalTo: replyContainer.trailingAnchor, constant: -10),
+
+            // AI Disclosure — cards 아래
+            aiDisclosureLabel.topAnchor.constraint(equalTo: replyCardsStack.bottomAnchor, constant: 6),
+            aiDisclosureLabel.centerXAnchor.constraint(equalTo: replyContainer.centerXAnchor),
+            aiDisclosureLabel.bottomAnchor.constraint(equalTo: replyContainer.bottomAnchor, constant: -6),
         ])
     }
 }
@@ -496,11 +527,7 @@ extension ChatReplyGeneratorView {
 
     private func setupActions() {
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
-        directionSendButton.addTarget(self, action: #selector(directionSendTapped), for: .touchUpInside)
-
-        let skipTap = UITapGestureRecognizer(target: self, action: #selector(skipTapped))
-        skipLabel.addGestureRecognizer(skipTap)
-
+        generateButton.addTarget(self, action: #selector(generateTapped), for: .touchUpInside)
         retryButton.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
         regenerateButton.addTarget(self, action: #selector(regenerateTapped), for: .touchUpInside)
     }
@@ -537,12 +564,7 @@ extension ChatReplyGeneratorView {
         updateToneSelection()
     }
 
-    @objc private func directionSendTapped() {
-        hapticFeedback.impactOccurred()
-        triggerGeneration()
-    }
-
-    @objc private func skipTapped() {
+    @objc private func generateTapped() {
         hapticFeedback.impactOccurred()
         triggerGeneration()
     }
@@ -557,12 +579,20 @@ extension ChatReplyGeneratorView {
         onRequestRegenerate?()
     }
 
+    @objc private func backTapped() {
+        onBack?()
+    }
+
+    @objc private func toneBadgeTapped() {
+        onBack?()
+    }
+
     private func triggerGeneration() {
         let tone = Self.toneAPIValues[safe: selectedToneIndex] ?? "Friendly"
         let request = ChatReplyRequest(
             context: contextMessage,
             tone: tone,
-            direction: directionText,
+            direction: "",
             language: ""
         )
         onRequestGenerate?(request)
@@ -583,13 +613,6 @@ extension ChatReplyGeneratorView {
         }
     }
 
-    private func updateDirectionSendButtonAppearance() {
-        let hasText = !directionText.isEmpty
-        directionSendButton.backgroundColor = hasText ?
-            UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1) :
-            UIColor(white: 0.5, alpha: 0.3)
-        directionSendButton.setTitleColor(.white, for: .normal)
-    }
 }
 
 // MARK: - Colors
@@ -616,12 +639,9 @@ extension ChatReplyGeneratorView {
         contextLabel.textColor = textColor
         closeButton.setTitleColor(secondaryText, for: .normal)
         toneSectionLabel.textColor = textColor
-        directionSectionLabel.textColor = textColor
         updateToneSelection()
-        directionInputContainer.backgroundColor = inputBg
-        directionDisplayLabel.textColor = textColor
-        directionPlaceholder.textColor = secondaryText
-        skipLabel.textColor = secondaryText
+        generateButton.backgroundColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1)
+        generateButton.setTitleColor(.white, for: .normal)
         loadingLabel.textColor = secondaryText
         errorLabel.textColor = secondaryText
         regenerateButton.backgroundColor = isDark ?
@@ -641,11 +661,9 @@ extension ChatReplyGeneratorView {
     func showSubState(_ state: SubState) {
         currentSubState = state
 
-        directionInputContainer.isHidden = true
-        directionSectionLabel.isHidden = true
         toneSectionLabel.isHidden = true
         toneGridStack.isHidden = true
-        skipLabel.isHidden = true
+        generateButton.isHidden = true
         loadingContainer.isHidden = true
         replyContainer.isHidden = true
         errorContainer.isHidden = true
@@ -654,16 +672,28 @@ extension ChatReplyGeneratorView {
         case .setup:
             toneSectionLabel.isHidden = false
             toneGridStack.isHidden = false
-            directionSectionLabel.isHidden = false
-            directionInputContainer.isHidden = false
-            skipLabel.isHidden = false
-            startCursorBlink()
+            generateButton.isHidden = false
+            contextBannerView.isHidden = false
+            // 키보드 높이 원복 요청
+            onRequestHeightUpdate?(0)  // 0 = 기본 높이로 복귀 신호
         case .loading:
             loadingContainer.isHidden = false
             startLoadingAnimation()
         case .results:
             replyContainer.isHidden = false
+            contextBannerView.isHidden = true
             stopLoadingAnimation()
+            // 원본 메시지 표시 (replyContainer 내부 context bar)
+            replyContextLabel.text = contextMessage
+            // 톤 배지 업데이트
+            let toneKey = Self.toneOptionKeys[selectedToneIndex]
+            toneBadge.setTitle("\(L(toneKey)) ▾", for: .normal)
+            // 높이 요청 (애니메이션 완료 후)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                guard let self = self else { return }
+                let neededH = self.calculateNeededHeight()
+                self.onRequestHeightUpdate?(neededH)
+            }
         case .error:
             errorContainer.isHidden = false
             stopLoadingAnimation()
@@ -685,21 +715,6 @@ extension ChatReplyGeneratorView {
         UIView.animate(withDuration: 0.2) { self.layoutIfNeeded() }
     }
 
-    private func startCursorBlink() {
-        cursorTimer?.invalidate()
-        directionCursorView.isHidden = false
-        cursorTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.directionCursorView.alpha = self.directionCursorView.alpha > 0.5 ? 0 : 1
-        }
-    }
-
-    private func stopCursorBlink() {
-        cursorTimer?.invalidate()
-        cursorTimer = nil
-        directionCursorView.isHidden = true
-    }
-
     private func startLoadingAnimation() {
         var dotIndex = 0
         loadingTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
@@ -718,16 +733,25 @@ extension ChatReplyGeneratorView {
         loadingTimer = nil
     }
 
+    func calculateNeededHeight() -> CGFloat {
+        layoutIfNeeded()
+        let contentH = replyContainer.systemLayoutSizeFitting(
+            CGSize(width: bounds.width, height: UIView.layoutFittingExpandedSize.height),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+        return contentH
+    }
+
     private func buildReplyCards(_ replies: [String]) {
         replyCards.forEach { $0.removeFromSuperview() }
         replyCards.removeAll()
         replyCardsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
-        let tone = cachedToneDisplayNames[safe: selectedToneIndex] ?? L("chatreply.tone.friendly")
-
         for (index, reply) in replies.enumerated() {
             let card = ChatReplyCard(index: index)
-            card.configure(number: index + 1, tone: tone, text: reply)
+            let styleKey = Self.styleDisplayKeys[safe: index] ?? Self.styleDisplayKeys[0]
+            card.configure(number: index + 1, tone: L(styleKey), text: reply)
 
             card.onTap = { [weak self] in
                 let generator = UIImpactFeedbackGenerator(style: .medium)
@@ -784,12 +808,15 @@ final class ChatReplyCard: UIView {
         clipsToBounds = true
 
         let colors: [(UIColor, UIColor)] = [
-            (UIColor(red: 0.12, green: 0.23, blue: 0.37, alpha: 1),
-             UIColor(red: 0.05, green: 0.12, blue: 0.20, alpha: 1)),
-            (UIColor(red: 0.18, green: 0.11, blue: 0.24, alpha: 1),
-             UIColor(red: 0.10, green: 0.06, blue: 0.14, alpha: 1)),
-            (UIColor(red: 0.11, green: 0.23, blue: 0.18, alpha: 1),
-             UIColor(red: 0.06, green: 0.14, blue: 0.10, alpha: 1))
+            // Card 1 (SHORT): 밝은 파랑
+            (UIColor(red: 0.25, green: 0.48, blue: 0.72, alpha: 1),
+             UIColor(red: 0.17, green: 0.38, blue: 0.58, alpha: 1)),
+            // Card 2 (WARM): 밝은 보라
+            (UIColor(red: 0.48, green: 0.30, blue: 0.62, alpha: 1),
+             UIColor(red: 0.38, green: 0.22, blue: 0.50, alpha: 1)),
+            // Card 3 (CREATIVE): 밝은 초록
+            (UIColor(red: 0.24, green: 0.55, blue: 0.45, alpha: 1),
+             UIColor(red: 0.17, green: 0.44, blue: 0.36, alpha: 1))
         ]
 
         let safeIndex = index % colors.count
@@ -815,8 +842,8 @@ final class ChatReplyCard: UIView {
         replyTextLabel.translatesAutoresizingMaskIntoConstraints = false
         replyTextLabel.font = .systemFont(ofSize: 14)
         replyTextLabel.textColor = .white
-        replyTextLabel.numberOfLines = 3
-        replyTextLabel.lineBreakMode = .byTruncatingTail
+        replyTextLabel.numberOfLines = 0
+        replyTextLabel.lineBreakMode = .byWordWrapping
         addSubview(replyTextLabel)
 
         NSLayoutConstraint.activate([
@@ -831,7 +858,7 @@ final class ChatReplyCard: UIView {
             replyTextLabel.topAnchor.constraint(equalTo: numberLabel.bottomAnchor, constant: 8),
             replyTextLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             replyTextLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            replyTextLabel.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -12),
+            replyTextLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
         ])
     }
 
