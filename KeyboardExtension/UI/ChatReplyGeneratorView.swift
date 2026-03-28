@@ -518,6 +518,9 @@ extension ChatReplyGeneratorView {
             aiDisclosureLabel.centerXAnchor.constraint(equalTo: replyContainer.centerXAnchor),
             aiDisclosureLabel.bottomAnchor.constraint(equalTo: replyContainer.bottomAnchor, constant: -6),
         ])
+
+        // closeButton을 최상위 z-order로 올려서 replyContainer에 가려지지 않도록 함
+        bringSubviewToFront(closeButton)
     }
 }
 
