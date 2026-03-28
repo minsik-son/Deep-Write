@@ -3487,7 +3487,7 @@ class KeyboardLayoutView: UIView {
         guard let returnButton = allKeyButtons.first(where: { $0.accessibilityLabel == Self.returnKey }) else { return }
 
         switch mode {
-        case .defaultMode, .phraseInputMode, .quickNoteMode:
+        case .defaultMode, .phraseInputMode, .quickNoteMode, .chatReplyMode:
             // Don't override — use the standard returnKeyDisplayName/returnKeyIsBlue logic
             returnButton.alpha = 1.0
             returnButton.isUserInteractionEnabled = false // touch handled at view level

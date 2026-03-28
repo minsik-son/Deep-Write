@@ -8,6 +8,7 @@ enum KeyboardMode {
     case correctionMode
     case phraseInputMode
     case quickNoteMode
+    case chatReplyMode
 }
 
 enum QuickNoteSubState {
@@ -60,6 +61,11 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Calculator
     private var calculatorView: CalculatorView?
     private var modeBeforeCalculator: KeyboardMode?
+
+    // MARK: - Chat Reply Generator
+    private var chatReplyView: ChatReplyGeneratorView?
+    private var chatReplyManager: ChatReplyManager?
+    private var isShowingChatReply: Bool = false
 
     // MARK: - Logic Managers
 
@@ -285,6 +291,23 @@ class KeyboardViewController: UIInputViewController {
             switchMode(to: .defaultMode)
         }
 
+        // Chat Reply Generator 메모리 확보
+        if chatReplyView != nil {
+            chatReplyManager?.cancelPending()
+            chatReplyManager?.clearCache()
+            chatReplyManager = nil
+            chatReplyView?.prepareForDismiss()
+            chatReplyView?.removeFromSuperview()
+            chatReplyView = nil
+            isShowingChatReply = false
+            modeTextInputHandler.clear()
+            keyboardLayoutView.isHidden = false
+            toolbarView.isHidden = false
+            switchMode(to: .defaultMode)
+        }
+
+        ChatReplyCache.shared.clear()
+
         #if DEBUG
         kbLogger.warning("⚠️ After cache clear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         #endif
@@ -370,6 +393,17 @@ class KeyboardViewController: UIInputViewController {
             modeBeforeCalculator = nil
         }
 
+        // Chat Reply Generator 정리
+        if currentMode == .chatReplyMode {
+            chatReplyManager?.cancelPending()
+            chatReplyManager?.clearCache()
+            chatReplyManager = nil
+            chatReplyView?.prepareForDismiss()
+            chatReplyView?.removeFromSuperview()
+            chatReplyView = nil
+            isShowingChatReply = false
+        }
+
         // CC-4: QuickNote 자동 저장 (기존 로직 유지)
         if currentMode == .quickNoteMode {
             autoSaveIfNeeded()
@@ -425,7 +459,7 @@ class KeyboardViewController: UIInputViewController {
 
         // 4) Optional views 해제
         #if DEBUG
-        kbLogger.info("🔬 [4] Optional views 상태 — emoji:\(self.emojiKeyboardView != nil) clipboard:\(self.clipboardHistoryView != nil) savedPhrases:\(self.savedPhrasesView != nil) langPicker:\(self.languagePickerView != nil)")
+        kbLogger.info("🔬 [4] Optional views 상태 — emoji:\(self.emojiKeyboardView != nil) clipboard:\(self.clipboardHistoryView != nil) savedPhrases:\(self.savedPhrasesView != nil) langPicker:\(self.languagePickerView != nil) calculator:\(self.calculatorView != nil)")
         #endif
 
         if let ev = emojiKeyboardView {
@@ -640,6 +674,8 @@ class KeyboardViewController: UIInputViewController {
                 let editH = quickNoteEditView?.idealHeight() ?? 130
                 newHeight = Heights.topPadding + editH + keyArea
             }
+        case .chatReplyMode:
+            newHeight = Heights.topPadding + Heights.toolbar + keyArea
         }
 
         heightConstraint?.constant = newHeight
@@ -1015,6 +1051,11 @@ class KeyboardViewController: UIInputViewController {
             self?.hideStatusPopup()
             self?.showCalculator()
         }
+        toolbarView.onChatReplyGeneratorTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.showChatReplyGenerator()
+        }
         // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
         toolbarView.onSuggestionTap = { [weak self] suggestion in
             self?.applySuggestion(suggestion)
@@ -1322,6 +1363,20 @@ class KeyboardViewController: UIInputViewController {
             modeBeforeCalculator = nil
         }
 
+        // chatReplyMode 이탈 시 전체 정리
+        if previousMode == .chatReplyMode && mode != .chatReplyMode {
+            chatReplyManager?.cancelPending()
+            chatReplyManager?.clearCache()
+            chatReplyManager = nil
+            chatReplyView?.prepareForDismiss()
+            chatReplyView?.removeFromSuperview()
+            chatReplyView = nil
+            isShowingChatReply = false
+            modeTextInputHandler.clear()
+            keyboardLayoutView.isHidden = false
+            toolbarView.isHidden = false
+        }
+
         // QuickNote 모드 이탈 시 전체 정리
         if previousMode == .quickNoteMode && mode != .quickNoteMode {
             autoSaveIfNeeded()
@@ -1450,6 +1505,23 @@ class KeyboardViewController: UIInputViewController {
             }
             toolbarView.hideSuggestions()
             showQuickNoteList()
+
+        case .chatReplyMode:
+            if isTranslationViewsSetUp {
+                translationLanguageBar.isHidden = true
+                translationInputView.isHidden = true
+            }
+            if isCorrectionViewsSetUp {
+                correctionLanguageBar.isHidden = true
+                correctionInputView.isHidden = true
+            }
+            if isPhraseViewsSetUp {
+                phraseInputHeaderView.isHidden = true
+                phraseInputView.isHidden = true
+            }
+            modeTextInputHandler.clear()
+            toolbarView.hideSuggestions()
+            keyboardTopToToolbarConstraint?.isActive = true
         }
 
         updateHeight(for: mode)
@@ -1462,7 +1534,7 @@ class KeyboardViewController: UIInputViewController {
             enterTranslationMode()
         case .translationMode:
             exitTranslationMode()
-        case .correctionMode, .phraseInputMode, .quickNoteMode:
+        case .correctionMode, .phraseInputMode, .quickNoteMode, .chatReplyMode:
             break
         }
     }
@@ -1507,7 +1579,7 @@ class KeyboardViewController: UIInputViewController {
             enterCorrectionMode()
         case .correctionMode:
             exitCorrectionMode()
-        case .translationMode, .phraseInputMode, .quickNoteMode:
+        case .translationMode, .phraseInputMode, .quickNoteMode, .chatReplyMode:
             break
         }
     }
@@ -2103,6 +2175,8 @@ class KeyboardViewController: UIInputViewController {
             handlePhraseInputModeKey(key)
         case .quickNoteMode:
             handleQuickNoteModeKey(key)
+        case .chatReplyMode:
+            handleChatReplyModeKey(key)
         }
     }
 
@@ -2358,6 +2432,11 @@ class KeyboardViewController: UIInputViewController {
         }
         statusMessageTimer = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: workItem)
+    }
+
+    /// showStatusMessage의 convenience wrapper (chatReply에서 사용)
+    private func showToast(_ message: String) {
+        showStatusMessage(message)
     }
 
     // MARK: - Autocorrect Suggestions
@@ -2626,6 +2705,8 @@ class KeyboardViewController: UIInputViewController {
         quickNoteEditView?.updateAppearance(isDark: isDark)
         calculatorView?.applyTheme(theme)
         calculatorView?.updateAppearance(isDark: isDark)
+        chatReplyView?.applyTheme(theme)
+        chatReplyView?.updateAppearance(isDark: isDark)
     }
 
     // MARK: - Status Popup (Proposal 02)
@@ -2759,7 +2840,7 @@ class KeyboardViewController: UIInputViewController {
         case .correctionMode:
             hasText = !modeTextInputHandler.fullText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             keyboardLayoutView.updateReturnKey(mode: .correctionMode, hasText: hasText)
-        case .defaultMode, .phraseInputMode, .quickNoteMode:
+        case .defaultMode, .phraseInputMode, .quickNoteMode, .chatReplyMode:
             keyboardLayoutView.clearReturnKeyOverride()
         }
     }
@@ -2785,6 +2866,8 @@ extension KeyboardViewController: TextInputHandlerDelegate {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
             }
+        case .chatReplyMode:
+            chatReplyView?.setDirectionText(handler.fullText)
         case .defaultMode:
             break
         }
@@ -2807,10 +2890,38 @@ extension KeyboardViewController: TextInputHandlerDelegate {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
             }
+        case .chatReplyMode:
+            chatReplyView?.setDirectionText(handler.fullText)
         case .defaultMode:
             break
         }
         updateReturnKeyForCurrentMode()
+    }
+}
+
+// MARK: - ChatReplyManagerDelegate
+
+extension KeyboardViewController: ChatReplyManagerDelegate {
+    func chatReplyManager(_ manager: ChatReplyManager, didGenerate replies: [String]) {
+        guard let view = chatReplyView else { return }
+        guard view.superview != nil else { return }
+        view.displayReplies(replies)
+
+        let tone = ChatReplyGeneratorView.toneAPIValues[safe: view.selectedToneIndex] ?? "Friendly"
+        let joinedReplies = replies.joined(separator: "\n---\n")
+        HistoryManager.shared.addItem(
+            type: .chatReply,
+            original: view.contextMessage,
+            result: joinedReplies,
+            metadata: tone
+        )
+
+        DailyUsageManager.shared.recordChatReply()
+    }
+
+    func chatReplyManager(_ manager: ChatReplyManager, didFailWith error: String) {
+        guard let view = chatReplyView else { return }
+        view.showError(error)
     }
 }
 
@@ -2879,6 +2990,226 @@ extension KeyboardViewController {
         } else {
             switchMode(to: .quickNoteMode)
         }
+    }
+
+    // MARK: - Chat Reply Generator
+
+    private func showChatReplyGenerator() {
+        guard !isShowingChatReply else { return }
+
+        guard hasFullAccess() else {
+            showStatusMessage(L("keyboard.error.full_access"))
+            return
+        }
+
+        guard UIPasteboard.general.hasStrings,
+              let clipText = UIPasteboard.general.string,
+              !clipText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            showToast(L("chatreply.copy_first"))
+            return
+        }
+
+        closeCalculator()
+        hideEmojiKeyboard()
+        hideClipboardHistory()
+        hideSavedPhrases()
+
+        isShowingChatReply = true
+
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("[ChatReply] SHOW start: \(String(format: "%.2f", memBefore))MB")
+        #endif
+
+        let view = ChatReplyGeneratorView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+
+        view.onClose = { [weak self] in
+            self?.closeChatReplyGenerator()
+        }
+        view.onInsert = { [weak self] text in
+            self?.textDocumentProxy.insertText(text)
+            self?.closeChatReplyGenerator()
+        }
+        view.onRequestGenerate = { [weak self] request in
+            self?.triggerChatReplyGeneration(request: request)
+        }
+        view.onRequestRegenerate = { [weak self] in
+            self?.regenerateChatReply()
+        }
+        view.onCopy = { [weak self] _ in
+            self?.showToast(L("chatreply.copied"))
+        }
+        view.onToneChanged = { [weak self] in
+            self?.modeTextInputHandler.commitComposing()
+        }
+
+        let manager = ChatReplyManager()
+        manager.delegate = self
+        chatReplyManager = manager
+
+        view.setContext(clipText)
+
+        let disclosureKey = "chatReplyAIDisclosureSeen"
+        if !(AppGroupManager.shared.bool(forKey: disclosureKey)) {
+            showToast(L("chatreply.ai_first_use_notice"))
+            AppGroupManager.shared.set(true, forKey: disclosureKey)
+        }
+
+        switchMode(to: .chatReplyMode)
+
+        guard let inputView = inputView else {
+            isShowingChatReply = false
+            return
+        }
+
+        inputView.addSubview(view)
+
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            view.topAnchor.constraint(equalTo: inputView.topAnchor),
+            view.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        chatReplyView = view
+
+        // Calculator 패턴: 키보드+툴바 숨기고 전체 영역 커버
+        keyboardLayoutView.isHidden = true
+        toolbarView.isHidden = true
+        inputView.bringSubviewToFront(view)
+        inputView.bringSubviewToFront(toastLabel)
+
+        if let theme = loadTheme() {
+            view.applyTheme(theme)
+        }
+        let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+        view.updateAppearance(isDark: isDarkMode)
+
+        view.alpha = 0
+        UIView.animate(withDuration: 0.2) { view.alpha = 1 }
+
+        checkMemorySafetyNet()
+
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("[ChatReply] SHOW end: \(String(format: "%.2f", memAfter))MB (delta: +\(String(format: "%.2f", memAfter - memBefore))MB)")
+        #endif
+    }
+
+    private func closeChatReplyGenerator() {
+        guard let view = chatReplyView else { return }
+
+        #if DEBUG
+        let memBefore = currentMemoryMB()
+        kbLogger.info("[ChatReply] CLOSE start: \(String(format: "%.2f", memBefore))MB")
+        #endif
+
+        chatReplyManager?.cancelPending()
+        chatReplyManager?.clearCache()
+        chatReplyManager = nil
+
+        view.prepareForDismiss()
+        view.removeFromSuperview()
+        chatReplyView = nil
+
+        modeTextInputHandler.clear()
+
+        isShowingChatReply = false
+
+        keyboardLayoutView.isHidden = false
+        toolbarView.isHidden = false
+
+        switchMode(to: .defaultMode)
+
+        triggerSystemCacheCleanup()
+        checkMemorySafetyNet()
+
+        #if DEBUG
+        let memAfter = currentMemoryMB()
+        kbLogger.info("[ChatReply] CLOSE end: \(String(format: "%.2f", memAfter))MB (delta: \(String(format: "%.2f", memAfter - memBefore))MB)")
+        #endif
+    }
+
+    private func handleChatReplyModeKey(_ key: String) {
+        guard chatReplyView?.currentSubState == .setup else { return }
+
+        switch key {
+        case KeyboardLayoutView.backKey:
+            modeTextInputHandler.handleBackspace()
+        case KeyboardLayoutView.returnKey:
+            modeTextInputHandler.commitComposing()
+            let direction = modeTextInputHandler.fullText
+            let tone = ChatReplyGeneratorView.toneAPIValues[safe: chatReplyView?.selectedToneIndex ?? 0] ?? "Friendly"
+            let request = ChatReplyRequest(
+                context: chatReplyView?.contextMessage ?? "",
+                tone: tone,
+                direction: direction,
+                language: ""
+            )
+            triggerChatReplyGeneration(request: request)
+        case " ":
+            modeTextInputHandler.handleSpace()
+        default:
+            guard modeTextInputHandler.totalLength < 150 else {
+                hapticFeedback.impactOccurred()
+                return
+            }
+            let isKorean = isKoreanJamo(key)
+            if let char = key.first {
+                modeTextInputHandler.handleKey(char, isKorean: isKorean)
+            }
+        }
+    }
+
+    private func triggerChatReplyGeneration(request: ChatReplyRequest) {
+        guard let view = chatReplyView else { return }
+
+        modeTextInputHandler.commitComposing()
+
+        let language = detectLanguage(request.context)
+        let finalRequest = ChatReplyRequest(
+            context: request.context,
+            tone: request.tone,
+            direction: request.direction.isEmpty ? modeTextInputHandler.fullText : request.direction,
+            language: language
+        )
+
+        view.showSubState(.loading)
+
+        chatReplyManager?.generate(request: finalRequest)
+    }
+
+    private func regenerateChatReply() {
+        guard let view = chatReplyView else { return }
+
+        let tone = ChatReplyGeneratorView.toneAPIValues[safe: view.selectedToneIndex] ?? "Friendly"
+        let request = ChatReplyRequest(
+            context: view.contextMessage,
+            tone: tone,
+            direction: modeTextInputHandler.fullText,
+            language: detectLanguage(view.contextMessage)
+        )
+
+        view.showSubState(.loading)
+        chatReplyManager?.generate(request: request)
+    }
+
+    private func detectLanguage(_ text: String) -> String {
+        for scalar in text.unicodeScalars {
+            if (0xAC00...0xD7AF).contains(scalar.value) ||
+               (0x1100...0x11FF).contains(scalar.value) {
+                return "ko"
+            }
+            if (0x3040...0x309F).contains(scalar.value) ||
+               (0x30A0...0x30FF).contains(scalar.value) {
+                return "ja"
+            }
+            if (0x4E00...0x9FFF).contains(scalar.value) {
+                return "zh"
+            }
+        }
+        return "en"
     }
 
     // MARK: - Calculator
@@ -2960,7 +3291,9 @@ extension KeyboardViewController {
             keyboardLayoutView.isHidden = false
         }
 
-        updateKeyboardAppearance()
+        // updateKeyboardAppearance 제거 — switchMode가 이미 필요한 뷰 복원 수행
+        // 테마는 계산기 사용 중 변경 불가하므로 재적용 불필요
+        // 애니메이션 재시작은 keyboardLayoutView.isHidden = false 시 자동
 
         #if DEBUG
         let memAfter = currentMemoryMB()

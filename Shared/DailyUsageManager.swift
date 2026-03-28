@@ -20,6 +20,9 @@ final class DailyUsageManager {
     private let composeCountKey = "daily_compose_count"
     private let rewardedAdComposeCountKey = "daily_rewarded_ad_compose_count"
     private let bonusComposeKey = "bonus_compose_count"
+    private let chatReplyCountKey = "daily_chat_reply_count"
+    private let rewardedAdChatReplyCountKey = "daily_rewarded_ad_chat_reply_count"
+    private let bonusChatReplyKey = "bonus_chat_reply_count"
     private let lastResetDateKey = "daily_usage_last_reset"
 
     private let keychainUsageDataKey = "kc_daily_usage_data"
@@ -99,6 +102,13 @@ final class DailyUsageManager {
         return max(0, (limit + bonus) - used)
     }
 
+    func recordChatReply() {
+        resetIfNewDay()
+        let count = (defaults?.integer(forKey: chatReplyCountKey) ?? 0) + 1
+        defaults?.set(count, forKey: chatReplyCountKey)
+        syncToKeychain()
+    }
+
     func recordCompose() {
         resetIfNewDay()
         let count = (defaults?.integer(forKey: composeCountKey) ?? 0) + 1
@@ -174,6 +184,9 @@ final class DailyUsageManager {
             defaults?.set(0, forKey: composeCountKey)
             defaults?.set(0, forKey: rewardedAdComposeCountKey)
             defaults?.set(0, forKey: bonusComposeKey)
+            defaults?.set(0, forKey: chatReplyCountKey)
+            defaults?.set(0, forKey: rewardedAdChatReplyCountKey)
+            defaults?.set(0, forKey: bonusChatReplyKey)
             defaults?.set(today, forKey: lastResetDateKey)
             syncToKeychain()
         }
@@ -204,6 +217,9 @@ final class DailyUsageManager {
             defaults?.set(usageData.composeCount, forKey: composeCountKey)
             defaults?.set(usageData.bonusCompose, forKey: bonusComposeKey)
             defaults?.set(usageData.rewardedAdCompose, forKey: rewardedAdComposeCountKey)
+            defaults?.set(usageData.chatReplyCount, forKey: chatReplyCountKey)
+            defaults?.set(usageData.bonusChatReply, forKey: bonusChatReplyKey)
+            defaults?.set(usageData.rewardedAdChatReply, forKey: rewardedAdChatReplyCountKey)
             defaults?.synchronize()
         }
         // 날짜가 오늘이 아니면 → 리셋 대상이므로 복원하지 않음 (resetIfNewDay가 처리)
@@ -220,7 +236,10 @@ final class DailyUsageManager {
             rewardedAdTranslation: defaults?.integer(forKey: rewardedAdTranslationCountKey) ?? 0,
             composeCount: defaults?.integer(forKey: composeCountKey) ?? 0,
             bonusCompose: defaults?.integer(forKey: bonusComposeKey) ?? 0,
-            rewardedAdCompose: defaults?.integer(forKey: rewardedAdComposeCountKey) ?? 0
+            rewardedAdCompose: defaults?.integer(forKey: rewardedAdComposeCountKey) ?? 0,
+            chatReplyCount: defaults?.integer(forKey: chatReplyCountKey) ?? 0,
+            bonusChatReply: defaults?.integer(forKey: bonusChatReplyKey) ?? 0,
+            rewardedAdChatReply: defaults?.integer(forKey: rewardedAdChatReplyCountKey) ?? 0
         )
 
         DispatchQueue.global(qos: .utility).async {

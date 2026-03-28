@@ -14,6 +14,7 @@ class ToolbarView: UIView {
     var onSuggestionTap: ((String) -> Void)?
     var onSuggestionDismiss: (() -> Void)?
     var onCalculatorTap: (() -> Void)?
+    var onChatReplyGeneratorTap: (() -> Void)?
 
     // MARK: - Toolbar Views
 
@@ -238,6 +239,10 @@ class ToolbarView: UIView {
                 btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
                 btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
                 toolbarStack.addArrangedSubview(btn)
+
+            case .chatReplyGenerator:
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_chat_reply", action: #selector(chatReplyGeneratorTapped), tag: 8, iconSize: iconRenderSize))
             }
         }
     }
@@ -482,6 +487,10 @@ class ToolbarView: UIView {
 
     @objc private func calculatorTapped() {
         onCalculatorTap?()
+    }
+
+    @objc private func chatReplyGeneratorTapped() {
+        onChatReplyGeneratorTap?()
     }
 
     @objc private func emojiButtonTapped() {

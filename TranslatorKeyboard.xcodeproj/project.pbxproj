@@ -33,6 +33,10 @@
 		3BB993C42F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
 		3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */; };
 		3BB993C82F7726B7002EA7C3 /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */; };
+		3BB993CB2F777DB0002EA7C3 /* ChatReplyCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C92F777DB0002EA7C3 /* ChatReplyCache.swift */; };
+		3BB993CC2F777DB0002EA7C3 /* ChatReplyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993CA2F777DB0002EA7C3 /* ChatReplyManager.swift */; };
+		3BB993CE2F777DCD002EA7C3 /* Array+Safe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993CD2F777DCD002EA7C3 /* Array+Safe.swift */; };
+		3BB993CF2F777DE0002EA7C3 /* ChatReplyGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993D02F777DE0002EA7C3 /* ChatReplyGeneratorView.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -196,6 +200,10 @@
 		3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarConfiguration.swift; sourceTree = "<group>"; };
 		3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarCustomizationViewController.swift; sourceTree = "<group>"; };
 		3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
+		3BB993C92F777DB0002EA7C3 /* ChatReplyCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyCache.swift; sourceTree = "<group>"; };
+		3BB993CA2F777DB0002EA7C3 /* ChatReplyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyManager.swift; sourceTree = "<group>"; };
+		3BB993CD2F777DCD002EA7C3 /* Array+Safe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Array+Safe.swift"; sourceTree = "<group>"; };
+		3BB993D02F777DE0002EA7C3 /* ChatReplyGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyGeneratorView.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -390,6 +398,9 @@
 		72C32C2E24A5A729B8F2C947 /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993CD2F777DCD002EA7C3 /* Array+Safe.swift */,
+				3BB993C92F777DB0002EA7C3 /* ChatReplyCache.swift */,
+				3BB993CA2F777DB0002EA7C3 /* ChatReplyManager.swift */,
 				1FCBC8FB5D66C494D8A053A0 /* AutocorrectEngine.swift */,
 				CB01AA11BB22CC33DD440011 /* ClipboardHistoryManager.swift */,
 				D466482591CD18ACB2300B2B /* ContextBuffer.swift */,
@@ -430,6 +441,7 @@
 				5E0E5D3FC75131189BB4EAA0 /* QuickNoteListView.swift */,
 				2447A0D66729D36830A99707 /* QuickNoteEditView.swift */,
 				210C063F672C0FE7A648C646 /* QuickNoteReadView.swift */,
+				3BB993D02F777DE0002EA7C3 /* ChatReplyGeneratorView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -696,12 +708,16 @@
 				1D98277DFBD46B145B1AEA14 /* AppGroupManager.swift in Sources */,
 				88DD1D3326500D609D9E2862 /* AutocorrectEngine.swift in Sources */,
 				13E2BA2EAF38109D37866AEE /* Constants.swift in Sources */,
+				3BB993CB2F777DB0002EA7C3 /* ChatReplyCache.swift in Sources */,
+				3BB993CC2F777DB0002EA7C3 /* ChatReplyManager.swift in Sources */,
 				3BB993A72F7328A1002EA7C3 /* KeyPreviewView.swift in Sources */,
 				A1B2C3D4E5F607081920ABCD /* CorrectionLanguageBar.swift in Sources */,
 				B2C3D4E5F6070819203BCDEF /* CorrectionManager.swift in Sources */,
 				B6F01ECAFA76E2B6D82900AB /* ContextBuffer.swift in Sources */,
 				3B89DA192F6F1FFD00D2D4F9 /* SnowfallSoftView.swift in Sources */,
 				51F14E345F7257B1DF84C896 /* EmojiKeyboardView.swift in Sources */,
+				3BB993CE2F777DCD002EA7C3 /* Array+Safe.swift in Sources */,
+				3BB993CF2F777DE0002EA7C3 /* ChatReplyGeneratorView.swift in Sources */,
 				48EB6B73C377FAC506F6929F /* HangulComposer.swift in Sources */,
 				F027BB91EC2EC981A6DD95A9 /* KeyboardLayoutView.swift in Sources */,
 				3948B0F72D89CB1FFE6ADA48 /* MatrixRainView.swift in Sources */,

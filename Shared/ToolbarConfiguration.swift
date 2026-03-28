@@ -11,6 +11,7 @@ enum ToolbarItemType: String, CaseIterable, Equatable {
     case correction
     case translation
     case calculator
+    case chatReplyGenerator
 }
 
 // MARK: - Toolbar Configuration

@@ -4,6 +4,7 @@ enum HistoryType: String, Codable {
     case translation
     case correction
     case clipboard
+    case chatReply
 }
 
 struct HistoryItem: Codable, Identifiable {

@@ -94,6 +94,7 @@ class HistoryViewController: UIViewController {
             (L("history.filter.correct"), 2),
             (L("history.filter.clipboard"), 3),
             (L("history.filter.phrases"), 4),
+            (L("history.filter.chatreply"), 5),
         ]
 
         for (i, filter) in filters.enumerated() {
@@ -155,7 +156,8 @@ class HistoryViewController: UIViewController {
             selectedFilter = nil
         } else {
             showingSavedPhrases = false
-            let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard]
+            let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard, nil, .chatReply]
+            guard sender.tag < filters.count else { return }
             selectedFilter = filters[sender.tag]
         }
         UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseOut) {
@@ -165,13 +167,15 @@ class HistoryViewController: UIViewController {
     }
 
     private func updateFilterAppearance() {
-        let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard]
+        let filters: [HistoryType?] = [nil, .translation, .correction, .clipboard, nil, .chatReply]
         for case let btn as UIButton in filterStack.arrangedSubviews {
             let isSelected: Bool
             if btn.tag == 4 {
                 isSelected = showingSavedPhrases
-            } else {
+            } else if btn.tag < filters.count {
                 isSelected = !showingSavedPhrases && filters[btn.tag] == selectedFilter
+            } else {
+                isSelected = false
             }
             if isSelected {
                 btn.backgroundColor = AppColors.tierAccent
@@ -506,6 +510,13 @@ class HistoryCell: UITableViewCell {
             originalLabel.textColor = AppColors.text
             separator.isHidden = true
             resultLabel.isHidden = true
+        case .chatReply:
+            tagLabel.text = " \(item.metadata ?? "AI Reply") "
+            tagLabel.backgroundColor = UIColor(red: 0.19, green: 0.51, blue: 0.96, alpha: 1)
+            originalLabel.textColor = AppColors.textSub
+            resultLabel.text = item.resultText
+            separator.isHidden = false
+            resultLabel.isHidden = false
         }
     }
 }
