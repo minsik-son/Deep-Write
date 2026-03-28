@@ -487,7 +487,7 @@
 "ai_writer.length.long" = "Подробно";
 
 // AI Writer v2 - Output Language
-"ai_writer.lang.auto" = "Авто (Устройство)";
+"ai_writer.lang.auto" = "Автоопределение";
 "ai_writer.lang.section_title" = "Язык вывода";
 "ai_writer.lang.select_title" = "Выбрать язык";
 

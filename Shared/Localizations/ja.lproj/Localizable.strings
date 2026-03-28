@@ -487,7 +487,7 @@
 "ai_writer.length.long" = "長く";
 
 // AI Writer v2 - Output Language
-"ai_writer.lang.auto" = "自動 (端末設定)";
+"ai_writer.lang.auto" = "自動検出";
 "ai_writer.lang.section_title" = "出力言語";
 "ai_writer.lang.select_title" = "出力言語を選択";
 

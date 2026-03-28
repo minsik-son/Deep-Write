@@ -487,7 +487,7 @@
 "ai_writer.length.long" = "详细";
 
 // AI Writer v2 - Output Language
-"ai_writer.lang.auto" = "自动 (设备设置)";
+"ai_writer.lang.auto" = "自动检测";
 "ai_writer.lang.section_title" = "输出语言";
 "ai_writer.lang.select_title" = "选择输出语言";
 

@@ -487,7 +487,7 @@
 "ai_writer.length.long" = "Long";
 
 // AI Writer v2 - Output Language
-"ai_writer.lang.auto" = "Auto (Device)";
+"ai_writer.lang.auto" = "Auto Detect";
 "ai_writer.lang.section_title" = "Output Language";
 "ai_writer.lang.select_title" = "Select output language";
 

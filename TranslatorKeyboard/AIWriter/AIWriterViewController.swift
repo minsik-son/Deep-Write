@@ -2180,12 +2180,7 @@ class AIWriterViewController: UIViewController {
         pageControl.isHidden = true
         loadingIndicator.startAnimating()
 
-        let langCode: String
-        if capturedOutputLanguage == "auto" {
-            langCode = LocalizationManager.shared.currentLanguage.translationLanguageCode
-        } else {
-            langCode = capturedOutputLanguage
-        }
+        let langCode: String = capturedOutputLanguage
 
         var body: [String: Any] = [
             "prompt": trimmedPrompt,
