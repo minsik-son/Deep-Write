@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <g fill="none" stroke="#4D5862" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 클립보드 보드 -->
+    <rect x="52" y="44" width="152" height="188" rx="12"/>
+    <!-- 클립 (상단 중앙) -->
+    <rect x="96" y="24" width="64" height="40" rx="8"/>
+  </g>
+</svg>

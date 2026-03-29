@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <g fill="none" stroke="#4D5862" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 노트 외곽 -->
+    <rect x="44" y="28" width="168" height="200" rx="12"/>
+    <!-- 텍스트 라인 1 (80%) -->
+    <line x1="76" y1="88" x2="180" y2="88"/>
+    <!-- 텍스트 라인 2 (80%) -->
+    <line x1="76" y1="128" x2="180" y2="128"/>
+    <!-- 텍스트 라인 3 (50%) -->
+    <line x1="76" y1="168" x2="141" y2="168"/>
+  </g>
+</svg>

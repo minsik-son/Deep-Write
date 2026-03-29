@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <g fill="none" stroke="#4D5862" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 왼쪽: "A" 글자 -->
+    <line x1="56" y1="184" x2="88" y2="72"/>
+    <line x1="88" y1="72" x2="120" y2="184"/>
+    <line x1="68" y1="148" x2="108" y2="148"/>
+    <!-- 중앙: 양방향 화살표 -->
+    <line x1="132" y1="128" x2="168" y2="128"/>
+    <polyline points="158,118 168,128 158,138"/>
+    <polyline points="142,118 132,128 142,138"/>
+    <!-- 오른쪽: "文" 글자 (간략화) -->
+    <line x1="180" y1="80" x2="232" y2="80"/>
+    <line x1="206" y1="80" x2="206" y2="120"/>
+    <line x1="182" y1="120" x2="230" y2="120"/>
+    <line x1="186" y1="140" x2="206" y2="184"/>
+    <line x1="226" y1="140" x2="206" y2="184"/>
+  </g>
+</svg>

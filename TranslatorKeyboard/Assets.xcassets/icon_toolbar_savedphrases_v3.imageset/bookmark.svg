@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <g fill="none" stroke="#4D5862" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 북마크/리본 -->
+    <path d="M 68 32 L 68 224 L 128 184 L 188 224 L 188 32 Z"/>
+  </g>
+</svg>
