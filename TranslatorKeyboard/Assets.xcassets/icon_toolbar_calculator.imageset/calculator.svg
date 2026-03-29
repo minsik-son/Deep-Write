@@ -1,0 +1,23 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+>
+  <g
+    stroke="#333D4B"
+    stroke-width="1.05"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="1.15" y="0.95" width="21.7" height="22.1" rx="3.7" />
+    <rect x="3.4" y="3.2" width="17.2" height="4.95" rx="1.55" />
+    <rect x="3.5" y="10.55" width="3.9" height="3.9" rx="1.15" />
+    <rect x="10.05" y="10.55" width="3.9" height="3.9" rx="1.15" />
+    <rect x="16.6" y="10.55" width="3.9" height="3.9" rx="1.15" />
+    <rect x="3.5" y="16.2" width="3.9" height="3.9" rx="1.15" />
+    <rect x="10.05" y="16.2" width="3.9" height="3.9" rx="1.15" />
+    <rect x="16.6" y="16.2" width="3.9" height="3.9" rx="1.15" />
+  </g>
+</svg>

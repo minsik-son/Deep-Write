@@ -132,7 +132,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .quickNote:    return "icon_toolbar_quicknote"
         case .correction:   return "icon_toolbar_correction"
         case .translation:  return "icon_toolbar_translation"
-        case .calculator:   return "plus.forwardslash.minus"
+        case .calculator:   return "icon_toolbar_calculator"
         case .chatReplyGenerator: return "icon_toolbar_chat_reply"
         }
     }
