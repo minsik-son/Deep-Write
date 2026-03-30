@@ -158,6 +158,9 @@
 		KV01AA11BB22CC33DD440002 /* DictationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV01AA11BB22CC33DD440001 /* DictationOverlayView.swift */; };
 		KV02AA11BB22CC33DD440002 /* DictationSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV02AA11BB22CC33DD440001 /* DictationSessionCoordinator.swift */; };
 		KV03AA11BB22CC33DD440002 /* DictationTextApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV03AA11BB22CC33DD440001 /* DictationTextApplier.swift */; };
+		AP02AA11BB22CC33DD440001 /* AppProcessServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = AP01AA11BB22CC33DD440001 /* AppProcessServices.swift */; };
+		AP02AA11BB22CC33DD440002 /* AppDictationRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = AP01AA11BB22CC33DD440002 /* AppDictationRuntime.swift */; };
+		AP02AA11BB22CC33DD440003 /* DictationBootstrapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AP01AA11BB22CC33DD440003 /* DictationBootstrapViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -317,6 +320,9 @@
 		KV01AA11BB22CC33DD440001 /* DictationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationOverlayView.swift; sourceTree = "<group>"; };
 		KV02AA11BB22CC33DD440001 /* DictationSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationSessionCoordinator.swift; sourceTree = "<group>"; };
 		KV03AA11BB22CC33DD440001 /* DictationTextApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationTextApplier.swift; sourceTree = "<group>"; };
+		AP01AA11BB22CC33DD440001 /* AppProcessServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppProcessServices.swift; sourceTree = "<group>"; };
+		AP01AA11BB22CC33DD440002 /* AppDictationRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDictationRuntime.swift; sourceTree = "<group>"; };
+		AP01AA11BB22CC33DD440003 /* DictationBootstrapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationBootstrapViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -641,6 +647,9 @@
 				VC01AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift */,
 				VC01AA11BB22CC33DD440002 /* DictationService.swift */,
 				VC01AA11BB22CC33DD440003 /* DictationViewController.swift */,
+				AP01AA11BB22CC33DD440001 /* AppProcessServices.swift */,
+				AP01AA11BB22CC33DD440002 /* AppDictationRuntime.swift */,
+				AP01AA11BB22CC33DD440003 /* DictationBootstrapViewController.swift */,
 			);
 			path = Voice;
 			sourceTree = "<group>";
@@ -898,6 +907,9 @@
 				VC02AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift in Sources */,
 				VC02AA11BB22CC33DD440002 /* DictationService.swift in Sources */,
 				VC02AA11BB22CC33DD440003 /* DictationViewController.swift in Sources */,
+				AP02AA11BB22CC33DD440001 /* AppProcessServices.swift in Sources */,
+				AP02AA11BB22CC33DD440002 /* AppDictationRuntime.swift in Sources */,
+				AP02AA11BB22CC33DD440003 /* DictationBootstrapViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

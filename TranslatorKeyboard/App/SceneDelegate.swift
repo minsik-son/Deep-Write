@@ -78,11 +78,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 return
             }
 
-            let dictationVC = DictationViewController()
-            dictationVC.configure(sessionId: sessionParam, locale: localeParam)
-            dictationVC.modalPresentationStyle = .fullScreen
+            // Resolve process-level runtime from AppDelegate
+            guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+            let runtime = appDelegate.appServices.dictationRuntime
+
+            let bootstrapVC = DictationBootstrapViewController()
+            bootstrapVC.configure(sessionId: sessionParam, locale: localeParam, runtime: runtime)
+            bootstrapVC.modalPresentationStyle = .fullScreen
             let presenter = tabBar.presentedViewController ?? tabBar
-            presenter.present(dictationVC, animated: true)
+            presenter.present(bootstrapVC, animated: true)
 
         default:
             break
