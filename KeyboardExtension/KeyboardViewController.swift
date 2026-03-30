@@ -68,6 +68,12 @@ class KeyboardViewController: UIInputViewController {
     private var isShowingChatReply: Bool = false
     private var chatReplyExpandedHeight: CGFloat = 0
 
+    // MARK: - Dictation
+    private var dictationCoordinator: DictationSessionCoordinator?
+    private var dictationOverlay: DictationOverlayView?
+    private var dictationTextApplier: DictationTextApplier?
+    private var isShowingDictation: Bool = false
+
     // MARK: - Logic Managers
 
     private let defaultTextInputHandler = TextInputHandler()
@@ -280,6 +286,12 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.warning("⚠️ didReceiveMemoryWarning! Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         #endif
 
+        // Dictation: memory warning시 현재 상태 보존하며 종료
+        if isShowingDictation {
+            dictationCoordinator?.forceFinalizePreservingCurrentState()
+            dismissDictation()
+        }
+
         // Static 캐시 일괄 해제
         ThemePatternRenderer.clearCache()
         MatrixRainView.clearCharacterImageCache()
@@ -386,6 +398,12 @@ class KeyboardViewController: UIInputViewController {
         #endif
 
         stopClipboardMonitoring()
+
+        // Dictation: 키보드 dismiss 시 정리
+        if isShowingDictation {
+            dictationCoordinator?.forceFinalizePreservingCurrentState()
+            dismissDictation()
+        }
 
         // 계산기 정리
         if let calc = calculatorView {
@@ -1066,6 +1084,11 @@ class KeyboardViewController: UIInputViewController {
             self?.hideContextMenu()
             self?.hideStatusPopup()
             self?.showChatReplyGenerator()
+        }
+        toolbarView.onDictationTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.startDictation()
         }
         // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
         toolbarView.onSuggestionTap = { [weak self] suggestion in
@@ -3004,6 +3027,84 @@ extension KeyboardViewController {
         }
     }
 
+    // MARK: - Dictation
+
+    private func startDictation() {
+        guard !isShowingDictation else { return }
+
+        // Secure field / phone pad guard
+        if textDocumentProxy.isSecureTextEntry == true { return }
+        if let keyboardType = textDocumentProxy.keyboardType {
+            switch keyboardType {
+            case .phonePad, .namePhonePad:
+                return
+            default:
+                break
+            }
+        }
+
+        let coordinator = DictationSessionCoordinator()
+        coordinator.delegate = self
+        coordinator.openURLHandler = { [weak self] url in
+            self?.openURL(url)
+        }
+
+        let overlay = DictationOverlayView()
+        overlay.delegate = self
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(overlay)
+
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: view.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+
+        let applier = DictationTextApplier()
+        applier.mode = .finalOnly
+        applier.overlay = overlay
+
+        let locale = AppGroupManager.shared.string(forKey: DictationConstants.DefaultsKeys.dictationPreferredLocale) ?? "en-US"
+        overlay.updateLocale(locale)
+
+        dictationCoordinator = coordinator
+        dictationOverlay = overlay
+        dictationTextApplier = applier
+        isShowingDictation = true
+
+        keyboardLayoutView.isHidden = true
+        toolbarView.isHidden = true
+
+        applier.reset(sessionId: coordinator.sessionId)
+        let started = coordinator.startDictation(locale: locale, proxy: textDocumentProxy)
+        if !started {
+            dismissDictation()
+        }
+    }
+
+    private func dismissDictation() {
+        dictationCoordinator?.cleanup()
+        dictationCoordinator = nil
+        dictationOverlay?.removeFromSuperview()
+        dictationOverlay = nil
+        dictationTextApplier = nil
+        isShowingDictation = false
+        keyboardLayoutView.isHidden = false
+        toolbarView.isHidden = false
+    }
+
+    private func openURL(_ url: URL) {
+        var responder: UIResponder? = self
+        while let r = responder {
+            if let application = r as? UIApplication {
+                application.open(url, options: [:], completionHandler: nil)
+                return
+            }
+            responder = r.next
+        }
+    }
+
     // MARK: - Chat Reply Generator
 
     private func showChatReplyGenerator() {
@@ -3604,5 +3705,98 @@ struct SettingsLinkView: View {
                 .frame(width: 36, height: 34)
                 .contentShape(Rectangle())
         }
+    }
+}
+
+// MARK: - DictationSessionCoordinatorDelegate
+
+extension KeyboardViewController: DictationSessionCoordinatorDelegate {
+
+    func dictationCoordinator(_ coordinator: DictationSessionCoordinator, didChangeState state: KeyboardDictationState) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            switch state {
+            case .active:
+                self.dictationOverlay?.setRecordingState()
+            case .paused:
+                self.dictationOverlay?.setPausedState()
+            case .error(let message):
+                self.dictationOverlay?.setErrorState(message)
+            case .idle:
+                self.dismissDictation()
+            default:
+                break
+            }
+        }
+    }
+
+    func dictationCoordinator(_ coordinator: DictationSessionCoordinator, didReceivePartial text: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let applier = self.dictationTextApplier else { return }
+            let payload = DictationStatePayload(
+                sessionId: coordinator.sessionId,
+                phase: .recording,
+                locale: coordinator.locale,
+                partialText: text,
+                finalText: nil,
+                errorMessage: nil,
+                errorCode: nil,
+                audioLevel: nil,
+                version: UInt64(Date().timeIntervalSince1970 * 1000),
+                updatedAt: Date()
+            )
+            applier.applyPartial(payload, proxy: self.textDocumentProxy)
+        }
+    }
+
+    func dictationCoordinator(_ coordinator: DictationSessionCoordinator, didReceiveFinal text: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let applier = self.dictationTextApplier else { return }
+            let payload = DictationStatePayload(
+                sessionId: coordinator.sessionId,
+                phase: .completed,
+                locale: coordinator.locale,
+                partialText: text,
+                finalText: text,
+                errorMessage: nil,
+                errorCode: nil,
+                audioLevel: nil,
+                version: UInt64(Date().timeIntervalSince1970 * 1000),
+                updatedAt: Date()
+            )
+            applier.applyFinal(payload, proxy: self.textDocumentProxy)
+            self.dismissDictation()
+        }
+    }
+
+    func dictationCoordinatorDidCancel(_ coordinator: DictationSessionCoordinator) {
+        DispatchQueue.main.async { [weak self] in
+            self?.dismissDictation()
+        }
+    }
+}
+
+// MARK: - DictationOverlayViewDelegate
+
+extension KeyboardViewController: DictationOverlayViewDelegate {
+
+    func dictationOverlayDidTapBack() {
+        dictationCoordinator?.sendStop()
+    }
+
+    func dictationOverlayDidTapPause() {
+        dictationCoordinator?.sendPause()
+    }
+
+    func dictationOverlayDidTapResume() {
+        dictationCoordinator?.sendResume()
+    }
+
+    func dictationOverlayDidTapCancel() {
+        dictationCoordinator?.sendCancel()
+    }
+
+    func dictationOverlayDidTapClear() {
+        dictationCoordinator?.sendClear()
     }
 }

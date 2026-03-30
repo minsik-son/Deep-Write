@@ -629,6 +629,7 @@
 "settings.toolbar.item.calculator" = "计算器";
 
 "settings.toolbar.item.chatReplyGenerator" = "回复生成";
+"settings.toolbar.item.dictation" = "语音输入";
 "chatreply.tone.friendly" = "友好的";
 "chatreply.tone.polite" = "礼貌的";
 "chatreply.tone.cool" = "酷酷的";

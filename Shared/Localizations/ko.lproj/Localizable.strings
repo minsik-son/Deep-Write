@@ -629,6 +629,7 @@
 "settings.toolbar.item.calculator" = "계산기";
 
 "settings.toolbar.item.chatReplyGenerator" = "답변 생성";
+"settings.toolbar.item.dictation" = "음성 입력";
 "chatreply.tone.friendly" = "친근한";
 "chatreply.tone.polite" = "정중한";
 "chatreply.tone.cool" = "쿨한";

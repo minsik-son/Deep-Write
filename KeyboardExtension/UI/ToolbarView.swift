@@ -15,6 +15,7 @@ class ToolbarView: UIView {
     var onSuggestionDismiss: (() -> Void)?
     var onCalculatorTap: (() -> Void)?
     var onChatReplyGeneratorTap: (() -> Void)?
+    var onDictationTap: (() -> Void)?
 
     // MARK: - Toolbar Views
 
@@ -243,6 +244,18 @@ class ToolbarView: UIView {
             case .chatReplyGenerator:
                 toolbarStack.addArrangedSubview(
                     makeToolbarButton(iconName: "icon_toolbar_chat_reply", action: #selector(chatReplyGeneratorTapped), tag: 8, iconSize: iconRenderSize))
+
+            case .dictation:
+                let btn = UIButton(type: .system)
+                let config = UIImage.SymbolConfiguration(pointSize: iconRenderSize, weight: .medium)
+                btn.setImage(UIImage(systemName: "mic.fill", withConfiguration: config), for: .normal)
+                btn.tintColor = .label
+                btn.tag = 9
+                btn.addTarget(self, action: #selector(dictationTapped), for: .touchUpInside)
+                btn.translatesAutoresizingMaskIntoConstraints = false
+                btn.widthAnchor.constraint(equalToConstant: 34).isActive = true
+                btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
+                toolbarStack.addArrangedSubview(btn)
             }
         }
     }
@@ -491,6 +504,10 @@ class ToolbarView: UIView {
 
     @objc private func chatReplyGeneratorTapped() {
         onChatReplyGeneratorTap?()
+    }
+
+    @objc private func dictationTapped() {
+        onDictationTap?()
     }
 
     @objc private func emojiButtonTapped() {

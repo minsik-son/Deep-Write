@@ -629,6 +629,7 @@
 "settings.toolbar.item.calculator" = "電卓";
 
 "settings.toolbar.item.chatReplyGenerator" = "返信ジェネレーター";
+"settings.toolbar.item.dictation" = "音声入力";
 "chatreply.tone.friendly" = "フレンドリー";
 "chatreply.tone.polite" = "丁寧";
 "chatreply.tone.cool" = "クール";

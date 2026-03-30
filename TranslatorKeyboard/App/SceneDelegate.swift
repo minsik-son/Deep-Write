@@ -55,6 +55,35 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let presenter = tabBar.presentedViewController ?? tabBar
             presenter.present(rewardVC, animated: true)
 
+        case "dictation":
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let queryItems = components?.queryItems ?? []
+
+            guard let sessionParam = queryItems.first(where: { $0.name == "session" })?.value,
+                  UUID(uuidString: sessionParam) != nil else {
+                return
+            }
+
+            let localeParam = queryItems.first(where: { $0.name == "locale" })?.value ?? "en-US"
+            guard DictationConstants.supportedLocales.contains(localeParam) else {
+                return
+            }
+
+            // Verify command file matches
+            let store = DictationSharedStore()
+            guard let command = store.readCommand(),
+                  command.sessionId == sessionParam,
+                  command.action == .start,
+                  command.locale == localeParam else {
+                return
+            }
+
+            let dictationVC = DictationViewController()
+            dictationVC.configure(sessionId: sessionParam, locale: localeParam)
+            dictationVC.modalPresentationStyle = .fullScreen
+            let presenter = tabBar.presentedViewController ?? tabBar
+            presenter.present(dictationVC, animated: true)
+
         default:
             break
         }

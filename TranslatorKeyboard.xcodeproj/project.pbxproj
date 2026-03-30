@@ -144,6 +144,20 @@
 		TP01AA11BB22CC33DD550002 /* ThemePatternRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = TP01AA11BB22CC33DD550001 /* ThemePatternRenderer.swift */; };
 		TP01AA11BB22CC33DD550003 /* ThemePatternRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = TP01AA11BB22CC33DD550001 /* ThemePatternRenderer.swift */; };
 		WD01AA11BB22CC33DD550002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = WD01AA11BB22CC33DD550001 /* Assets.xcassets */; };
+		DC01AA11BB22CC33DD440002 /* DictationConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC01AA11BB22CC33DD440001 /* DictationConstants.swift */; };
+		DC01AA11BB22CC33DD440003 /* DictationConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC01AA11BB22CC33DD440001 /* DictationConstants.swift */; };
+		DM01AA11BB22CC33DD440002 /* DictationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DM01AA11BB22CC33DD440001 /* DictationModels.swift */; };
+		DM01AA11BB22CC33DD440003 /* DictationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DM01AA11BB22CC33DD440001 /* DictationModels.swift */; };
+		DS02AA11BB22CC33DD440002 /* DictationSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DS02AA11BB22CC33DD440001 /* DictationSharedStore.swift */; };
+		DS02AA11BB22CC33DD440003 /* DictationSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DS02AA11BB22CC33DD440001 /* DictationSharedStore.swift */; };
+		DN01AA11BB22CC33DD440002 /* DarwinNotificationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DN01AA11BB22CC33DD440001 /* DarwinNotificationBridge.swift */; };
+		DN01AA11BB22CC33DD440003 /* DarwinNotificationBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DN01AA11BB22CC33DD440001 /* DarwinNotificationBridge.swift */; };
+		VC02AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = VC01AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift */; };
+		VC02AA11BB22CC33DD440002 /* DictationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = VC01AA11BB22CC33DD440002 /* DictationService.swift */; };
+		VC02AA11BB22CC33DD440003 /* DictationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = VC01AA11BB22CC33DD440003 /* DictationViewController.swift */; };
+		KV01AA11BB22CC33DD440002 /* DictationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV01AA11BB22CC33DD440001 /* DictationOverlayView.swift */; };
+		KV02AA11BB22CC33DD440002 /* DictationSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV02AA11BB22CC33DD440001 /* DictationSessionCoordinator.swift */; };
+		KV03AA11BB22CC33DD440002 /* DictationTextApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = KV03AA11BB22CC33DD440001 /* DictationTextApplier.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +307,16 @@
 		SP01AA11BB22CC33DD440001 /* StatusPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPopupView.swift; sourceTree = "<group>"; };
 		TP01AA11BB22CC33DD550001 /* ThemePatternRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePatternRenderer.swift; sourceTree = "<group>"; };
 		WD01AA11BB22CC33DD550001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DC01AA11BB22CC33DD440001 /* DictationConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationConstants.swift; sourceTree = "<group>"; };
+		DM01AA11BB22CC33DD440001 /* DictationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationModels.swift; sourceTree = "<group>"; };
+		DS02AA11BB22CC33DD440001 /* DictationSharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationSharedStore.swift; sourceTree = "<group>"; };
+		DN01AA11BB22CC33DD440001 /* DarwinNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarwinNotificationBridge.swift; sourceTree = "<group>"; };
+		VC01AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionManager.swift; sourceTree = "<group>"; };
+		VC01AA11BB22CC33DD440002 /* DictationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationService.swift; sourceTree = "<group>"; };
+		VC01AA11BB22CC33DD440003 /* DictationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationViewController.swift; sourceTree = "<group>"; };
+		KV01AA11BB22CC33DD440001 /* DictationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationOverlayView.swift; sourceTree = "<group>"; };
+		KV02AA11BB22CC33DD440001 /* DictationSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationSessionCoordinator.swift; sourceTree = "<group>"; };
+		KV03AA11BB22CC33DD440001 /* DictationTextApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationTextApplier.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -370,6 +394,7 @@
 				FC17688ECD68EF751C993FD2 /* RewardedAds */,
 				296F73430F09678354EBCEC9 /* Settings */,
 				F9D76C690D906097982DA8D4 /* ThemeStore */,
+				VC01AA11BB22CC33DD440000 /* Voice */,
 				18696B8A35AF16A2C1D48EE8 /* Assets.xcassets */,
 			);
 			path = TranslatorKeyboard;
@@ -461,8 +486,19 @@
 				C7D19AADC203E5850D8BFAEF /* Resources */,
 				43B6AA0B4788DDA803262AB2 /* Theme */,
 				768E1FBE90D1BDE218924FCA /* UI */,
+				KV00AA11BB22CC33DD440001 /* Voice */,
 			);
 			path = KeyboardExtension;
+			sourceTree = "<group>";
+		};
+		KV00AA11BB22CC33DD440001 /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				KV01AA11BB22CC33DD440001 /* DictationOverlayView.swift */,
+				KV02AA11BB22CC33DD440001 /* DictationSessionCoordinator.swift */,
+				KV03AA11BB22CC33DD440001 /* DictationTextApplier.swift */,
+			);
+			path = Voice;
 			sourceTree = "<group>";
 		};
 		8DA69973A47E48CD82E08D8F /* Animation */ = {
@@ -504,6 +540,10 @@
 				479E69162D2A943CC5309D69 /* QuickNote.swift */,
 				0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */,
 				FF00AA11BB22CC33DD440001 /* UIColor+Hex.swift */,
+				DC01AA11BB22CC33DD440001 /* DictationConstants.swift */,
+				DM01AA11BB22CC33DD440001 /* DictationModels.swift */,
+				DS02AA11BB22CC33DD440001 /* DictationSharedStore.swift */,
+				DN01AA11BB22CC33DD440001 /* DarwinNotificationBridge.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -593,6 +633,16 @@
 				F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */,
 			);
 			path = RewardedAds;
+			sourceTree = "<group>";
+		};
+		VC01AA11BB22CC33DD440000 /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				VC01AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift */,
+				VC01AA11BB22CC33DD440002 /* DictationService.swift */,
+				VC01AA11BB22CC33DD440003 /* DictationViewController.swift */,
+			);
+			path = Voice;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -773,6 +823,13 @@
 				4B67AEF0C78D2D12FE40B605 /* QuickNoteListView.swift in Sources */,
 				8D33983765C32F421690890B /* QuickNoteEditView.swift in Sources */,
 				7CD69FD82FE167B78EE20C64 /* QuickNoteReadView.swift in Sources */,
+				DC01AA11BB22CC33DD440002 /* DictationConstants.swift in Sources */,
+				DM01AA11BB22CC33DD440002 /* DictationModels.swift in Sources */,
+				DS02AA11BB22CC33DD440002 /* DictationSharedStore.swift in Sources */,
+				DN01AA11BB22CC33DD440002 /* DarwinNotificationBridge.swift in Sources */,
+				KV01AA11BB22CC33DD440002 /* DictationOverlayView.swift in Sources */,
+				KV02AA11BB22CC33DD440002 /* DictationSessionCoordinator.swift in Sources */,
+				KV03AA11BB22CC33DD440002 /* DictationTextApplier.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -834,6 +891,13 @@
 				3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */,
 				6E5D7788A2414F2E8CD5E60C /* QuickNoteListViewController.swift in Sources */,
 				4A7AD1F4DF18DCD5E74A5051 /* QuickNoteEditViewController.swift in Sources */,
+				DC01AA11BB22CC33DD440003 /* DictationConstants.swift in Sources */,
+				DM01AA11BB22CC33DD440003 /* DictationModels.swift in Sources */,
+				DS02AA11BB22CC33DD440003 /* DictationSharedStore.swift in Sources */,
+				DN01AA11BB22CC33DD440003 /* DarwinNotificationBridge.swift in Sources */,
+				VC02AA11BB22CC33DD440001 /* SpeechRecognitionManager.swift in Sources */,
+				VC02AA11BB22CC33DD440002 /* DictationService.swift in Sources */,
+				VC02AA11BB22CC33DD440003 /* DictationViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

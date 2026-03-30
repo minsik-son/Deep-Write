@@ -629,6 +629,7 @@
 "settings.toolbar.item.calculator" = "Calcolatrice";
 
 "settings.toolbar.item.chatReplyGenerator" = "Generatore di risposte";
+"settings.toolbar.item.dictation" = "Dettatura";
 "chatreply.tone.friendly" = "Amichevole";
 "chatreply.tone.polite" = "Cortese";
 "chatreply.tone.cool" = "Figo";

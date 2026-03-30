@@ -50,6 +50,10 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition is used to convert your voice to text for dictation.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed to capture your voice for dictation.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

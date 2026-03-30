@@ -134,6 +134,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .translation:  return "icon_toolbar_translation"
         case .calculator:   return "plus.forwardslash.minus"
         case .chatReplyGenerator: return "icon_toolbar_chat_reply"
+        case .dictation:    return "mic.fill"
         }
     }
 
@@ -148,6 +149,7 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .translation:  return L("settings.toolbar.item.translation")
         case .calculator:   return L("settings.toolbar.item.calculator")
         case .chatReplyGenerator: return L("settings.toolbar.item.chatReplyGenerator")
+        case .dictation:    return L("settings.toolbar.item.dictation")
         }
     }
 
