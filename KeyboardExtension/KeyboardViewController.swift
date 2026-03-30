@@ -3845,17 +3845,23 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
         dictationCoordinator?.sendClear()
     }
 
-    /// X = stop recognition, keep inserted text, dismiss overlay
+    /// X = stop recognition, keep inserted text, dismiss overlay after runtime ack
     func dictationOverlayDidTapStop() {
-        dictationCoordinator?.sendStop()
-        // Don't clear text — just dismiss the overlay
-        dictationCoordinator?.cleanup()
-        dictationCoordinator = nil
-        dictationOverlay?.removeFromSuperview()
-        dictationOverlay = nil
-        dictationTextApplier = nil
-        isShowingDictation = false
-        keyboardLayoutView.isHidden = false
-        toolbarView.isHidden = false
+        guard let coordinator = dictationCoordinator else {
+            dismissDictation()
+            return
+        }
+
+        // Send stop command — do NOT cleanup immediately
+        // Let the coordinator receive the completed/idle ack from runtime
+        // The ack will trigger didChangeState(.idle) → dismissDictation()
+        coordinator.sendStop()
+
+        // Safety fallback: if runtime doesn't ack within 3 seconds, force dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            guard let self = self, self.isShowingDictation else { return }
+            // Runtime didn't ack — force cleanup
+            self.dismissDictation()
+        }
     }
 }

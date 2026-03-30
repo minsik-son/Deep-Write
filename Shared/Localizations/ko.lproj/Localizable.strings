@@ -646,6 +646,7 @@
 "chatreply.style.short" = "짧게";
 "chatreply.style.warm" = "따뜻하게";
 "chatreply.style.creative" = "센스있게";
+"dictation.bootstrap.return_hint" = "위로 올리거나 앱으로 돌아가세요";
 "chatreply.loading" = "답변 생성 중...";
 "chatreply.regenerate" = "재생성";
 "chatreply.retry" = "재시도";

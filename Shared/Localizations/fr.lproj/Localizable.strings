@@ -646,6 +646,7 @@
 "chatreply.style.short" = "Court";
 "chatreply.style.warm" = "Chaleureux";
 "chatreply.style.creative" = "Créatif";
+"dictation.bootstrap.return_hint" = "Glissez vers le haut pour revenir";
 "chatreply.loading" = "Génération des réponses...";
 "chatreply.regenerate" = "Régénérer";
 "chatreply.retry" = "Réessayer";

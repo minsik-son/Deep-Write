@@ -143,7 +143,8 @@ final class DictationOverlayView: UIView {
             statusLabel.leadingAnchor.constraint(equalTo: micIndicator.trailingAnchor, constant: 8),
 
             localeBadge.centerYAnchor.constraint(equalTo: micIndicator.centerYAnchor),
-            localeBadge.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+            localeBadge.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -8),
+            localeBadge.widthAnchor.constraint(lessThanOrEqualToConstant: 120),
 
             previewLabel.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 12),
             previewLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),

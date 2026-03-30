@@ -247,7 +247,11 @@ final class DictationSessionCoordinator {
             let message = payload.errorMessage ?? "Unknown error"
             transitionTo(.error(message))
 
-        case .idle, .launchingApp, .finalizing:
+        case .idle:
+            // Runtime went idle (e.g., after stop) — cleanup
+            cleanup()
+
+        case .launchingApp, .finalizing:
             break
         }
     }

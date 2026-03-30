@@ -41,6 +41,15 @@ final class DictationBootstrapViewController: UIViewController {
         return l
     }()
 
+    private let returnHintLabel: UILabel = {
+        let l = UILabel()
+        l.font = .systemFont(ofSize: 14, weight: .medium)
+        l.textColor = .systemBlue
+        l.text = "↑ " + L("dictation.bootstrap.return_hint")
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
     private let cancelButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Cancel", for: .normal)
@@ -75,12 +84,16 @@ final class DictationBootstrapViewController: UIViewController {
     // MARK: - Setup
 
     private func setupUI() {
+        view.addSubview(returnHintLabel)
         view.addSubview(micIcon)
         view.addSubview(statusLabel)
         view.addSubview(hintLabel)
         view.addSubview(cancelButton)
 
         NSLayoutConstraint.activate([
+            returnHintLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            returnHintLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+
             micIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             micIcon.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
 

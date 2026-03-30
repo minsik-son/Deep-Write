@@ -646,6 +646,7 @@
 "chatreply.style.short" = "简短";
 "chatreply.style.warm" = "温暖";
 "chatreply.style.creative" = "创意";
+"dictation.bootstrap.return_hint" = "向上滑动或返回应用";
 "chatreply.loading" = "正在生成回复...";
 "chatreply.regenerate" = "重新生成";
 "chatreply.retry" = "重试";

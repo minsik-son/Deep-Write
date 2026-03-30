@@ -646,6 +646,7 @@
 "chatreply.style.short" = "Kurz";
 "chatreply.style.warm" = "Warmherzig";
 "chatreply.style.creative" = "Kreativ";
+"dictation.bootstrap.return_hint" = "Nach oben wischen oder zur App zurückkehren";
 "chatreply.loading" = "Antworten generieren...";
 "chatreply.regenerate" = "Neu generieren";
 "chatreply.retry" = "Wiederholen";

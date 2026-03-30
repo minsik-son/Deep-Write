@@ -646,6 +646,7 @@
 "chatreply.style.short" = "Кратко";
 "chatreply.style.warm" = "Тепло";
 "chatreply.style.creative" = "Креативно";
+"dictation.bootstrap.return_hint" = "Проведите вверх или вернитесь в приложение";
 "chatreply.loading" = "Генерация ответов...";
 "chatreply.regenerate" = "Перегенерировать";
 "chatreply.retry" = "Повторить";

@@ -646,6 +646,7 @@
 "chatreply.style.short" = "短く";
 "chatreply.style.warm" = "温かく";
 "chatreply.style.creative" = "ユニーク";
+"dictation.bootstrap.return_hint" = "上にスワイプしてアプリに戻る";
 "chatreply.loading" = "返信を生成中...";
 "chatreply.regenerate" = "再生成";
 "chatreply.retry" = "リトライ";

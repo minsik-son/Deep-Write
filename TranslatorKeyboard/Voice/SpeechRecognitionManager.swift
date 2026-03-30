@@ -120,11 +120,35 @@ final class SpeechRecognitionManager {
         startSilenceTimer()
     }
 
-    // MARK: - Stop
+    // MARK: - Pause (mic 캡처만 중단, engine/session은 유지)
+
+    private(set) var isPaused: Bool = false
+
+    func pause() {
+        guard isRunning, !isPaused else { return }
+        isPaused = true
+
+        silenceTimer?.invalidate()
+        silenceTimer = nil
+
+        // audio engine pause — tap은 유지하되 캡처만 멈춤
+        audioEngine?.pause()
+    }
+
+    func resumeAfterPause() throws {
+        guard isRunning, isPaused else { return }
+        isPaused = false
+
+        try audioEngine?.start()
+        startSilenceTimer()
+    }
+
+    // MARK: - Stop (완전 종료 — teardown)
 
     func stop() {
         guard isRunning else { return }
         isRunning = false
+        isPaused = false
 
         silenceTimer?.invalidate()
         silenceTimer = nil

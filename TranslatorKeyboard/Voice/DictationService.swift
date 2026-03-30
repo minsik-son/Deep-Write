@@ -73,24 +73,31 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     func pauseSession() {
         guard isActive else { return }
-        speechManager.stop()
+        // True pause — engine stays alive, mic capture paused
+        speechManager.pause()
         writeState(phase: .paused, partialText: currentAbsoluteText)
         delegate?.dictationService(self, didChangePhase: .paused)
     }
 
     func resumeSession() {
         guard isActive else { return }
-        // Commit current partial before resuming
-        transcriptState.committedPrefix = currentAbsoluteText
-        transcriptState.currentTaskPartial = ""
 
         do {
-            try speechManager.start()
-            speechManager.delegate = self
+            try speechManager.resumeAfterPause()
             writeState(phase: .recording, partialText: currentAbsoluteText)
             delegate?.dictationService(self, didChangePhase: .recording)
         } catch {
-            writeError(error.localizedDescription)
+            // Pause resume failed — try full restart as fallback
+            transcriptState.committedPrefix = currentAbsoluteText
+            transcriptState.currentTaskPartial = ""
+            do {
+                try speechManager.start()
+                speechManager.delegate = self
+                writeState(phase: .recording, partialText: currentAbsoluteText)
+                delegate?.dictationService(self, didChangePhase: .recording)
+            } catch {
+                writeError(error.localizedDescription)
+            }
         }
     }
 
