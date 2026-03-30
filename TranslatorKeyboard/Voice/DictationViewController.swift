@@ -1,66 +1,41 @@
 import UIKit
 
+/// Bootstrap-only dictation screen.
+/// Starts the speech engine then auto-dismisses so the user returns to the host app + keyboard overlay.
 final class DictationViewController: UIViewController, DictationServiceDelegate {
 
     private let dictationService = DictationService()
     private var sessionId: String = ""
     private var locale: String = "en-US"
+    private var didStartSession: Bool = false
 
-    // MARK: - UI Components
-
-    private let micCircleView: UIView = {
-        let v = UIView()
-        v.backgroundColor = UIColor.systemRed
-        v.layer.cornerRadius = 50
-        v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }()
+    // MARK: - UI Components (minimal handoff screen)
 
     private let micIcon: UIImageView = {
         let iv = UIImageView()
-        let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .medium)
+        let config = UIImage.SymbolConfiguration(pointSize: 36, weight: .medium)
         iv.image = UIImage(systemName: "mic.fill", withConfiguration: config)
-        iv.tintColor = .white
+        iv.tintColor = .systemRed
         iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
     }()
 
     private let statusLabel: UILabel = {
         let l = UILabel()
-        l.font = .systemFont(ofSize: 18, weight: .semibold)
-        l.textColor = .label
-        l.textAlignment = .center
-        l.text = "Listening..."
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
-
-    private let localeBadge: UILabel = {
-        let l = UILabel()
-        l.font = .systemFont(ofSize: 13, weight: .medium)
+        l.font = .systemFont(ofSize: 16, weight: .medium)
         l.textColor = .secondaryLabel
         l.textAlignment = .center
+        l.text = "Starting dictation..."
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
-    private let transcriptPreview: UILabel = {
-        let l = UILabel()
-        l.font = .systemFont(ofSize: 15)
-        l.textColor = .secondaryLabel
-        l.textAlignment = .center
-        l.numberOfLines = 3
-        l.lineBreakMode = .byTruncatingTail
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
-
-    private let returnHintLabel: UILabel = {
+    private let hintLabel: UILabel = {
         let l = UILabel()
         l.font = .systemFont(ofSize: 13)
         l.textColor = .tertiaryLabel
         l.textAlignment = .center
-        l.text = "Return to your app to see the result"
+        l.text = "Returning to your app..."
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
@@ -70,15 +45,6 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
         btn.setTitle("Cancel", for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         btn.setTitleColor(.systemRed, for: .normal)
-        btn.translatesAutoresizingMaskIntoConstraints = false
-        return btn
-    }()
-
-    private let stopButton: UIButton = {
-        let btn = UIButton(type: .system)
-        btn.setTitle("Done", for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        btn.setTitleColor(.systemBlue, for: .normal)
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
@@ -96,62 +62,38 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setupUI()
-        setupActions()
-
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
         dictationService.delegate = self
-        localeBadge.text = Locale(identifier: locale).localizedString(forIdentifier: locale) ?? locale
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        guard !didStartSession else { return }
+        didStartSession = true
         startDictation()
     }
 
     // MARK: - Setup
 
     private func setupUI() {
-        view.addSubview(micCircleView)
-        micCircleView.addSubview(micIcon)
+        view.addSubview(micIcon)
         view.addSubview(statusLabel)
-        view.addSubview(localeBadge)
-        view.addSubview(transcriptPreview)
-        view.addSubview(returnHintLabel)
+        view.addSubview(hintLabel)
         view.addSubview(cancelButton)
-        view.addSubview(stopButton)
 
         NSLayoutConstraint.activate([
-            micCircleView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            micCircleView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -80),
-            micCircleView.widthAnchor.constraint(equalToConstant: 100),
-            micCircleView.heightAnchor.constraint(equalToConstant: 100),
+            micIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            micIcon.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
 
-            micIcon.centerXAnchor.constraint(equalTo: micCircleView.centerXAnchor),
-            micIcon.centerYAnchor.constraint(equalTo: micCircleView.centerYAnchor),
-
-            statusLabel.topAnchor.constraint(equalTo: micCircleView.bottomAnchor, constant: 24),
+            statusLabel.topAnchor.constraint(equalTo: micIcon.bottomAnchor, constant: 16),
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            localeBadge.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
-            localeBadge.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-
-            transcriptPreview.topAnchor.constraint(equalTo: localeBadge.bottomAnchor, constant: 20),
-            transcriptPreview.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
-            transcriptPreview.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
-
-            returnHintLabel.topAnchor.constraint(equalTo: transcriptPreview.bottomAnchor, constant: 24),
-            returnHintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            hintLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
+            hintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             cancelButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-
-            stopButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            stopButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
+            cancelButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
-    }
-
-    private func setupActions() {
-        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
-        stopButton.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
     }
 
     // MARK: - Dictation
@@ -169,6 +111,7 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
             return
         }
 
+        // Start the engine
         dictationService.startSession(sessionId: sessionId, locale: locale)
     }
 
@@ -178,8 +121,16 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
         if !speech { message += "Speech recognition access is required." }
 
         statusLabel.text = "Permission Required"
-        transcriptPreview.text = message
-        micCircleView.backgroundColor = .systemGray
+        hintLabel.text = message
+        micIcon.tintColor = .systemGray
+    }
+
+    /// Auto-dismiss after engine starts — user returns to host app + keyboard overlay
+    private func autoDismiss() {
+        hintLabel.text = "Return to your app to use dictation"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.dismiss(animated: true)
+        }
     }
 
     // MARK: - Actions
@@ -189,10 +140,6 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
         dismiss(animated: true)
     }
 
-    @objc private func stopTapped() {
-        dictationService.stopSession()
-    }
-
     // MARK: - DictationServiceDelegate
 
     func dictationService(_ service: DictationService, didChangePhase phase: DictationPhase) {
@@ -200,30 +147,19 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
             guard let self = self else { return }
             switch phase {
             case .recording:
-                self.statusLabel.text = "Listening..."
-                self.micCircleView.backgroundColor = .systemRed
-                self.startPulseAnimation()
-            case .paused:
-                self.statusLabel.text = "Paused"
-                self.micCircleView.backgroundColor = .systemOrange
-                self.stopPulseAnimation()
+                // Engine is running — auto-dismiss so user returns to keyboard
+                self.statusLabel.text = "Dictation active"
+                self.autoDismiss()
             case .preparing:
-                self.statusLabel.text = "Preparing..."
-                self.micCircleView.backgroundColor = .systemYellow
-            case .completed:
-                self.statusLabel.text = "Done"
-                self.micCircleView.backgroundColor = .systemGreen
-                self.stopPulseAnimation()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                    self?.dismiss(animated: true)
-                }
+                self.statusLabel.text = "Starting..."
             case .error:
                 self.statusLabel.text = "Error"
-                self.micCircleView.backgroundColor = .systemGray
-                self.stopPulseAnimation()
+                self.micIcon.tintColor = .systemGray
                 DispatchQueue.main.asyncAfter(deadline: .now() + DictationConstants.Limits.errorAutoResetDelay) { [weak self] in
                     self?.dismiss(animated: true)
                 }
+            case .completed:
+                self.dismiss(animated: true)
             default:
                 break
             }
@@ -231,38 +167,18 @@ final class DictationViewController: UIViewController, DictationServiceDelegate 
     }
 
     func dictationService(_ service: DictationService, didUpdatePartial text: String) {
-        DispatchQueue.main.async { [weak self] in
-            // Redacted for privacy — show length only
-            self?.transcriptPreview.text = "Transcribing... (\(text.count) chars)"
-        }
+        // Engine is running in background — no UI update needed here
+        // Keyboard extension will receive partial via shared store + Darwin notification
     }
 
     func dictationService(_ service: DictationService, didFinishWith finalText: String) {
-        DispatchQueue.main.async { [weak self] in
-            self?.transcriptPreview.text = "Dictation complete (\(finalText.count) chars)"
-        }
+        // Final delivered via shared store to keyboard extension
     }
 
     func dictationService(_ service: DictationService, didFailWith message: String) {
         DispatchQueue.main.async { [weak self] in
-            self?.transcriptPreview.text = message
+            self?.statusLabel.text = message
+            self?.hintLabel.text = ""
         }
-    }
-
-    // MARK: - Pulse Animation
-
-    private func startPulseAnimation() {
-        let pulse = CABasicAnimation(keyPath: "transform.scale")
-        pulse.fromValue = 1.0
-        pulse.toValue = 1.08
-        pulse.duration = 0.8
-        pulse.autoreverses = true
-        pulse.repeatCount = .infinity
-        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        micCircleView.layer.add(pulse, forKey: "pulse")
-    }
-
-    private func stopPulseAnimation() {
-        micCircleView.layer.removeAnimation(forKey: "pulse")
     }
 }

@@ -58,6 +58,55 @@ final class DictationSessionCoordinator {
         }
     }
 
+    // MARK: - Session Recovery
+
+    /// 키보드가 다시 나타날 때 active session을 복구한다.
+    /// shared state file에서 유효한 active session이 있으면 overlay를 재구성한다.
+    func tryRecoverSession() -> Bool {
+        guard state == .idle else { return isActive }
+
+        guard let payload = sharedStore.readState() else { return false }
+
+        // Stale check
+        let age = Date().timeIntervalSince(payload.updatedAt)
+        guard age < DictationConstants.Limits.stalePayloadTTL else {
+            sharedStore.clearAllIfStale()
+            return false
+        }
+
+        // Active phase check
+        switch payload.phase {
+        case .preparing, .recording, .paused, .finalizing:
+            break
+        default:
+            return false
+        }
+
+        // Recover session
+        sessionId = payload.sessionId
+        locale = payload.locale
+        lastAppliedVersion = 0 // Re-apply from scratch
+
+        startObservers()
+
+        // Apply current state
+        switch payload.phase {
+        case .recording, .preparing:
+            transitionTo(.active)
+        case .paused:
+            transitionTo(.paused)
+        case .finalizing:
+            transitionTo(.finalizing)
+        default:
+            break
+        }
+
+        // Trigger immediate state update
+        handleStateUpdate()
+
+        return true
+    }
+
     // MARK: - Start
 
     func startDictation(locale: String, proxy: UITextDocumentProxy) -> Bool {

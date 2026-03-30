@@ -7,7 +7,7 @@ enum DictationApplyMode {
 
 final class DictationTextApplier {
 
-    var mode: DictationApplyMode = .finalOnly
+    var mode: DictationApplyMode = .rollbackLive
 
     private var state = RollbackState()
     private var lastApplyTime: Date = .distantPast

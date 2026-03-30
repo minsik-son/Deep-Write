@@ -6,6 +6,8 @@ protocol DictationOverlayViewDelegate: AnyObject {
     func dictationOverlayDidTapResume()
     func dictationOverlayDidTapCancel()
     func dictationOverlayDidTapClear()
+    /// X button: stop recognition but keep inserted text
+    func dictationOverlayDidTapStop()
 }
 
 final class DictationOverlayView: UIView {
@@ -73,10 +75,20 @@ final class DictationOverlayView: UIView {
     private let clearButton: UIButton = {
         let btn = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
-        btn.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: config), for: .normal)
+        btn.setImage(UIImage(systemName: "trash", withConfiguration: config), for: .normal)
         btn.tintColor = UIColor(white: 0.5, alpha: 1)
         btn.translatesAutoresizingMaskIntoConstraints = false
         btn.isHidden = true
+        return btn
+    }()
+
+    /// X button — stop recognition, keep inserted text
+    private let stopButton: UIButton = {
+        let btn = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .medium)
+        btn.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: config), for: .normal)
+        btn.tintColor = .white
+        btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
     }()
 
@@ -114,6 +126,7 @@ final class DictationOverlayView: UIView {
         addSubview(pauseButton)
         addSubview(cancelButton)
         addSubview(clearButton)
+        addSubview(stopButton)
 
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
@@ -145,7 +158,12 @@ final class DictationOverlayView: UIView {
             cancelButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
 
             clearButton.centerYAnchor.constraint(equalTo: pauseButton.centerYAnchor),
-            clearButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            clearButton.leadingAnchor.constraint(equalTo: pauseButton.trailingAnchor, constant: 24),
+
+            stopButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            stopButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+            stopButton.widthAnchor.constraint(equalToConstant: 32),
+            stopButton.heightAnchor.constraint(equalToConstant: 32),
         ])
     }
 
@@ -154,6 +172,7 @@ final class DictationOverlayView: UIView {
         pauseButton.addTarget(self, action: #selector(pauseTapped), for: .touchUpInside)
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
         clearButton.addTarget(self, action: #selector(clearTapped), for: .touchUpInside)
+        stopButton.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
     }
 
     // MARK: - Public API
@@ -225,6 +244,11 @@ final class DictationOverlayView: UIView {
 
     @objc private func clearTapped() {
         delegate?.dictationOverlayDidTapClear()
+    }
+
+    /// X = stop voice, keep text
+    @objc private func stopTapped() {
+        delegate?.dictationOverlayDidTapStop()
     }
 
     // MARK: - Pulse Animation

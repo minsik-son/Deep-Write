@@ -386,6 +386,11 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         checkMemorySafetyNet()  // Phase 5: 메모리 안전망
+
+        // Dictation session recovery: 메인앱에서 돌아왔을 때 active session 복구
+        if !isShowingDictation {
+            tryRecoverDictationSession()
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -3062,7 +3067,7 @@ extension KeyboardViewController {
         ])
 
         let applier = DictationTextApplier()
-        applier.mode = .finalOnly
+        applier.mode = .rollbackLive
         applier.overlay = overlay
 
         let locale = AppGroupManager.shared.string(forKey: DictationConstants.DefaultsKeys.dictationPreferredLocale) ?? "en-US"
@@ -3081,6 +3086,45 @@ extension KeyboardViewController {
         if !started {
             dismissDictation()
         }
+    }
+
+    /// viewDidAppear에서 호출 — active dictation session이 있으면 overlay 자동 복구
+    private func tryRecoverDictationSession() {
+        let coordinator = DictationSessionCoordinator()
+        guard coordinator.tryRecoverSession() else { return }
+
+        coordinator.delegate = self
+        coordinator.openURLHandler = { [weak self] url in
+            self?.openURL(url)
+        }
+
+        let overlay = DictationOverlayView()
+        overlay.delegate = self
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(overlay)
+
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: view.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+
+        let applier = DictationTextApplier()
+        applier.mode = .rollbackLive
+        applier.overlay = overlay
+        applier.reset(sessionId: coordinator.sessionId)
+
+        overlay.updateLocale(coordinator.locale)
+        overlay.setRecordingState()
+
+        dictationCoordinator = coordinator
+        dictationOverlay = overlay
+        dictationTextApplier = applier
+        isShowingDictation = true
+
+        keyboardLayoutView.isHidden = true
+        toolbarView.isHidden = true
     }
 
     private func dismissDictation() {
@@ -3781,7 +3825,8 @@ extension KeyboardViewController: DictationSessionCoordinatorDelegate {
 extension KeyboardViewController: DictationOverlayViewDelegate {
 
     func dictationOverlayDidTapBack() {
-        dictationCoordinator?.sendStop()
+        // Back = same as X: stop recognition, keep text
+        dictationOverlayDidTapStop()
     }
 
     func dictationOverlayDidTapPause() {
@@ -3798,5 +3843,19 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
 
     func dictationOverlayDidTapClear() {
         dictationCoordinator?.sendClear()
+    }
+
+    /// X = stop recognition, keep inserted text, dismiss overlay
+    func dictationOverlayDidTapStop() {
+        dictationCoordinator?.sendStop()
+        // Don't clear text — just dismiss the overlay
+        dictationCoordinator?.cleanup()
+        dictationCoordinator = nil
+        dictationOverlay?.removeFromSuperview()
+        dictationOverlay = nil
+        dictationTextApplier = nil
+        isShowingDictation = false
+        keyboardLayoutView.isHidden = false
+        toolbarView.isHidden = false
     }
 }
