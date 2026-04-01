@@ -7,6 +7,15 @@ protocol DictationServiceDelegate: AnyObject {
     func dictationService(_ service: DictationService, didFailWith message: String)
 }
 
+// Control intent guard — pause 중 callback이 fatal로 전파되지 않게 함
+private enum ControlIntent {
+    case none
+    case pausing
+    case stopping
+    case canceling
+    case restarting
+}
+
 final class DictationService: SpeechRecognitionManagerDelegate {
 
     weak var delegate: DictationServiceDelegate?
@@ -16,11 +25,14 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     private var heartbeatTimer: Timer?
     private var debounceTimer: Timer?
 
-    // Transcript state for seamless restart
     private var transcriptState = AppTranscriptState()
     private var currentLocale: String = "en-US"
+    private var controlIntent: ControlIntent = .none
 
     private(set) var isActive: Bool = false
+
+    /// Runtime이 현재 transcript를 읽을 수 있도록 public accessor
+    var currentText: String { currentAbsoluteText }
 
     // MARK: - Session Start
 
@@ -29,6 +41,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
         currentLocale = locale
         transcriptState = AppTranscriptState(sessionId: sessionId)
+        controlIntent = .none
 
         guard speechManager.setLocale(locale) else {
             writeError("Speech recognition not available for \(locale)")
@@ -46,50 +59,46 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             speechManager.delegate = self
             writeState(phase: .recording, partialText: "")
             delegate?.dictationService(self, didChangePhase: .recording)
+            writeHeartbeatNow()  // 즉시 첫 heartbeat write
             startHeartbeat()
         } catch {
             writeError(error.localizedDescription)
         }
     }
 
-    // MARK: - Stop / Cancel
+    // MARK: - Force Stop (deterministic — runtime이 호출)
 
-    func stopSession() {
-        guard isActive else { return }
-        writeState(phase: .finalizing, partialText: currentAbsoluteText)
+    func forceStop() {
+        controlIntent = .stopping
         speechManager.stop()
-        // Final will be delivered via delegate
-    }
-
-    func cancelSession() {
-        guard isActive else { return }
-        speechManager.cancel()
-        writeState(phase: .idle, partialText: "")
         cleanup()
-        delegate?.dictationService(self, didChangePhase: .idle)
     }
 
     // MARK: - Pause / Resume
 
     func pauseSession() {
         guard isActive else { return }
-        // True pause — engine stays alive, mic capture paused
+        controlIntent = .pausing
         speechManager.pause()
         writeState(phase: .paused, partialText: currentAbsoluteText)
         delegate?.dictationService(self, didChangePhase: .paused)
+        controlIntent = .none
     }
 
     func resumeSession() {
         guard isActive else { return }
+        controlIntent = .none
 
         do {
             try speechManager.resumeAfterPause()
             writeState(phase: .recording, partialText: currentAbsoluteText)
+            writeHeartbeatNow()  // resume 직후 heartbeat 즉시 갱신
             delegate?.dictationService(self, didChangePhase: .recording)
         } catch {
-            // Pause resume failed — try full restart as fallback
+            // Fallback: full restart
             transcriptState.committedPrefix = currentAbsoluteText
             transcriptState.currentTaskPartial = ""
+            speechManager.stop()
             do {
                 try speechManager.start()
                 speechManager.delegate = self
@@ -101,14 +110,44 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         }
     }
 
+    // MARK: - Clear Transcript
+
+    func clearTranscript() {
+        guard isActive else { return }
+        transcriptState.committedPrefix = ""
+        transcriptState.currentTaskPartial = ""
+        writeState(phase: .recording, partialText: "")
+    }
+
+    // MARK: - Stop (동기 cleanup + ControlIntent)
+
+    func stopSession() {
+        guard isActive else { return }
+        controlIntent = .stopping
+        writeState(phase: .finalizing, partialText: currentAbsoluteText)
+        speechManager.stop()
+        cleanup()
+    }
+
+    func cancelSession() {
+        controlIntent = .canceling
+        speechManager.cancel()
+        writeState(phase: .idle, partialText: "")
+        cleanup()
+        delegate?.dictationService(self, didChangePhase: .idle)
+    }
+
     // MARK: - SpeechRecognitionManagerDelegate
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceivePartial text: String) {
+        // Intent guard: stopping/canceling 중이면 무시
+        guard controlIntent == .none else { return }
         transcriptState.currentTaskPartial = text
         debouncedWritePartial()
     }
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceiveFinal text: String) {
+        guard controlIntent == .none else { return }
         transcriptState.currentTaskPartial = text
         let finalText = currentAbsoluteText
 
@@ -126,34 +165,35 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             updatedAt: Date()
         )
         try? sharedStore.writeState(payload)
-
         cleanup()
         delegate?.dictationService(self, didFinishWith: finalText)
         delegate?.dictationService(self, didChangePhase: .completed)
     }
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didFailWith error: Error) {
+        // 1차 방어선: pausing/stopping/canceling 중이면 전파 안 함
+        guard controlIntent == .none else { return }
         writeError(error.localizedDescription)
     }
 
     func speechRecognitionDidReachTimeLimit(_ manager: SpeechRecognitionManager) {
+        guard controlIntent == .none else { return }
         performSeamlessRestart()
     }
 
     // MARK: - Seamless Restart
 
     private func performSeamlessRestart() {
-        // Commit current partial
+        controlIntent = .restarting
         transcriptState.committedPrefix = currentAbsoluteText
         transcriptState.currentTaskPartial = ""
-
         speechManager.stop()
-
         do {
             try speechManager.start()
             speechManager.delegate = self
-            // Keep phase as recording — invisible to extension
+            controlIntent = .none
         } catch {
+            controlIntent = .none
             writeError(error.localizedDescription)
         }
     }
@@ -163,10 +203,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     private var currentAbsoluteText: String {
         let prefix = transcriptState.committedPrefix
         let partial = transcriptState.currentTaskPartial
-
         guard !partial.isEmpty else { return prefix }
         guard !prefix.isEmpty else { return partial }
-
         let langPrefix = String(currentLocale.prefix(2))
         if DictationConstants.noSpaceLocales.contains(langPrefix) {
             return prefix + partial
@@ -217,10 +255,9 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         debounceTimer?.invalidate()
         let interval = Double(DictationConstants.Limits.partialDebounceMs) / 1000.0
         debounceTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-            guard let self = self, self.isActive else { return }
+            guard let self = self, self.isActive, self.controlIntent == .none else { return }
             self.writeState(phase: .recording, partialText: self.currentAbsoluteText)
-
-            // Check time limit for seamless restart
+            self.writeHeartbeatNow()  // partial write 시 heartbeat 갱신
             if self.speechManager.isNearTimeLimit {
                 self.performSeamlessRestart()
             }
@@ -228,6 +265,11 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     }
 
     // MARK: - Heartbeat
+
+    private func writeHeartbeatNow() {
+        AppGroupManager.shared.set(Date(), forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt)
+        DarwinNotificationBridge.shared.post(DictationConstants.Notifications.heartbeatChanged)
+    }
 
     private func startHeartbeat() {
         heartbeatTimer?.invalidate()

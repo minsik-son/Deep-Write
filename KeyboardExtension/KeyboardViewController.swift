@@ -3116,7 +3116,16 @@ extension KeyboardViewController {
         applier.reset(sessionId: coordinator.sessionId)
 
         overlay.updateLocale(coordinator.locale)
-        overlay.setRecordingState()
+
+        // Phase별 정확한 UI 세팅
+        switch coordinator.state {
+        case .paused:
+            overlay.setPausedState()
+        case .waitingForAck:
+            overlay.updateStatus("Connecting...")
+        default:
+            overlay.setRecordingState()
+        }
 
         dictationCoordinator = coordinator
         dictationOverlay = overlay
@@ -3838,30 +3847,24 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
     }
 
     func dictationOverlayDidTapCancel() {
-        dictationCoordinator?.sendCancel()
+        guard let coordinator = dictationCoordinator else { return }
+        coordinator.forceShutdown(reason: "user_cancel")
+        dismissDictation()
     }
 
     func dictationOverlayDidTapClear() {
         dictationCoordinator?.sendClear()
+        dictationTextApplier?.clearInsertedText(proxy: textDocumentProxy)
     }
 
-    /// X = stop recognition, keep inserted text, dismiss overlay after runtime ack
+    /// X = stop recognition, keep inserted text, force shutdown with kill signal
     func dictationOverlayDidTapStop() {
         guard let coordinator = dictationCoordinator else {
             dismissDictation()
             return
         }
 
-        // Send stop command — do NOT cleanup immediately
-        // Let the coordinator receive the completed/idle ack from runtime
-        // The ack will trigger didChangeState(.idle) → dismissDictation()
-        coordinator.sendStop()
-
-        // Safety fallback: if runtime doesn't ack within 3 seconds, force dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-            guard let self = self, self.isShowingDictation else { return }
-            // Runtime didn't ack — force cleanup
-            self.dismissDictation()
-        }
+        coordinator.forceShutdown(reason: "user_stop")
+        dismissDictation()
     }
 }

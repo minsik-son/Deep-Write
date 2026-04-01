@@ -81,6 +81,7 @@ final class SpeechRecognitionManager {
             guard let self = self else { return }
 
             if let result = result {
+                guard self.isRunning else { return }
                 let text = result.bestTranscription.formattedString
                 self.resetSilenceTimer()
 
@@ -92,11 +93,14 @@ final class SpeechRecognitionManager {
             }
 
             if let error = error {
+                // 1차 방어선: isPaused 중이면 error callback 전파 안 함
+                guard self.isRunning && !self.isPaused else { return }
+
                 let nsError = error as NSError
                 // 1분 제한 도달 (code 216 = kAFAssistantErrorDomain)
                 if nsError.code == 216 || nsError.code == 209 {
                     self.delegate?.speechRecognitionDidReachTimeLimit(self)
-                } else if self.isRunning {
+                } else {
                     self.delegate?.speechRecognition(self, didFailWith: error)
                 }
             }

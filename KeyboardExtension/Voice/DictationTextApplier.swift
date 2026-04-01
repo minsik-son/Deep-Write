@@ -27,6 +27,24 @@ final class DictationTextApplier {
         pendingTimer = nil
     }
 
+    /// Clear: 현재 세션이 삽입한 text만 지운다
+    func clearInsertedText(proxy: UITextDocumentProxy) {
+        guard state.lastInsertedLength > 0 else {
+            overlay?.updatePreviewOnly("")
+            return
+        }
+
+        if !state.isContextBroken {
+            rollbackDelete(count: state.lastInsertedLength, proxy: proxy)
+        }
+
+        state.lastInsertedText = ""
+        state.lastInsertedLength = 0
+        state.currentPartialText = ""
+        state.isContextBroken = false
+        overlay?.updatePreviewOnly("")
+    }
+
     func applyPartial(_ payload: DictationStatePayload, proxy: UITextDocumentProxy) {
         guard mode == .rollbackLive else {
             // finalOnly mode: only update overlay preview

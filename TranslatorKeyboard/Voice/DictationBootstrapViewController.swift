@@ -1,8 +1,10 @@
 import UIKit
 
 /// Bootstrap-only VC for dictation.
-/// Starts the runtime session, shows "Return to your app", auto-dismisses when user leaves.
+/// Starts the runtime session, shows "Return to your app".
 /// Does NOT own the speech session — AppDictationRuntime does.
+/// No state observer. No auto-dismiss. No background handler.
+/// dismiss는 Cancel 탭 또는 rejectedAlreadyActive 분기에서만 발생.
 final class DictationBootstrapViewController: UIViewController {
 
     private var sessionId: String = ""
@@ -117,7 +119,6 @@ final class DictationBootstrapViewController: UIViewController {
             return
         }
 
-        // Check permissions first
         guard SpeechRecognitionManager.isSpeechAuthorized && SpeechRecognitionManager.isMicAuthorized else {
             SpeechRecognitionManager.requestPermissions { [weak self] speech, mic in
                 guard let self = self else { return }
@@ -132,6 +133,19 @@ final class DictationBootstrapViewController: UIViewController {
 
         let result = runtime.startSession(sessionId: sessionId, locale: locale, source: .coldStart)
 
+        #if DEBUG
+        switch result {
+        case .accepted(let sid):
+            print("[Bootstrap] accepted sid=\(sid.prefix(8))")
+        case .rejectedAlreadyActive(let activeId):
+            print("[Bootstrap] REJECTED already active! activeId=\(activeId.prefix(8))")
+        case .failedToStart(let msg):
+            print("[Bootstrap] FAILED: \(msg)")
+        default:
+            print("[Bootstrap] result=\(result)")
+        }
+        #endif
+
         switch result {
         case .accepted:
             statusLabel.text = "Dictation active"
@@ -142,7 +156,6 @@ final class DictationBootstrapViewController: UIViewController {
         case .rejectedAlreadyActive(let activeId):
             statusLabel.text = "Already recording"
             hintLabel.text = "Session \(String(activeId.prefix(8)))... is active.\nReturn to your app."
-            // Still dismiss — user should go back to keyboard
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 self?.dismiss(animated: true)
             }

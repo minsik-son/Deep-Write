@@ -88,6 +88,37 @@ final class DictationSharedStore {
         }
     }
 
+    // MARK: - Kill Signal
+
+    private var killFileURL: URL? {
+        containerURL?.appendingPathComponent(DictationConstants.SharedFiles.kill)
+    }
+
+    func writeKill(_ payload: DictationKillSignal) throws {
+        guard let url = killFileURL else { return }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(payload)
+        try data.write(to: url, options: .atomic)
+        hardenFile(at: url)
+        DarwinNotificationBridge.shared.post(DictationConstants.Notifications.killChanged)
+    }
+
+    func readKill() -> DictationKillSignal? {
+        return autoreleasepool {
+            guard let url = killFileURL else { return nil }
+            guard let data = try? Data(contentsOf: url) else { return nil }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try? decoder.decode(DictationKillSignal.self, from: data)
+        }
+    }
+
+    func clearKill() {
+        guard let url = killFileURL else { return }
+        try? fileManager.removeItem(at: url)
+    }
+
     // MARK: - File Hardening
 
     private func hardenFile(at url: URL) {

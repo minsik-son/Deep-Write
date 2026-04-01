@@ -6,6 +6,7 @@ enum DictationConstants {
         static let stateChanged = "com.translatorkeyboard.dictation.state"
         static let heartbeatChanged = "com.translatorkeyboard.dictation.heartbeat"
         static let cancelChanged = "com.translatorkeyboard.dictation.cancel"
+        static let killChanged = "com.translatorkeyboard.dictation.kill"
     }
 
     enum DefaultsKeys {
@@ -17,6 +18,7 @@ enum DictationConstants {
     enum SharedFiles {
         static let command = "dictation_command.json"
         static let state = "dictation_state.json"
+        static let kill = "dictation_kill.json"
     }
 
     enum Limits {
@@ -32,6 +34,7 @@ enum DictationConstants {
         static let watchdogTimeout: TimeInterval = 5.0
         static let errorAutoResetDelay: TimeInterval = 3.0
         static let stalePayloadTTL: TimeInterval = 120
+        static let killSignalTTL: TimeInterval = 30
     }
 
     static let supportedLocales: [String] = [

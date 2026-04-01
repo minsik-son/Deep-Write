@@ -45,6 +45,7 @@ final class DictationSessionCoordinator {
     private var ackWatchdogTimer: Timer?
     private var heartbeatWatchdogTimer: Timer?
     private var errorResetTimer: Timer?
+    private var killObserverToken: UUID?
 
     private var lastAppliedVersion: UInt64 = 0
     private var isWarmStart: Bool = false
@@ -65,16 +66,50 @@ final class DictationSessionCoordinator {
     func tryRecoverSession() -> Bool {
         guard state == .idle else { return isActive }
 
+        // Step 1: Read kill signal ONCE
+        let killSignal = sharedStore.readKill()
+
+        // Step 2: If kill signal exists, check TTL first
+        if let killSignal = killSignal {
+            let killAge = Date().timeIntervalSince(killSignal.timestampAt)
+            if killAge >= DictationConstants.Limits.killSignalTTL {
+                #if DEBUG
+                print("[DictationCoord] kill signal STALE age=\(killAge)s — clearing")
+                #endif
+                sharedStore.clearKill()
+            }
+        }
+
+        // Step 3: Load state payload
         guard let payload = sharedStore.readState() else { return false }
 
-        // Stale check
+        // Step 4: If fresh kill signal exists, compare sessionId
+        if let killSignal = killSignal {
+            let killAge = Date().timeIntervalSince(killSignal.timestampAt)
+            if killAge < DictationConstants.Limits.killSignalTTL {
+                if killSignal.sessionId == payload.sessionId {
+                    #if DEBUG
+                    print("[DictationCoord] recovery REJECT: kill signal matches sessionId=\(payload.sessionId.prefix(8))")
+                    #endif
+                    sharedStore.clearAllIfStale()
+                    sharedStore.clearKill()
+                    return false
+                } else {
+                    #if DEBUG
+                    print("[DictationCoord] kill signal sessionId MISMATCH — ignoring")
+                    #endif
+                }
+            }
+        }
+
+        // Step 5: Stale payload check
         let age = Date().timeIntervalSince(payload.updatedAt)
         guard age < DictationConstants.Limits.stalePayloadTTL else {
             sharedStore.clearAllIfStale()
             return false
         }
 
-        // Active phase check
+        // Step 6: Active phase check
         switch payload.phase {
         case .preparing, .recording, .paused, .finalizing:
             break
@@ -82,14 +117,17 @@ final class DictationSessionCoordinator {
             return false
         }
 
-        // Recover session
+        #if DEBUG
+        print("[DictationCoord] recovery ACCEPT: phase=\(payload.phase) age=\(age)s sessionId=\(payload.sessionId.prefix(8))")
+        #endif
+
+        // Step 7: Recover session
         sessionId = payload.sessionId
         locale = payload.locale
-        lastAppliedVersion = 0 // Re-apply from scratch
+        lastAppliedVersion = 0
 
         startObservers()
 
-        // Apply current state
         switch payload.phase {
         case .recording, .preparing:
             transitionTo(.active)
@@ -101,9 +139,7 @@ final class DictationSessionCoordinator {
             break
         }
 
-        // Trigger immediate state update
         handleStateUpdate()
-
         return true
     }
 
@@ -354,6 +390,10 @@ final class DictationSessionCoordinator {
     // MARK: - Cleanup
 
     func cleanup() {
+        #if DEBUG
+        print("[DictationCoord] CLEANUP state=\(state)")
+        #endif
+
         stopObservers()
         ackWatchdogTimer?.invalidate()
         ackWatchdogTimer = nil
@@ -362,7 +402,40 @@ final class DictationSessionCoordinator {
         errorResetTimer?.invalidate()
         errorResetTimer = nil
 
+        sharedStore.clearCommand()  // extension이 자기 command 정리
+
+        let previousState = state
+        state = .idle
+        if previousState != .idle {
+            delegate?.dictationCoordinator(self, didChangeState: .idle)
+        }
+    }
+
+    /// Force-shutdown: stop immediately, clear all shared state, write kill signal with TTL
+    func forceShutdown(reason: String) {
+        #if DEBUG
+        print("[DictationCoord] FORCE_SHUTDOWN reason=\(reason) sessionId=\(sessionId.prefix(8))")
+        #endif
+
+        stopObservers()
+        ackWatchdogTimer?.invalidate()
+        ackWatchdogTimer = nil
+        heartbeatWatchdogTimer?.invalidate()
+        heartbeatWatchdogTimer = nil
+        errorResetTimer?.invalidate()
+        errorResetTimer = nil
+
+        // Clear all shared files
         sharedStore.clearCommand()
+        sharedStore.clearState()  // Only forceShutdown() deletes state
+
+        // Write kill signal to force main app cleanup
+        let killSignal = DictationKillSignal(
+            sessionId: sessionId,
+            reason: reason,
+            timestampAt: Date()
+        )
+        try? sharedStore.writeKill(killSignal)
 
         let previousState = state
         state = .idle

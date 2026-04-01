@@ -41,3 +41,9 @@ struct DictationStatePayload: Codable {
     let version: UInt64
     let updatedAt: Date
 }
+
+struct DictationKillSignal: Codable {
+    let sessionId: String
+    let reason: String  // "user_stop", "user_cancel"
+    let timestampAt: Date
+}

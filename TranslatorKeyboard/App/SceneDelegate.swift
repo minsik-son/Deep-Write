@@ -82,6 +82,22 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
             let runtime = appDelegate.appServices.dictationRuntime
 
+            #if DEBUG
+            print("[SceneDelegate] dictation URL: presentedVC=\(String(describing: tabBar.presentedViewController))")
+            #endif
+
+            // 기존 bootstrap VC가 있으면 먼저 dismiss 후 present
+            if let existingPresented = tabBar.presentedViewController,
+               existingPresented is DictationBootstrapViewController {
+                existingPresented.dismiss(animated: false) {
+                    let bootstrapVC = DictationBootstrapViewController()
+                    bootstrapVC.configure(sessionId: sessionParam, locale: localeParam, runtime: runtime)
+                    bootstrapVC.modalPresentationStyle = .fullScreen
+                    tabBar.present(bootstrapVC, animated: true)
+                }
+                return
+            }
+
             let bootstrapVC = DictationBootstrapViewController()
             bootstrapVC.configure(sessionId: sessionParam, locale: localeParam, runtime: runtime)
             bootstrapVC.modalPresentationStyle = .fullScreen
