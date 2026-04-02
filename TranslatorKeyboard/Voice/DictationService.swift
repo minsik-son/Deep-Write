@@ -35,6 +35,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     private var transcriptState = AppTranscriptState()
     private var currentLocale: String = "en-US"
     private var controlIntent: ControlIntent = .none
+    private var hasReceivedSpeech: Bool = false
 
     private(set) var isActive: Bool = false
 
@@ -52,6 +53,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         currentLocale = locale
         transcriptState = AppTranscriptState(sessionId: sessionId)
         controlIntent = .none
+        hasReceivedSpeech = false
 
         guard speechManager.setLocale(locale) else {
             writeError("Speech recognition not available for \(locale)")
@@ -132,6 +134,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         guard isActive else { return }
         transcriptState.committedPrefix = ""
         transcriptState.currentTaskPartial = ""
+        hasReceivedSpeech = false
         writeState(phase: .recording, partialText: "")
     }
 
@@ -159,6 +162,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         guard controlIntent == .none else { return }
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=service_partial sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) intent=\(String(describing: self.controlIntent), privacy: .public) delegateCall=true")
+        hasReceivedSpeech = true
         transcriptState.currentTaskPartial = text
         debouncedWritePartial()
         delegate?.dictationService(self, didUpdatePartial: currentAbsoluteText)
@@ -168,6 +172,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         guard controlIntent == .none else { return }
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=service_final sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+        hasReceivedSpeech = true
         transcriptState.currentTaskPartial = text
         let finalText = currentAbsoluteText
 
@@ -193,8 +198,18 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     func speechRecognition(_ manager: SpeechRecognitionManager, didFailWith error: Error) {
         // 1차 방어선: pausing/stopping/canceling 중이면 전파 안 함
         guard controlIntent == .none else { return }
+
+        // silence timeout은 정책적 종료 — 일반 error와 분리 처리
+        if let speechError = error as? SpeechRecognitionManager.SpeechError,
+           speechError == .silenceTimeout {
+            handleSilenceTimeout()
+            return
+        }
+
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.error("event=service_error sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
+        // 일반 error: speech engine teardown 먼저 보장
+        speechManager.stop()
         writeError(error.localizedDescription)
     }
 
@@ -203,6 +218,44 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=timeLimit sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         performSeamlessRestart()
+    }
+
+    // MARK: - Silence Timeout Handler
+
+    private func handleSilenceTimeout() {
+        let existingText = currentAbsoluteText
+
+        // DEBUG TRACE: silence timeout 전용 로그
+        serviceLog.debug("event=silence_timeout_handle sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) hasReceivedSpeech=\(self.hasReceivedSpeech, privacy: .public) hasText=\(!existingText.isEmpty, privacy: .public)")
+
+        // 1. speech engine 완전 teardown 먼저
+        controlIntent = .stopping
+        speechManager.stop()
+
+        if hasReceivedSpeech && !existingText.isEmpty {
+            // Case 2: partial이 있었음 — 텍스트 보존, 정상 완료 취급
+            transcriptState.version += 1
+            let payload = DictationStatePayload(
+                sessionId: transcriptState.sessionId,
+                phase: .completed,
+                locale: currentLocale,
+                partialText: existingText,
+                finalText: existingText,
+                errorMessage: nil,
+                errorCode: nil,
+                audioLevel: nil,
+                version: transcriptState.version,
+                updatedAt: Date()
+            )
+            try? sharedStore.writeState(payload)
+            cleanup()
+            delegate?.dictationService(self, didFinishWith: existingText)
+            delegate?.dictationService(self, didChangePhase: .completed)
+        } else {
+            // Case 1: partial 없음 — No speech detected
+            controlIntent = .none
+            writeError("No speech detected")
+        }
     }
 
     // MARK: - Seamless Restart
