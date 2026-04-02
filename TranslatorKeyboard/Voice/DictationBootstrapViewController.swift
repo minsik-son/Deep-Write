@@ -10,13 +10,17 @@ private let bootstrapLog = Logger(
 /// Bootstrap-only VC for dictation.
 /// Starts the runtime session, shows "Return to your app".
 /// Does NOT own the speech session — AppDictationRuntime does.
-/// No state observer. No auto-dismiss. No background handler.
-/// dismiss는 Cancel 탭 또는 rejectedAlreadyActive 분기에서만 발생.
+/// Session 종료 시 runtime 상태를 관찰하여 자동 dismiss.
+/// dismiss는 Cancel 탭, rejected branch, 또는 stale check에서 발생.
 final class DictationBootstrapViewController: UIViewController {
 
     private var sessionId: String = ""
     private var locale: String = "en-US"
     private var runtime: AppDictationRuntime?
+
+    private var foregroundObserver: Any?
+    private var stateObserverToken: UUID?
+    private var hasStartedSession: Bool = false
 
     // MARK: - UI
 
@@ -83,6 +87,7 @@ final class DictationBootstrapViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupUI()
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+        startObservers()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -90,6 +95,76 @@ final class DictationBootstrapViewController: UIViewController {
         // DEBUG TRACE: VoiceRecognition investigation
         bootstrapLog.debug("event=viewDidAppear sid=\(self.sessionId.prefix(8), privacy: .public)")
         startSession()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        checkAndDismissIfStale()
+    }
+
+    deinit {
+        stopObservers()
+    }
+
+    // MARK: - Stale Check Observers
+
+    private func startObservers() {
+        // Option 1: scene foreground 복귀 시 stale check
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIScene.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.checkAndDismissIfStale()
+        }
+
+        // Option 2: shared state 변경 시 즉시 stale check (session 종료 즉각 감지)
+        stateObserverToken = DarwinNotificationBridge.shared.addObserver(
+            name: DictationConstants.Notifications.stateChanged
+        ) { [weak self] in
+            DispatchQueue.main.async { self?.checkAndDismissIfStale() }
+        }
+    }
+
+    private func stopObservers() {
+        if let observer = foregroundObserver {
+            NotificationCenter.default.removeObserver(observer)
+            foregroundObserver = nil
+        }
+        if let token = stateObserverToken {
+            DarwinNotificationBridge.shared.removeObserver(
+                name: DictationConstants.Notifications.stateChanged,
+                token: token
+            )
+            stateObserverToken = nil
+        }
+    }
+
+    // MARK: - Stale Check
+
+    private func checkAndDismissIfStale() {
+        // 세션 시작 전에는 stale check 하지 않음 (viewWillAppear → viewDidAppear 순서 보호)
+        guard hasStartedSession else { return }
+        guard let runtime = runtime else { return }
+        let snapshot = runtime.currentSnapshot()
+
+        bootstrapLog.debug("event=bootstrap_stale_check sid=\(self.sessionId.prefix(8), privacy: .public) runtimeActive=\(snapshot.isActive, privacy: .public) runtimeSid=\(snapshot.sessionId?.prefix(8) ?? "nil", privacy: .public)")
+
+        // Case A/B: runtime이 더 이상 active가 아니거나 sessionId가 nil
+        if !snapshot.isActive {
+            bootstrapLog.debug("event=bootstrap_auto_dismiss reason=runtimeInactive sid=\(self.sessionId.prefix(8), privacy: .public)")
+            stopObservers()
+            dismiss(animated: true)
+            return
+        }
+
+        // Case C: 현재 bootstrap의 sessionId와 runtime의 activeSessionId가 다름
+        if let runtimeSid = snapshot.sessionId, runtimeSid != sessionId {
+            bootstrapLog.debug("event=bootstrap_auto_dismiss reason=sessionMismatch sid=\(self.sessionId.prefix(8), privacy: .public) runtimeSid=\(runtimeSid.prefix(8), privacy: .public)")
+            stopObservers()
+            dismiss(animated: true)
+            return
+        }
     }
 
     // MARK: - Setup
@@ -141,6 +216,7 @@ final class DictationBootstrapViewController: UIViewController {
         }
 
         let result = runtime.startSession(sessionId: sessionId, locale: locale, source: .coldStart)
+        hasStartedSession = true
 
         // DEBUG TRACE: VoiceRecognition investigation
         switch result {
@@ -202,6 +278,7 @@ final class DictationBootstrapViewController: UIViewController {
     @objc private func cancelTapped() {
         // DEBUG TRACE: VoiceRecognition investigation
         bootstrapLog.debug("event=cancelTapped sid=\(self.sessionId.prefix(8), privacy: .public)")
+        stopObservers()
         runtime?.cancelSession(reason: .userCancelledDuringBootstrap)
         dismiss(animated: true)
     }
