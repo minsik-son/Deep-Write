@@ -7,7 +7,7 @@ enum DictationCommandAction: String, Codable {
     case stop
     case cancel
     case clear
-    case deleteLastWord
+    case deleteLastCharacter
 }
 
 enum DictationPhase: String, Codable {

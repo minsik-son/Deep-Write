@@ -185,6 +185,11 @@ final class AppDictationRuntime: DictationServiceDelegate {
         dictationService.clearTranscript()
     }
 
+    func deleteLastCharacter() {
+        guard isActive else { return }
+        dictationService.deleteLastCharacter()
+    }
+
     // MARK: - App Lifecycle
 
     func handleAppDidEnterBackground() {
@@ -316,7 +321,7 @@ final class AppDictationRuntime: DictationServiceDelegate {
         case .stop:   stopSession(reason: .userStopped)
         case .cancel: cancelSession(reason: .userCancelledFromExtension)
         case .clear:  clearTranscript()
-        case .deleteLastWord: break
+        case .deleteLastCharacter: deleteLastCharacter()
         case .start:  break
         }
     }

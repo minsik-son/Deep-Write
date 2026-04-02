@@ -30,7 +30,7 @@ final class DictationTextApplier {
     /// Clear: 현재 세션이 삽입한 text만 지운다
     func clearInsertedText(proxy: UITextDocumentProxy) {
         guard state.lastInsertedLength > 0 else {
-            overlay?.updatePreviewOnly("")
+            updateOverlay(text: "")
             return
         }
 
@@ -42,13 +42,13 @@ final class DictationTextApplier {
         state.lastInsertedLength = 0
         state.currentPartialText = ""
         state.isContextBroken = false
-        overlay?.updatePreviewOnly("")
+        updateOverlay(text: "")
     }
 
     func applyPartial(_ payload: DictationStatePayload, proxy: UITextDocumentProxy) {
         guard mode == .rollbackLive else {
             // finalOnly mode: only update overlay preview
-            overlay?.updatePreviewOnly(payload.partialText)
+            updateOverlay(text: payload.partialText)
             return
         }
 
@@ -101,7 +101,7 @@ final class DictationTextApplier {
         }
 
         // Cannot rollback — show confirmation on overlay
-        overlay?.updatePreviewOnly("⚠ Tap to insert: \(String(finalText.prefix(40)))...")
+        updateOverlay(text: "⚠ Tap to insert: \(String(finalText.prefix(40)))...")
     }
 
     // MARK: - Private Implementation
@@ -112,7 +112,7 @@ final class DictationTextApplier {
 
         if state.isContextBroken {
             state.currentPartialText = payload.partialText
-            overlay?.updatePreviewOnly(payload.partialText)
+            updateOverlay(text: payload.partialText)
             return
         }
 
@@ -125,14 +125,14 @@ final class DictationTextApplier {
             state.lastInsertedText = payload.partialText
             state.lastInsertedLength = payload.partialText.count
             state.currentPartialText = payload.partialText
-            overlay?.updatePreviewOnly(payload.partialText)
+            updateOverlay(text: payload.partialText)
             return
         }
 
         guard currentTail.hasSuffix(normalizedLast) else {
             state.isContextBroken = true
             state.currentPartialText = payload.partialText
-            overlay?.updatePreviewOnly(payload.partialText)
+            updateOverlay(text: payload.partialText)
             return
         }
 
@@ -141,7 +141,7 @@ final class DictationTextApplier {
         state.lastInsertedText = payload.partialText
         state.lastInsertedLength = payload.partialText.count
         state.currentPartialText = payload.partialText
-        overlay?.updatePreviewOnly(payload.partialText)
+        updateOverlay(text: payload.partialText)
     }
 
     private func schedulePendingApply(after interval: TimeInterval, proxy: UITextDocumentProxy) {
@@ -154,6 +154,16 @@ final class DictationTextApplier {
     }
 
     // MARK: - Helpers
+
+    /// preview 업데이트 + backspace 가시성을 실제 삭제 가능 상태 기준으로 동시 제어
+    private func updateOverlay(text: String) {
+        overlay?.updatePreviewOnly(text)
+        // backspace 가시성: preview text가 아닌 실제 dictation-owned state 기준
+        let hasDeletable = !state.currentPartialText.isEmpty
+            || state.lastInsertedLength > 0
+            || !text.isEmpty
+        overlay?.updateBackspaceVisibility(hasDeletableText: hasDeletable)
+    }
 
     private func normalized(_ text: String, locale: String) -> String {
         return text.precomposedStringWithCanonicalMapping

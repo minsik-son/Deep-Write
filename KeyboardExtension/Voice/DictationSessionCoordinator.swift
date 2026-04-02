@@ -253,6 +253,16 @@ final class DictationSessionCoordinator {
         try? sharedStore.writeCommand(command)
     }
 
+    func sendDeleteLastCharacter() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=cmd_write action=deleteLastCharacter sid=\(self.sessionId.prefix(8), privacy: .public)")
+        let command = DictationCommandPayload(
+            sessionId: sessionId, action: .deleteLastCharacter,
+            locale: locale, sourceAppBundleId: nil, requestedAt: Date()
+        )
+        try? sharedStore.writeCommand(command)
+    }
+
     // MARK: - Force Finalize (memory warning / dismiss)
 
     func forceFinalizePreservingCurrentState() {

@@ -5,7 +5,7 @@ protocol DictationOverlayViewDelegate: AnyObject {
     func dictationOverlayDidTapPause()
     func dictationOverlayDidTapResume()
     func dictationOverlayDidTapCancel()
-    func dictationOverlayDidTapClear()
+    func dictationOverlayDidTapBackspace()
     /// X button: stop recognition but keep inserted text
     func dictationOverlayDidTapStop()
 }
@@ -49,7 +49,7 @@ final class DictationOverlayView: UIView {
         l.textColor = UIColor(white: 0.6, alpha: 1)
         l.textAlignment = .center
         l.numberOfLines = 2
-        l.lineBreakMode = .byTruncatingTail
+        l.lineBreakMode = .byTruncatingHead
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
@@ -72,10 +72,10 @@ final class DictationOverlayView: UIView {
         return btn
     }()
 
-    private let clearButton: UIButton = {
+    private let backspaceButton: UIButton = {
         let btn = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
-        btn.setImage(UIImage(systemName: "trash", withConfiguration: config), for: .normal)
+        btn.setImage(UIImage(systemName: "delete.left", withConfiguration: config), for: .normal)
         btn.tintColor = UIColor(white: 0.5, alpha: 1)
         btn.translatesAutoresizingMaskIntoConstraints = false
         btn.isHidden = true
@@ -125,10 +125,11 @@ final class DictationOverlayView: UIView {
         addSubview(previewLabel)
         addSubview(pauseButton)
         addSubview(cancelButton)
-        addSubview(clearButton)
+        addSubview(backspaceButton)
         addSubview(stopButton)
 
         NSLayoutConstraint.activate([
+            // 상단 바: back, mic, status, locale, X
             backButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             backButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             backButton.widthAnchor.constraint(equalToConstant: 28),
@@ -146,25 +147,29 @@ final class DictationOverlayView: UIView {
             localeBadge.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -8),
             localeBadge.widthAnchor.constraint(lessThanOrEqualToConstant: 120),
 
-            previewLabel.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 12),
-            previewLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            previewLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-
-            pauseButton.topAnchor.constraint(equalTo: previewLabel.bottomAnchor, constant: 16),
-            pauseButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-            pauseButton.widthAnchor.constraint(equalToConstant: 44),
-            pauseButton.heightAnchor.constraint(equalToConstant: 44),
-
-            cancelButton.centerYAnchor.constraint(equalTo: pauseButton.centerYAnchor),
-            cancelButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-
-            clearButton.centerYAnchor.constraint(equalTo: pauseButton.centerYAnchor),
-            clearButton.leadingAnchor.constraint(equalTo: pauseButton.trailingAnchor, constant: 24),
-
             stopButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             stopButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
             stopButton.widthAnchor.constraint(equalToConstant: 32),
             stopButton.heightAnchor.constraint(equalToConstant: 32),
+
+            // preview: 상단 바 아래
+            previewLabel.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 12),
+            previewLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            previewLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+
+            // pause: 중앙
+            pauseButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            pauseButton.centerYAnchor.constraint(equalTo: centerYAnchor, constant: 8),
+            pauseButton.widthAnchor.constraint(equalToConstant: 44),
+            pauseButton.heightAnchor.constraint(equalToConstant: 44),
+
+            // cancel: 좌하단
+            cancelButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            cancelButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
+
+            // backspace: 우하단
+            backspaceButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            backspaceButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
         ])
     }
 
@@ -172,7 +177,7 @@ final class DictationOverlayView: UIView {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         pauseButton.addTarget(self, action: #selector(pauseTapped), for: .touchUpInside)
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
-        clearButton.addTarget(self, action: #selector(clearTapped), for: .touchUpInside)
+        backspaceButton.addTarget(self, action: #selector(backspaceTapped), for: .touchUpInside)
         stopButton.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
     }
 
@@ -187,8 +192,12 @@ final class DictationOverlayView: UIView {
     }
 
     func updatePreviewOnly(_ text: String) {
-        previewLabel.text = text.isEmpty ? "" : "..." + String(text.suffix(80))
-        clearButton.isHidden = text.isEmpty
+        previewLabel.text = text.isEmpty ? "" : String(text.suffix(80))
+    }
+
+    /// backspace 가시성은 preview text가 아닌 실제 삭제 가능 상태로 제어
+    func updateBackspaceVisibility(hasDeletableText: Bool) {
+        backspaceButton.isHidden = !hasDeletableText
     }
 
     func setRecordingState() {
@@ -219,7 +228,7 @@ final class DictationOverlayView: UIView {
     func reset() {
         isPaused = false
         previewLabel.text = ""
-        clearButton.isHidden = true
+        backspaceButton.isHidden = true
         micIndicator.backgroundColor = .systemRed
         statusLabel.text = "Listening..."
         stopPulse()
@@ -243,8 +252,8 @@ final class DictationOverlayView: UIView {
         delegate?.dictationOverlayDidTapCancel()
     }
 
-    @objc private func clearTapped() {
-        delegate?.dictationOverlayDidTapClear()
+    @objc private func backspaceTapped() {
+        delegate?.dictationOverlayDidTapBackspace()
     }
 
     /// X = stop voice, keep text

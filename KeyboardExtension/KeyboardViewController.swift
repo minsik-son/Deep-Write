@@ -3853,9 +3853,8 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
         dismissDictation()
     }
 
-    func dictationOverlayDidTapClear() {
-        dictationCoordinator?.sendClear()
-        dictationTextApplier?.clearInsertedText(proxy: textDocumentProxy)
+    func dictationOverlayDidTapBackspace() {
+        dictationCoordinator?.sendDeleteLastCharacter()
     }
 
     /// X = stop recognition, keep inserted text, force shutdown with kill signal

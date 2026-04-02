@@ -138,6 +138,43 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         writeState(phase: .recording, partialText: "")
     }
 
+    // MARK: - Delete Last Character
+
+    func deleteLastCharacter() {
+        guard isActive else { return }
+
+        let absoluteText = currentAbsoluteText
+        guard !absoluteText.isEmpty else { return }
+
+        // 1. 현재 absolute text에서 마지막 Character 제거
+        let editedText = String(absoluteText.dropLast())
+
+        // 2. 편집된 텍스트를 새 base로 승격 — partial 초기화
+        transcriptState.committedPrefix = editedText
+        transcriptState.currentTaskPartial = ""
+
+        // DEBUG TRACE
+        serviceLog.debug("event=deleteLastCharacter sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) remaining=\(editedText.count, privacy: .public)")
+
+        // 3. recognizer restart — 다음 partial이 편집된 base 위에 쌓이도록
+        controlIntent = .restarting
+        speechManager.stop()
+        do {
+            try speechManager.start()
+            speechManager.delegate = self
+            controlIntent = .none
+            serviceLog.debug("event=deleteLastCharacter_resync sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+        } catch {
+            controlIntent = .none
+            serviceLog.error("event=deleteLastCharacter_resync_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
+        }
+
+        // 4. 상태 전파 — extension에 업데이트된 텍스트 전달
+        writeState(phase: .recording, partialText: currentAbsoluteText)
+        writeHeartbeatNow(source: "deleteChar")
+        delegate?.dictationService(self, didUpdatePartial: currentAbsoluteText)
+    }
+
     // MARK: - Stop (동기 cleanup + ControlIntent)
 
     func stopSession() {
