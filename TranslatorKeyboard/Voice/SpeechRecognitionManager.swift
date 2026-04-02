@@ -160,6 +160,14 @@ final class SpeechRecognitionManager: NSObject, SFSpeechRecognizerDelegate {
                 // DEBUG TRACE: guard 앞에서 result 내용 기록
                 speechLog.debug("event=srm_result final=\(result.isFinal, privacy: .public) running=\(self.isRunning, privacy: .public) paused=\(self.isPaused, privacy: .public)")
                 guard self.isRunning else { return }
+
+                // task identity 방어선: old task의 late result가 새 session에 영향주지 않게
+                // stop() 시 recognitionRequest = nil → old request와 현재 request 비교
+                guard self.recognitionRequest === currentRequest else {
+                    speechLog.debug("event=srm_result_stale final=\(result.isFinal, privacy: .public)")
+                    return
+                }
+
                 let text = result.bestTranscription.formattedString
                 self.resetSilenceTimer()
 

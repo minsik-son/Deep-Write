@@ -213,6 +213,9 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         transcriptState.currentTaskPartial = text
         let finalText = currentAbsoluteText
 
+        // speech engine 완전 teardown — ghost audio pipeline 방지
+        speechManager.stop()
+
         transcriptState.version += 1
         let payload = DictationStatePayload(
             sessionId: transcriptState.sessionId,
