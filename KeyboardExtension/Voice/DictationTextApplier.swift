@@ -110,6 +110,23 @@ final class DictationTextApplier {
         lastApplyTime = Date()
         state.lastAppliedVersion = payload.version
 
+        // delete-to-empty: runtime이 빈 텍스트를 보냈고 host에 아직 삽입된 텍스트가 남아있으면
+        // context-broken 상태여도 force rollback으로 host text 정리
+        if payload.partialText.isEmpty && state.lastInsertedLength > 0 {
+            if !state.isContextBroken {
+                rollbackDelete(count: state.lastInsertedLength, proxy: proxy)
+            } else {
+                // context-broken 상태: best-effort로 남은 길이만큼 삭제 시도
+                rollbackDelete(count: state.lastInsertedLength, proxy: proxy)
+            }
+            state.lastInsertedText = ""
+            state.lastInsertedLength = 0
+            state.currentPartialText = ""
+            state.isContextBroken = false
+            updateOverlay(text: "")
+            return
+        }
+
         if state.isContextBroken {
             state.currentPartialText = payload.partialText
             updateOverlay(text: payload.partialText)
@@ -121,7 +138,9 @@ final class DictationTextApplier {
         let normalizedLast = normalized(state.lastInsertedText, locale: payload.locale)
 
         if state.lastInsertedLength == 0 {
-            proxy.insertText(payload.partialText)
+            if !payload.partialText.isEmpty {
+                proxy.insertText(payload.partialText)
+            }
             state.lastInsertedText = payload.partialText
             state.lastInsertedLength = payload.partialText.count
             state.currentPartialText = payload.partialText
@@ -137,7 +156,9 @@ final class DictationTextApplier {
         }
 
         rollbackDelete(count: state.lastInsertedLength, proxy: proxy)
-        proxy.insertText(payload.partialText)
+        if !payload.partialText.isEmpty {
+            proxy.insertText(payload.partialText)
+        }
         state.lastInsertedText = payload.partialText
         state.lastInsertedLength = payload.partialText.count
         state.currentPartialText = payload.partialText
@@ -158,10 +179,9 @@ final class DictationTextApplier {
     /// preview 업데이트 + backspace 가시성을 실제 삭제 가능 상태 기준으로 동시 제어
     private func updateOverlay(text: String) {
         overlay?.updatePreviewOnly(text)
-        // backspace 가시성: preview text가 아닌 실제 dictation-owned state 기준
-        let hasDeletable = !state.currentPartialText.isEmpty
-            || state.lastInsertedLength > 0
-            || !text.isEmpty
+        // backspace 가시성: applier가 소유한 실제 삭제 가능 상태 기준
+        // lastInsertedLength > 0 이면 host text에 아직 dictation-owned 문자가 남아있음
+        let hasDeletable = state.lastInsertedLength > 0 || !state.currentPartialText.isEmpty
         overlay?.updateBackspaceVisibility(hasDeletableText: hasDeletable)
     }
 
