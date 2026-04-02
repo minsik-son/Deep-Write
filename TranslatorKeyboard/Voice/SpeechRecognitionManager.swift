@@ -1,6 +1,13 @@
 import Foundation
 import Speech
 import AVFoundation
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let speechLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "speech"
+)
 
 protocol SpeechRecognitionManagerDelegate: AnyObject {
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceivePartial text: String)
@@ -9,7 +16,7 @@ protocol SpeechRecognitionManagerDelegate: AnyObject {
     func speechRecognitionDidReachTimeLimit(_ manager: SpeechRecognitionManager)
 }
 
-final class SpeechRecognitionManager {
+final class SpeechRecognitionManager: NSObject, SFSpeechRecognizerDelegate {
 
     weak var delegate: SpeechRecognitionManagerDelegate?
 
@@ -23,6 +30,49 @@ final class SpeechRecognitionManager {
 
     private(set) var isRunning: Bool = false
     private(set) var currentLocale: Locale = Locale(identifier: "en-US")
+
+    // Pipeline 진단용 카운터
+    private var tapBufferCount: Int = 0
+
+    // MARK: - Interruption Observer
+
+    private var interruptionObserver: Any?
+
+    private func startInterruptionObserver() {
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            guard let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+
+            switch type {
+            case .began:
+                speechLog.error("event=audio_interruption type=began running=\(self.isRunning, privacy: .public) paused=\(self.isPaused, privacy: .public)")
+            case .ended:
+                let shouldResume = (notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt)
+                    .map { AVAudioSession.InterruptionOptions(rawValue: $0).contains(.shouldResume) } ?? false
+                speechLog.debug("event=audio_interruption type=ended shouldResume=\(shouldResume, privacy: .public) running=\(self.isRunning, privacy: .public)")
+            @unknown default:
+                speechLog.debug("event=audio_interruption type=unknown")
+            }
+        }
+    }
+
+    private func stopInterruptionObserver() {
+        if let observer = interruptionObserver {
+            NotificationCenter.default.removeObserver(observer)
+            interruptionObserver = nil
+        }
+    }
+
+    // MARK: - SFSpeechRecognizerDelegate
+
+    func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+        speechLog.debug("event=recognizer_availability available=\(available, privacy: .public) locale=\(self.currentLocale.identifier, privacy: .public) running=\(self.isRunning, privacy: .public)")
+    }
 
     // MARK: - Permissions
 
@@ -54,6 +104,7 @@ final class SpeechRecognitionManager {
         }
         currentLocale = locale
         recognizer = rec
+        recognizer?.delegate = self
         return true
     }
 
@@ -64,23 +115,50 @@ final class SpeechRecognitionManager {
 
         if recognizer == nil {
             recognizer = SFSpeechRecognizer(locale: currentLocale)
+            recognizer?.delegate = self
         }
         guard let recognizer = recognizer, recognizer.isAvailable else {
+            // DEBUG TRACE: VoiceRecognition investigation
+            speechLog.error("event=start_fail reason=recognizerUnavailable locale=\(self.currentLocale.identifier, privacy: .public)")
             throw SpeechError.recognizerUnavailable
         }
+
+        // DEBUG TRACE: VoiceRecognition investigation
+        speechLog.debug("event=start locale=\(self.currentLocale.identifier, privacy: .public)")
 
         let audioSession = AVAudioSession.sharedInstance()
         try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        // DEBUG TRACE: audio session activation
+        speechLog.debug("event=audio_session_active category=record mode=measurement")
+
+        // DEBUG TRACE: audio route 확인
+        let inputs = audioSession.currentRoute.inputs.map { $0.portType.rawValue }.joined(separator: ",")
+        let outputs = audioSession.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+        speechLog.debug("event=audio_route inputs=\(inputs, privacy: .public) outputs=\(outputs, privacy: .public)")
+
+        // DEBUG TRACE: recognizer status
+        speechLog.debug("event=recognizer_status available=\(recognizer.isAvailable, privacy: .public) locale=\(self.currentLocale.identifier, privacy: .public)")
 
         let engine = AVAudioEngine()
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
 
+        // request를 identity token으로 사용 — callback이 현재 request에 속하는지 확인
+        let currentRequest = request
+
+        // tap 카운터 리셋
+        tapBufferCount = 0
+
         let task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self = self else { return }
 
+            // DEBUG TRACE: callback 진입 자체를 최우선 기록
+            speechLog.debug("event=srm_callback_enter result_nil=\(result == nil, privacy: .public) error_nil=\(error == nil, privacy: .public) running=\(self.isRunning, privacy: .public) paused=\(self.isPaused, privacy: .public)")
+
             if let result = result {
+                // DEBUG TRACE: guard 앞에서 result 내용 기록
+                speechLog.debug("event=srm_result final=\(result.isFinal, privacy: .public) running=\(self.isRunning, privacy: .public) paused=\(self.isPaused, privacy: .public)")
                 guard self.isRunning else { return }
                 let text = result.bestTranscription.formattedString
                 self.resetSilenceTimer()
@@ -93,11 +171,15 @@ final class SpeechRecognitionManager {
             }
 
             if let error = error {
-                // 1차 방어선: isPaused 중이면 error callback 전파 안 함
+                // DEBUG TRACE: guard 앞에서 error callback 진입 자체를 먼저 기록
+                let nsError = error as NSError
+                speechLog.error("event=srm_error code=\(nsError.code, privacy: .public) running=\(self.isRunning, privacy: .public) paused=\(self.isPaused, privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
                 guard self.isRunning && !self.isPaused else { return }
 
-                let nsError = error as NSError
-                // 1분 제한 도달 (code 216 = kAFAssistantErrorDomain)
+                // task identity 방어선: old task의 callback이 새 session을 죽이지 않게
+                // stop() 시 recognitionRequest = nil → old request와 현재 request 비교
+                guard self.recognitionRequest === currentRequest else { return }
+
                 if nsError.code == 216 || nsError.code == 209 {
                     self.delegate?.speechRecognitionDidReachTimeLimit(self)
                 } else {
@@ -108,12 +190,32 @@ final class SpeechRecognitionManager {
 
         let inputNode = engine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            guard let self = self else { return }
+            self.tapBufferCount += 1
+
+            // DEBUG TRACE: 첫 버퍼 도착 기록
+            if self.tapBufferCount == 1 {
+                speechLog.debug("event=audio_tap_first_buffer frameLength=\(buffer.frameLength, privacy: .public)")
+            }
+
             request.append(buffer)
+
+            // DEBUG TRACE: 첫 append 기록
+            if self.tapBufferCount == 1 {
+                speechLog.debug("event=request_append_first_buffer")
+            }
+
+            // DEBUG TRACE: 50회마다 샘플링
+            if self.tapBufferCount % 50 == 0 {
+                speechLog.debug("event=audio_tap_sample count=\(self.tapBufferCount, privacy: .public)")
+            }
         }
 
         engine.prepare()
         try engine.start()
+        // DEBUG TRACE: engine start
+        speechLog.debug("event=engine_start success=true")
 
         self.audioEngine = engine
         self.recognitionRequest = request
@@ -122,6 +224,7 @@ final class SpeechRecognitionManager {
         self.isRunning = true
 
         startSilenceTimer()
+        startInterruptionObserver()
     }
 
     // MARK: - Pause (mic 캡처만 중단, engine/session은 유지)
@@ -130,6 +233,8 @@ final class SpeechRecognitionManager {
 
     func pause() {
         guard isRunning, !isPaused else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        speechLog.debug("event=pause")
         isPaused = true
 
         silenceTimer?.invalidate()
@@ -141,6 +246,8 @@ final class SpeechRecognitionManager {
 
     func resumeAfterPause() throws {
         guard isRunning, isPaused else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        speechLog.debug("event=resume")
         isPaused = false
 
         try audioEngine?.start()
@@ -151,6 +258,8 @@ final class SpeechRecognitionManager {
 
     func stop() {
         guard isRunning else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        speechLog.debug("event=stop_teardown tapCount=\(self.tapBufferCount, privacy: .public)")
         isRunning = false
         isPaused = false
 
@@ -167,6 +276,7 @@ final class SpeechRecognitionManager {
         recognitionTask?.cancel()
         recognitionTask = nil
 
+        stopInterruptionObserver()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
@@ -174,6 +284,8 @@ final class SpeechRecognitionManager {
 
     func cancel() {
         guard isRunning else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        speechLog.debug("event=cancel_teardown tapCount=\(self.tapBufferCount, privacy: .public)")
         isRunning = false
 
         silenceTimer?.invalidate()
@@ -189,6 +301,7 @@ final class SpeechRecognitionManager {
         audioEngine?.stop()
         audioEngine = nil
 
+        stopInterruptionObserver()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
@@ -209,6 +322,8 @@ final class SpeechRecognitionManager {
         silenceTimer?.invalidate()
         silenceTimer = Timer.scheduledTimer(withTimeInterval: DictationConstants.Limits.silenceTimeout, repeats: false) { [weak self] _ in
             guard let self = self, self.isRunning else { return }
+            // DEBUG TRACE: VoiceRecognition investigation
+            speechLog.debug("event=silence_timer_fire tapCount=\(self.tapBufferCount, privacy: .public)")
             self.delegate?.speechRecognition(self, didFailWith: SpeechError.silenceTimeout)
         }
     }

@@ -1,4 +1,11 @@
 import UIKit
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let bootstrapLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "bootstrap"
+)
 
 /// Bootstrap-only VC for dictation.
 /// Starts the runtime session, shows "Return to your app".
@@ -80,6 +87,8 @@ final class DictationBootstrapViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // DEBUG TRACE: VoiceRecognition investigation
+        bootstrapLog.debug("event=viewDidAppear sid=\(self.sessionId.prefix(8), privacy: .public)")
         startSession()
     }
 
@@ -133,25 +142,27 @@ final class DictationBootstrapViewController: UIViewController {
 
         let result = runtime.startSession(sessionId: sessionId, locale: locale, source: .coldStart)
 
-        #if DEBUG
+        // DEBUG TRACE: VoiceRecognition investigation
         switch result {
         case .accepted(let sid):
-            print("[Bootstrap] accepted sid=\(sid.prefix(8))")
+            bootstrapLog.debug("event=startSession_result result=accepted sid=\(sid.prefix(8), privacy: .public)")
         case .rejectedAlreadyActive(let activeId):
-            print("[Bootstrap] REJECTED already active! activeId=\(activeId.prefix(8))")
+            bootstrapLog.debug("event=startSession_result result=rejectedAlreadyActive activeId=\(activeId.prefix(8), privacy: .public)")
         case .failedToStart(let msg):
-            print("[Bootstrap] FAILED: \(msg)")
-        default:
-            print("[Bootstrap] result=\(result)")
+            bootstrapLog.error("event=startSession_result result=failedToStart reason=\(msg, privacy: .public)")
+        case .rejectedUnsupportedLocale:
+            bootstrapLog.error("event=startSession_result result=rejectedUnsupportedLocale")
+        case .rejectedPermissionRequired:
+            bootstrapLog.error("event=startSession_result result=rejectedPermissionRequired")
         }
-        #endif
 
         switch result {
         case .accepted:
             statusLabel.text = "Dictation active"
             hintLabel.text = "Return to your app — dictation will continue"
             micIcon.tintColor = .systemGreen
-            runtime.startReturnGraceTimer()
+            // returnGraceTimer는 runtime의 didChangePhase(.recording)에서 시작됨
+            // bootstrap에서 중복 호출하지 않음
 
         case .rejectedAlreadyActive(let activeId):
             statusLabel.text = "Already recording"
@@ -189,6 +200,8 @@ final class DictationBootstrapViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func cancelTapped() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        bootstrapLog.debug("event=cancelTapped sid=\(self.sessionId.prefix(8), privacy: .public)")
         runtime?.cancelSession(reason: .userCancelledDuringBootstrap)
         dismiss(animated: true)
     }

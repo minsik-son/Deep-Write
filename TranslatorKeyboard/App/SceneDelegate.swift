@@ -1,4 +1,11 @@
 import UIKit
+import OSLog
+
+// DEBUG TRACE: app lifecycle
+private let sceneLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "scene"
+)
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -26,6 +33,30 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             handleURL(urlContext.url, tabBar: tabBarController)
         }
     }
+
+    // MARK: - Scene Lifecycle
+
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        sceneLog.debug("event=sceneWillEnterForeground")
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        appDelegate.appServices.dictationRuntime.handleAppWillEnterForeground()
+    }
+
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        sceneLog.debug("event=sceneDidEnterBackground")
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        appDelegate.appServices.dictationRuntime.handleAppDidEnterBackground()
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        sceneLog.debug("event=sceneDidBecomeActive")
+    }
+
+    func sceneWillResignActive(_ scene: UIScene) {
+        sceneLog.debug("event=sceneWillResignActive")
+    }
+
+    // MARK: - URL Handling
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }

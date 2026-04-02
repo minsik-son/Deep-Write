@@ -404,9 +404,10 @@ class KeyboardViewController: UIInputViewController {
 
         stopClipboardMonitoring()
 
-        // Dictation: 키보드 dismiss 시 정리
+        // Dictation: 키보드 dismiss 시 UI만 정리
+        // handoff dismiss와 실제 종료를 구분 — stop 커맨드를 보내지 않음
+        // 메인앱 세션은 유지되며, viewDidAppear에서 tryRecoverDictationSession()이 복구
         if isShowingDictation {
-            dictationCoordinator?.forceFinalizePreservingCurrentState()
             dismissDictation()
         }
 

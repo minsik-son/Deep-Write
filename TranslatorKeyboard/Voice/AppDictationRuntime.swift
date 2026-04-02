@@ -1,4 +1,11 @@
 import Foundation
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let runtimeLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "runtime"
+)
 
 // MARK: - Types
 
@@ -91,18 +98,26 @@ final class AppDictationRuntime: DictationServiceDelegate {
 
     func startSession(sessionId: String, locale: String, source: LaunchSource) -> StartResult {
         if isActive, let activeId = activeSessionId {
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.debug("event=startSession_rejected sid=\(activeId.prefix(8), privacy: .public) reason=alreadyActive")
             return .rejectedAlreadyActive(activeSessionId: activeId)
         }
         if activeSessionId == sessionId {
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.debug("event=startSession_rejected sid=\(sessionId.prefix(8), privacy: .public) reason=duplicateSession")
             return .rejectedAlreadyActive(activeSessionId: sessionId)
         }
 
         guard SpeechRecognitionManager.isSpeechAuthorized && SpeechRecognitionManager.isMicAuthorized else {
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.error("event=startSession_rejected reason=permissionRequired")
             return .rejectedPermissionRequired
         }
 
         let tempManager = SpeechRecognitionManager()
         guard tempManager.setLocale(locale) else {
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.error("event=startSession_rejected reason=unsupportedLocale locale=\(locale, privacy: .public)")
             return .rejectedUnsupportedLocale
         }
 
@@ -110,9 +125,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
         activeLocale = locale
         state = .starting(sessionId: sessionId)
 
-        #if DEBUG
-        print("[DictationRuntime] START sessionId=\(sessionId.prefix(8)) locale=\(locale)")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=startSession_accepted sid=\(sessionId.prefix(8), privacy: .public) locale=\(locale, privacy: .public)")
 
         dictationService.startSession(sessionId: sessionId, locale: locale)
         return .accepted(sessionId: sessionId)
@@ -123,9 +137,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
     func stopSession(reason: StopReason) {
         guard isActive else { return }
 
-        #if DEBUG
-        print("[DictationRuntime] STOP reason=\(reason) sessionId=\(activeSessionId?.prefix(8) ?? "nil")")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=stopSession reason=\(String(describing: reason), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
 
         state = .finalizing(sessionId: activeSessionId ?? "")
         returnGraceTimer?.invalidate()
@@ -140,9 +153,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
     func cancelSession(reason: CancelReason) {
         guard isActive else { return }
 
-        #if DEBUG
-        print("[DictationRuntime] CANCEL reason=\(reason) sessionId=\(activeSessionId?.prefix(8) ?? "nil")")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=cancelSession reason=\(String(describing: reason), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
 
         dictationService.cancelSession()
         cleanupSession()  // 동기
@@ -152,18 +164,16 @@ final class AppDictationRuntime: DictationServiceDelegate {
 
     func pauseSession() {
         guard isActive, let sid = activeSessionId else { return }
-        #if DEBUG
-        print("[DictationRuntime] PAUSE sessionId=\(sid.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=pauseSession sid=\(sid.prefix(8), privacy: .public)")
         dictationService.pauseSession()
         state = .paused(sessionId: sid)
     }
 
     func resumeSession() {
         guard isActive, let sid = activeSessionId else { return }
-        #if DEBUG
-        print("[DictationRuntime] RESUME sessionId=\(sid.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=resumeSession sid=\(sid.prefix(8), privacy: .public)")
         dictationService.resumeSession()
         state = .recording(sessionId: sid)
     }
@@ -178,10 +188,14 @@ final class AppDictationRuntime: DictationServiceDelegate {
     // MARK: - App Lifecycle
 
     func handleAppDidEnterBackground() {
+        // DEBUG TRACE: app lifecycle
+        runtimeLog.debug("event=appDidEnterBackground state=\(String(describing: self.state), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
         // Audio continues with UIBackgroundModes=audio — 아무것도 하지 않음
     }
 
     func handleAppWillEnterForeground() {
+        // DEBUG TRACE: app lifecycle
+        runtimeLog.debug("event=appWillEnterForeground state=\(String(describing: self.state), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
         // Check for pending kill signals from extension
         checkKillSignal()
     }
@@ -213,13 +227,21 @@ final class AppDictationRuntime: DictationServiceDelegate {
 
     func startReturnGraceTimer() {
         returnGraceTimer?.invalidate()
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=timer_start name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) timeout=20 state=\(String(describing: self.state), privacy: .public)")
         returnGraceTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: false) { [weak self] _ in
             guard let self = self, self.isActive else { return }
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.error("event=timer_fire name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) state=\(String(describing: self.state), privacy: .public) reason=userDidNotReturnInTime")
             self.stopSession(reason: .userDidNotReturnInTime)
         }
     }
 
     func cancelReturnGraceTimer() {
+        if returnGraceTimer != nil {
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.debug("event=timer_cancel name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
+        }
         returnGraceTimer?.invalidate()
         returnGraceTimer = nil
     }
@@ -249,30 +271,25 @@ final class AppDictationRuntime: DictationServiceDelegate {
             return
         }
 
-        #if DEBUG
-        print("[DictationRuntime] KILL SIGNAL detected reason=\(killSignal.reason) sessionId=\(killSignal.sessionId.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=killSignal_detected reason=\(killSignal.reason, privacy: .public) sid=\(killSignal.sessionId.prefix(8), privacy: .public)")
 
         guard isActive else {
-            // Not active — preserve kill signal for later
-            #if DEBUG
-            print("[DictationRuntime] kill signal preserved — isActive=false")
-            #endif
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.debug("event=killSignal_preserved reason=notActive")
             return
         }
 
         guard let activeId = activeSessionId, killSignal.sessionId == activeId else {
-            #if DEBUG
-            print("[DictationRuntime] kill signal sessionId MISMATCH — clearing")
-            #endif
+            // DEBUG TRACE: VoiceRecognition investigation
+            runtimeLog.debug("event=killSignal_mismatch reason=sessionIdMismatch")
             sharedStore.clearKill()
             return
         }
 
         // Kill signal matches active session + fresh TTL → force terminate
-        #if DEBUG
-        print("[DictationRuntime] EXECUTING KILL for sessionId=\(activeId.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=killSignal_execute sid=\(activeId.prefix(8), privacy: .public)")
         dictationService.forceStop()
         cleanupSession()
         sharedStore.clearKill()
@@ -290,9 +307,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
         guard let command = sharedStore.readCommand() else { return }
         guard isActive, command.sessionId == activeSessionId else { return }
 
-        #if DEBUG
-        print("[DictationRuntime] CMD action=\(command.action) sessionId=\(command.sessionId.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=handleCommandUpdate action=\(String(describing: command.action), privacy: .public) sid=\(command.sessionId.prefix(8), privacy: .public)")
 
         switch command.action {
         case .pause:  pauseSession()
@@ -311,6 +327,9 @@ final class AppDictationRuntime: DictationServiceDelegate {
         guard let sid = activeSessionId else { return }
 
         let previousState = state
+
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=didChangePhase prev=\(String(describing: previousState), privacy: .public) new=\(String(describing: phase), privacy: .public) sid=\(sid.prefix(8), privacy: .public)")
 
         switch phase {
         case .preparing:
@@ -342,20 +361,25 @@ final class AppDictationRuntime: DictationServiceDelegate {
     }
 
     func dictationService(_ service: DictationService, didUpdatePartial text: String) {
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=didUpdatePartial state=\(String(describing: self.state), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) graceTimerActive=\(self.returnGraceTimer != nil, privacy: .public)")
         cancelReturnGraceTimer()
+        // DEBUG TRACE: grace timer cancel 확인
+        runtimeLog.debug("event=didUpdatePartial_cancelGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) graceTimerAfterCancel=\(self.returnGraceTimer != nil, privacy: .public)")
         if let sid = activeSessionId, case .waitingForUserReturn = state {
             state = .recording(sessionId: sid)
         }
     }
 
     func dictationService(_ service: DictationService, didFinishWith finalText: String) {
-        #if DEBUG
-        print("[DictationRuntime] didFinishWith: len=\(finalText.count)")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=didFinishWith sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
         cleanupSession()  // 동기
     }
 
     func dictationService(_ service: DictationService, didFailWith message: String) {
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.error("event=didFailWith sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) reason=\(message, privacy: .public)")
         state = .error(message: message)
         cleanupSession()  // 동기. asyncAfter 금지.
     }
@@ -366,10 +390,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
     private func cleanupSession() {
         guard isActive || activeSessionId != nil else { return }
 
-        #if DEBUG
-        let sid = activeSessionId ?? "none"
-        print("[DictationRuntime] CLEANUP sessionId=\(sid.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        runtimeLog.debug("event=cleanupSession sid=\(self.activeSessionId?.prefix(8) ?? "none", privacy: .public)")
 
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil

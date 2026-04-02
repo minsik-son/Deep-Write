@@ -1,4 +1,11 @@
 import Foundation
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let storeLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "store"
+)
 
 final class DictationSharedStore {
 
@@ -25,6 +32,8 @@ final class DictationSharedStore {
         let data = try encoder.encode(payload)
         try data.write(to: url, options: .atomic)
         hardenFile(at: url)
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=writeCommand action=\(String(describing: payload.action), privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public)")
         DarwinNotificationBridge.shared.post(DictationConstants.Notifications.commandChanged)
     }
 
@@ -35,6 +44,8 @@ final class DictationSharedStore {
         let data = try encoder.encode(payload)
         try data.write(to: url, options: .atomic)
         hardenFile(at: url)
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=writeState phase=\(String(describing: payload.phase), privacy: .public) ver=\(payload.version, privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public)")
         DarwinNotificationBridge.shared.post(DictationConstants.Notifications.stateChanged)
     }
 
@@ -63,11 +74,15 @@ final class DictationSharedStore {
     // MARK: - Clear
 
     func clearCommand() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=clearCommand")
         guard let url = commandFileURL else { return }
         try? fileManager.removeItem(at: url)
     }
 
     func clearState() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=clearState")
         guard let url = stateFileURL else { return }
         try? fileManager.removeItem(at: url)
     }
@@ -101,6 +116,8 @@ final class DictationSharedStore {
         let data = try encoder.encode(payload)
         try data.write(to: url, options: .atomic)
         hardenFile(at: url)
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=writeKill sid=\(payload.sessionId.prefix(8), privacy: .public) reason=\(payload.reason, privacy: .public)")
         DarwinNotificationBridge.shared.post(DictationConstants.Notifications.killChanged)
     }
 
@@ -115,6 +132,8 @@ final class DictationSharedStore {
     }
 
     func clearKill() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        storeLog.debug("event=clearKill")
         guard let url = killFileURL else { return }
         try? fileManager.removeItem(at: url)
     }

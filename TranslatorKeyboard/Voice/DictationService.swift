@@ -1,4 +1,11 @@
 import Foundation
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let serviceLog = Logger(
+    subsystem: "com.translatorkeyboard.app.voice",
+    category: "service"
+)
 
 protocol DictationServiceDelegate: AnyObject {
     func dictationService(_ service: DictationService, didChangePhase phase: DictationPhase)
@@ -39,6 +46,9 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     func startSession(sessionId: String, locale: String) {
         guard !isActive else { return }
 
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=startSession sid=\(sessionId.prefix(8), privacy: .public) locale=\(locale, privacy: .public)")
+
         currentLocale = locale
         transcriptState = AppTranscriptState(sessionId: sessionId)
         controlIntent = .none
@@ -55,11 +65,13 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         delegate?.dictationService(self, didChangePhase: .preparing)
 
         do {
-            try speechManager.start()
             speechManager.delegate = self
+            // DEBUG TRACE: VoiceRecognition investigation
+            serviceLog.debug("event=delegate_bound sid=\(sessionId.prefix(8), privacy: .public)")
+            try speechManager.start()
             writeState(phase: .recording, partialText: "")
             delegate?.dictationService(self, didChangePhase: .recording)
-            writeHeartbeatNow()  // 즉시 첫 heartbeat write
+            writeHeartbeatNow(source: "initial")
             startHeartbeat()
         } catch {
             writeError(error.localizedDescription)
@@ -78,6 +90,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     func pauseSession() {
         guard isActive else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=pauseSession sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         controlIntent = .pausing
         speechManager.pause()
         writeState(phase: .paused, partialText: currentAbsoluteText)
@@ -87,12 +101,14 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     func resumeSession() {
         guard isActive else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=resumeSession sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         controlIntent = .none
 
         do {
             try speechManager.resumeAfterPause()
             writeState(phase: .recording, partialText: currentAbsoluteText)
-            writeHeartbeatNow()  // resume 직후 heartbeat 즉시 갱신
+            writeHeartbeatNow(source: "resume")
             delegate?.dictationService(self, didChangePhase: .recording)
         } catch {
             // Fallback: full restart
@@ -140,14 +156,18 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     // MARK: - SpeechRecognitionManagerDelegate
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceivePartial text: String) {
-        // Intent guard: stopping/canceling 중이면 무시
         guard controlIntent == .none else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=service_partial sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) intent=\(String(describing: self.controlIntent), privacy: .public) delegateCall=true")
         transcriptState.currentTaskPartial = text
         debouncedWritePartial()
+        delegate?.dictationService(self, didUpdatePartial: currentAbsoluteText)
     }
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceiveFinal text: String) {
         guard controlIntent == .none else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=service_final sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         transcriptState.currentTaskPartial = text
         let finalText = currentAbsoluteText
 
@@ -173,17 +193,23 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     func speechRecognition(_ manager: SpeechRecognitionManager, didFailWith error: Error) {
         // 1차 방어선: pausing/stopping/canceling 중이면 전파 안 함
         guard controlIntent == .none else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.error("event=service_error sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
         writeError(error.localizedDescription)
     }
 
     func speechRecognitionDidReachTimeLimit(_ manager: SpeechRecognitionManager) {
         guard controlIntent == .none else { return }
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=timeLimit sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         performSeamlessRestart()
     }
 
     // MARK: - Seamless Restart
 
     private func performSeamlessRestart() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=seamlessRestart_start sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         controlIntent = .restarting
         transcriptState.committedPrefix = currentAbsoluteText
         transcriptState.currentTaskPartial = ""
@@ -192,9 +218,26 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             try speechManager.start()
             speechManager.delegate = self
             controlIntent = .none
+            // DEBUG TRACE: VoiceRecognition investigation
+            serviceLog.debug("event=seamlessRestart_success sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+            writeState(phase: .recording, partialText: currentAbsoluteText)
+            writeHeartbeatNow(source: "restart")
         } catch {
-            controlIntent = .none
-            writeError(error.localizedDescription)
+            // 1회 재시도
+            do {
+                try speechManager.start()
+                speechManager.delegate = self
+                controlIntent = .none
+                serviceLog.debug("event=seamlessRestart_retry_success sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+                writeState(phase: .recording, partialText: currentAbsoluteText)
+                writeHeartbeatNow(source: "restart")
+            } catch {
+                controlIntent = .none
+                // DEBUG TRACE: VoiceRecognition investigation
+                serviceLog.error("event=seamlessRestart_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
+                writeHeartbeatNow(source: "restart")
+                writeError(error.localizedDescription)
+            }
         }
     }
 
@@ -216,6 +259,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     private func writeState(phase: DictationPhase, partialText: String) {
         transcriptState.version += 1
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=writeState phase=\(String(describing: phase), privacy: .public) ver=\(self.transcriptState.version, privacy: .public) sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         let payload = DictationStatePayload(
             sessionId: transcriptState.sessionId,
             phase: phase,
@@ -257,7 +302,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         debounceTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             guard let self = self, self.isActive, self.controlIntent == .none else { return }
             self.writeState(phase: .recording, partialText: self.currentAbsoluteText)
-            self.writeHeartbeatNow()  // partial write 시 heartbeat 갱신
+            self.writeHeartbeatNow(source: "partial")
             if self.speechManager.isNearTimeLimit {
                 self.performSeamlessRestart()
             }
@@ -266,7 +311,9 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     // MARK: - Heartbeat
 
-    private func writeHeartbeatNow() {
+    private func writeHeartbeatNow(source: String) {
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=heartbeat source=\(source, privacy: .public) sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) active=\(self.isActive, privacy: .public)")
         AppGroupManager.shared.set(Date(), forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt)
         DarwinNotificationBridge.shared.post(DictationConstants.Notifications.heartbeatChanged)
     }
@@ -275,6 +322,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         heartbeatTimer?.invalidate()
         heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             guard let self = self, self.isActive else { return }
+            // DEBUG TRACE: heartbeat source=timer
+            serviceLog.debug("event=heartbeat source=timer sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) active=\(self.isActive, privacy: .public)")
             AppGroupManager.shared.set(Date(), forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt)
             DarwinNotificationBridge.shared.post(DictationConstants.Notifications.heartbeatChanged)
         }
@@ -283,6 +332,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     // MARK: - Cleanup
 
     private func cleanup() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        serviceLog.debug("event=cleanup sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) isActive=\(self.isActive, privacy: .public)")
         isActive = false
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil

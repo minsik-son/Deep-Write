@@ -1,4 +1,11 @@
 import UIKit
+import OSLog
+
+// DEBUG TRACE: VoiceRecognition investigation
+private let extensionLog = Logger(
+    subsystem: "com.translatorkeyboard.keyboard.voice",
+    category: "extension"
+)
 
 protocol DictationSessionCoordinatorDelegate: AnyObject {
     func dictationCoordinator(_ coordinator: DictationSessionCoordinator, didChangeState state: KeyboardDictationState)
@@ -73,9 +80,8 @@ final class DictationSessionCoordinator {
         if let killSignal = killSignal {
             let killAge = Date().timeIntervalSince(killSignal.timestampAt)
             if killAge >= DictationConstants.Limits.killSignalTTL {
-                #if DEBUG
-                print("[DictationCoord] kill signal STALE age=\(killAge)s — clearing")
-                #endif
+                // DEBUG TRACE: VoiceRecognition investigation
+                extensionLog.debug("event=tryRecoverSession killSignal=stale age=\(killAge, privacy: .public)")
                 sharedStore.clearKill()
             }
         }
@@ -88,16 +94,14 @@ final class DictationSessionCoordinator {
             let killAge = Date().timeIntervalSince(killSignal.timestampAt)
             if killAge < DictationConstants.Limits.killSignalTTL {
                 if killSignal.sessionId == payload.sessionId {
-                    #if DEBUG
-                    print("[DictationCoord] recovery REJECT: kill signal matches sessionId=\(payload.sessionId.prefix(8))")
-                    #endif
+                    // DEBUG TRACE: VoiceRecognition investigation
+                    extensionLog.debug("event=tryRecoverSession_reject reason=killSignalMatch sid=\(payload.sessionId.prefix(8), privacy: .public)")
                     sharedStore.clearAllIfStale()
                     sharedStore.clearKill()
                     return false
                 } else {
-                    #if DEBUG
-                    print("[DictationCoord] kill signal sessionId MISMATCH — ignoring")
-                    #endif
+                    // DEBUG TRACE: VoiceRecognition investigation
+                    extensionLog.debug("event=tryRecoverSession killSignal=mismatch")
                 }
             }
         }
@@ -117,9 +121,8 @@ final class DictationSessionCoordinator {
             return false
         }
 
-        #if DEBUG
-        print("[DictationCoord] recovery ACCEPT: phase=\(payload.phase) age=\(age)s sessionId=\(payload.sessionId.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=tryRecoverSession_accept phase=\(String(describing: payload.phase), privacy: .public) age=\(age, privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public)")
 
         // Step 7: Recover session
         sessionId = payload.sessionId
@@ -161,6 +164,9 @@ final class DictationSessionCoordinator {
         sessionId = UUID().uuidString
         lastAppliedVersion = 0
 
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=startDictation sid=\(self.sessionId.prefix(8), privacy: .public) locale=\(locale, privacy: .public) warmStart=\(self.isWarmStart, privacy: .public)")
+
         // Check warm start
         if let heartbeat = AppGroupManager.shared.date(forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt) {
             let age = Date().timeIntervalSince(heartbeat)
@@ -199,6 +205,8 @@ final class DictationSessionCoordinator {
     // MARK: - Send Commands
 
     func sendPause() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=cmd_write action=pause sid=\(self.sessionId.prefix(8), privacy: .public)")
         let command = DictationCommandPayload(
             sessionId: sessionId, action: .pause,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
@@ -207,6 +215,8 @@ final class DictationSessionCoordinator {
     }
 
     func sendResume() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=cmd_write action=resume sid=\(self.sessionId.prefix(8), privacy: .public)")
         let command = DictationCommandPayload(
             sessionId: sessionId, action: .resume,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
@@ -215,6 +225,8 @@ final class DictationSessionCoordinator {
     }
 
     func sendStop() {
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=cmd_write action=stop sid=\(self.sessionId.prefix(8), privacy: .public)")
         let command = DictationCommandPayload(
             sessionId: sessionId, action: .stop,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
@@ -259,6 +271,9 @@ final class DictationSessionCoordinator {
         guard payload.version > lastAppliedVersion else { return }
 
         lastAppliedVersion = payload.version
+
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=handleStateUpdate phase=\(String(describing: payload.phase), privacy: .public) ver=\(payload.version, privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public) extState=\(String(describing: self.state), privacy: .public)")
 
         switch payload.phase {
         case .preparing:
@@ -350,8 +365,12 @@ final class DictationSessionCoordinator {
 
     private func resetHeartbeatWatchdog() {
         heartbeatWatchdogTimer?.invalidate()
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=watchdog_reset sid=\(self.sessionId.prefix(8), privacy: .public) state=\(String(describing: self.state), privacy: .public)")
         heartbeatWatchdogTimer = Timer.scheduledTimer(withTimeInterval: DictationConstants.Limits.watchdogTimeout, repeats: false) { [weak self] _ in
             guard let self = self, self.isActive else { return }
+            // DEBUG TRACE: VoiceRecognition investigation
+            extensionLog.error("event=watchdog_fire sid=\(self.sessionId.prefix(8), privacy: .public) state=\(String(describing: self.state), privacy: .public) reason=appConnectionLost")
             self.transitionTo(.error("App connection lost"))
         }
     }
@@ -390,9 +409,8 @@ final class DictationSessionCoordinator {
     // MARK: - Cleanup
 
     func cleanup() {
-        #if DEBUG
-        print("[DictationCoord] CLEANUP state=\(state)")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.debug("event=cleanup state=\(String(describing: self.state), privacy: .public) sid=\(self.sessionId.prefix(8), privacy: .public)")
 
         stopObservers()
         ackWatchdogTimer?.invalidate()
@@ -413,9 +431,8 @@ final class DictationSessionCoordinator {
 
     /// Force-shutdown: stop immediately, clear all shared state, write kill signal with TTL
     func forceShutdown(reason: String) {
-        #if DEBUG
-        print("[DictationCoord] FORCE_SHUTDOWN reason=\(reason) sessionId=\(sessionId.prefix(8))")
-        #endif
+        // DEBUG TRACE: VoiceRecognition investigation
+        extensionLog.error("event=forceShutdown reason=\(reason, privacy: .public) sid=\(self.sessionId.prefix(8), privacy: .public)")
 
         stopObservers()
         ackWatchdogTimer?.invalidate()
