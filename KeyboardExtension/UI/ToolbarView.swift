@@ -230,32 +230,16 @@ class ToolbarView: UIView {
                     makeToolbarButton(iconName: "icon_toolbar_translation", action: #selector(translationButtonTapped), tag: 6, iconSize: iconRenderSize))
 
             case .calculator:
-                let btn = UIButton(type: .system)
-                let sfConfig = UIImage.SymbolConfiguration(pointSize: iconRenderSize, weight: .regular)
-                btn.setImage(UIImage(systemName: "plus.forwardslash.minus", withConfiguration: sfConfig), for: .normal)
-                btn.tintColor = .label
-                btn.tag = 7
-                btn.addTarget(self, action: #selector(calculatorTapped), for: .touchUpInside)
-                btn.translatesAutoresizingMaskIntoConstraints = false
-                btn.widthAnchor.constraint(equalToConstant: 36).isActive = true
-                btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
-                toolbarStack.addArrangedSubview(btn)
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_calculator", action: #selector(calculatorTapped), tag: 7, iconSize: iconRenderSize))
 
             case .chatReplyGenerator:
                 toolbarStack.addArrangedSubview(
                     makeToolbarButton(iconName: "icon_toolbar_chat_reply", action: #selector(chatReplyGeneratorTapped), tag: 8, iconSize: iconRenderSize))
 
             case .dictation:
-                let btn = UIButton(type: .system)
-                let config = UIImage.SymbolConfiguration(pointSize: iconRenderSize, weight: .medium)
-                btn.setImage(UIImage(systemName: "mic.fill", withConfiguration: config), for: .normal)
-                btn.tintColor = .label
-                btn.tag = 9
-                btn.addTarget(self, action: #selector(dictationTapped), for: .touchUpInside)
-                btn.translatesAutoresizingMaskIntoConstraints = false
-                btn.widthAnchor.constraint(equalToConstant: 34).isActive = true
-                btn.heightAnchor.constraint(equalToConstant: 34).isActive = true
-                toolbarStack.addArrangedSubview(btn)
+                toolbarStack.addArrangedSubview(
+                    makeToolbarButton(iconName: "icon_toolbar_dictation", action: #selector(dictationTapped), tag: 9, iconSize: iconRenderSize))
             }
         }
     }
