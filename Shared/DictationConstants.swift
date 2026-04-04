@@ -23,7 +23,7 @@ enum DictationConstants {
     enum Limits {
         static let maxRecordingSeconds: TimeInterval = 60
         static let seamlessRestartThreshold: TimeInterval = 55
-        static let silenceTimeout: TimeInterval = 30
+        static let silenceTimeout: TimeInterval = 60
         static let partialDebounceMs = 120
         static let extensionPartialThrottleMs = 100
         static let pollingInterval: TimeInterval = 0.5
@@ -31,6 +31,7 @@ enum DictationConstants {
         static let coldStartAckTimeout: TimeInterval = 5.0
         static let warmStartAckTimeout: TimeInterval = 1.5
         static let watchdogTimeout: TimeInterval = 300
+        static let returnGraceTimeout: TimeInterval = 60.0
         static let errorAutoResetDelay: TimeInterval = 3.0
         static let stalePayloadTTL: TimeInterval = 120
         static let killSignalTTL: TimeInterval = 30

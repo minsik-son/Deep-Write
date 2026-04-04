@@ -227,9 +227,10 @@ final class AppDictationRuntime: DictationServiceDelegate {
 
     func startReturnGraceTimer() {
         returnGraceTimer?.invalidate()
+        let timeout = DictationConstants.Limits.returnGraceTimeout
         // DEBUG TRACE: VoiceRecognition investigation
-        runtimeLog.debug("event=timer_start name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) timeout=20 state=\(String(describing: self.state), privacy: .public)")
-        returnGraceTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: false) { [weak self] _ in
+        runtimeLog.debug("event=timer_start name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) timeout=\(timeout, privacy: .public) state=\(String(describing: self.state), privacy: .public)")
+        returnGraceTimer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { [weak self] _ in
             guard let self = self, self.isActive else { return }
             // DEBUG TRACE: VoiceRecognition investigation
             runtimeLog.error("event=timer_fire name=returnGrace sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public) state=\(String(describing: self.state), privacy: .public) reason=userDidNotReturnInTime")

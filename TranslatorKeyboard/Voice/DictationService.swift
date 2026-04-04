@@ -267,6 +267,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             updatedAt: Date()
         )
         try? sharedStore.writeState(payload)
+        DarwinNotificationBridge.shared.post(DictationConstants.Notifications.stateChanged)
         cleanup()
         delegate?.dictationService(self, didFinishWith: finalText)
         delegate?.dictationService(self, didChangePhase: .completed)
@@ -325,6 +326,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
                 updatedAt: Date()
             )
             try? sharedStore.writeState(payload)
+            DarwinNotificationBridge.shared.post(DictationConstants.Notifications.stateChanged)
             cleanup()
             delegate?.dictationService(self, didFinishWith: existingText)
             delegate?.dictationService(self, didChangePhase: .completed)
@@ -404,6 +406,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             updatedAt: Date()
         )
         try? sharedStore.writeState(payload)
+        DarwinNotificationBridge.shared.post(DictationConstants.Notifications.stateChanged)
     }
 
     private func writeError(_ message: String) {
@@ -421,6 +424,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
             updatedAt: Date()
         )
         try? sharedStore.writeState(payload)
+        DarwinNotificationBridge.shared.post(DictationConstants.Notifications.stateChanged)
         cleanup()
         delegate?.dictationService(self, didFailWith: message)
         delegate?.dictationService(self, didChangePhase: .error)
