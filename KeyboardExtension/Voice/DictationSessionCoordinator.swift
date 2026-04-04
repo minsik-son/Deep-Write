@@ -52,7 +52,6 @@ final class DictationSessionCoordinator {
     private var ackWatchdogTimer: Timer?
     private var heartbeatWatchdogTimer: Timer?
     private var errorResetTimer: Timer?
-    private var killObserverToken: UUID?
 
     private var lastAppliedVersion: UInt64 = 0
     private var isWarmStart: Bool = false
@@ -121,10 +120,24 @@ final class DictationSessionCoordinator {
             return false
         }
 
+        // Step 6.5: Heartbeat freshness gate — app/runtime이 실제로 살아있는지 확인
+        if let heartbeatDate = AppGroupManager.shared.date(forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt) {
+            let heartbeatAge = Date().timeIntervalSince(heartbeatDate)
+            guard heartbeatAge < DictationConstants.Limits.warmHeartbeatTTL else {
+                extensionLog.debug("event=tryRecoverSession_reject reason=staleHeartbeat age=\(heartbeatAge, privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public)")
+                return false
+            }
+        } else {
+            // heartbeat가 아예 없으면 앱이 한 번도 heartbeat를 쓴 적 없음
+            extensionLog.debug("event=tryRecoverSession_reject reason=noHeartbeat sid=\(payload.sessionId.prefix(8), privacy: .public)")
+            return false
+        }
+
         // DEBUG TRACE: VoiceRecognition investigation
         extensionLog.debug("event=tryRecoverSession_accept phase=\(String(describing: payload.phase), privacy: .public) age=\(age, privacy: .public) sid=\(payload.sessionId.prefix(8), privacy: .public)")
 
-        // Step 7: Recover session
+        // Step 7: Recover session — delegate/overlay 연결 전이므로 handleStateUpdate 호출하지 않음
+        // caller(KeyboardViewController)가 delegate/overlay 연결 후 replayRecoveredState()로 첫 payload 처리
         sessionId = payload.sessionId
         locale = payload.locale
         lastAppliedVersion = 0
@@ -142,8 +155,12 @@ final class DictationSessionCoordinator {
             break
         }
 
-        handleStateUpdate()
         return true
+    }
+
+    /// Recovery 후 delegate/overlay 연결이 완료된 시점에 첫 payload를 replay
+    func replayRecoveredState() {
+        handleStateUpdate()
     }
 
     // MARK: - Start
@@ -211,7 +228,11 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .pause,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=pause reason=\(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func sendResume() {
@@ -221,7 +242,11 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .resume,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=resume reason=\(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func sendStop() {
@@ -231,7 +256,11 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .stop,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=stop reason=\(error.localizedDescription, privacy: .public)")
+        }
         transitionTo(.finalizing)
     }
 
@@ -240,7 +269,11 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .cancel,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=cancel reason=\(error.localizedDescription, privacy: .public)")
+        }
         cleanup()
         delegate?.dictationCoordinatorDidCancel(self)
     }
@@ -250,7 +283,11 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .clear,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=clear reason=\(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func sendDeleteLastCharacter() {
@@ -260,17 +297,18 @@ final class DictationSessionCoordinator {
             sessionId: sessionId, action: .deleteLastCharacter,
             locale: locale, sourceAppBundleId: nil, requestedAt: Date()
         )
-        try? sharedStore.writeCommand(command)
+        do {
+            try sharedStore.writeCommand(command)
+        } catch {
+            extensionLog.error("event=cmd_write_fail action=deleteLastCharacter reason=\(error.localizedDescription, privacy: .public)")
+        }
     }
 
     // MARK: - Force Finalize (memory warning / dismiss)
 
     func forceFinalizePreservingCurrentState() {
         sendStop()
-        // Give a moment for state to propagate, then cleanup
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.cleanup()
-        }
+        cleanup()  // 즉시 cleanup — memory warning 경로에서 0.5s delay 제거
     }
 
     // MARK: - State Handling
@@ -298,6 +336,7 @@ final class DictationSessionCoordinator {
 
         case .paused:
             transitionTo(.paused)
+            resetHeartbeatWatchdog()  // pause 진입 시 watchdog seed
 
         case .completed:
             let finalText = payload.finalText ?? payload.partialText
@@ -332,9 +371,10 @@ final class DictationSessionCoordinator {
             DispatchQueue.main.async { self?.resetHeartbeatWatchdog() }
         }
 
-        // Polling backup
+        // Polling backup — state update + heartbeat freshness keepalive
         pollingTimer = Timer.scheduledTimer(withTimeInterval: DictationConstants.Limits.pollingInterval, repeats: true) { [weak self] _ in
             self?.handleStateUpdate()
+            self?.refreshWatchdogFromHeartbeatIfNeeded()
         }
     }
 
@@ -383,6 +423,16 @@ final class DictationSessionCoordinator {
             extensionLog.error("event=watchdog_fire sid=\(self.sessionId.prefix(8), privacy: .public) state=\(String(describing: self.state), privacy: .public) reason=appConnectionLost")
             self.transitionTo(.error("App connection lost"))
         }
+    }
+
+    /// Polling backup: heartbeat freshness로 watchdog 연장 — state version 변화 없어도 동작
+    private func refreshWatchdogFromHeartbeatIfNeeded() {
+        guard state == .active || state == .paused else { return }
+        guard let heartbeatDate = AppGroupManager.shared.date(forKey: DictationConstants.DefaultsKeys.dictationHeartbeatAt) else { return }
+        let heartbeatAge = Date().timeIntervalSince(heartbeatDate)
+        guard heartbeatAge < DictationConstants.Limits.watchdogTimeout else { return }
+        // heartbeat가 아직 fresh — watchdog 갱신
+        resetHeartbeatWatchdog()
     }
 
     // MARK: - State Transition
@@ -462,7 +512,11 @@ final class DictationSessionCoordinator {
             reason: reason,
             timestampAt: Date()
         )
-        try? sharedStore.writeKill(killSignal)
+        do {
+            try sharedStore.writeKill(killSignal)
+        } catch {
+            extensionLog.error("event=writeKill_fail reason=\(error.localizedDescription, privacy: .public)")
+        }
 
         let previousState = state
         state = .idle

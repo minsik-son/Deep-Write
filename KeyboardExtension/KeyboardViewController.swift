@@ -3135,6 +3135,9 @@ extension KeyboardViewController {
 
         keyboardLayoutView.isHidden = true
         toolbarView.isHidden = true
+
+        // delegate/overlay 연결 완료 후 첫 recovered payload replay
+        coordinator.replayRecoveredState()
     }
 
     private func dismissDictation() {

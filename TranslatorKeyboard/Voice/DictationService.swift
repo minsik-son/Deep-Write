@@ -36,6 +36,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     private var currentLocale: String = "en-US"
     private var controlIntent: ControlIntent = .none
     private var hasReceivedSpeech: Bool = false
+    private var isAwaitingDeleteResyncResult: Bool = false
+    private var isSpeechPipelinePaused: Bool = false
 
     private(set) var isActive: Bool = false
 
@@ -54,6 +56,8 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         transcriptState = AppTranscriptState(sessionId: sessionId)
         controlIntent = .none
         hasReceivedSpeech = false
+        isAwaitingDeleteResyncResult = false
+        isSpeechPipelinePaused = false
 
         guard speechManager.setLocale(locale) else {
             writeError("Speech recognition not available for \(locale)")
@@ -95,34 +99,50 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=pauseSession sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         controlIntent = .pausing
-        speechManager.pause()
+
+        transcriptState.committedPrefix = currentAbsoluteText
+        transcriptState.currentTaskPartial = ""
+
+        // ★ 변경: stop() 대신 pauseRecognition()
+        // engine pause + task/request 정리 + AudioSession 비활성화
+        speechManager.pauseRecognition()
+        isSpeechPipelinePaused = true
+
         writeState(phase: .paused, partialText: currentAbsoluteText)
         delegate?.dictationService(self, didChangePhase: .paused)
         controlIntent = .none
+        // isActive, heartbeat timer는 유지 — 논리적 세션은 살아있음
     }
 
     func resumeSession() {
         guard isActive else { return }
         // DEBUG TRACE: VoiceRecognition investigation
-        serviceLog.debug("event=resumeSession sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+        serviceLog.debug("event=resumeSession sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) pipelinePaused=\(self.isSpeechPipelinePaused, privacy: .public)")
         controlIntent = .none
 
+        // ★ 1차: resumeRecognition() — engine restart + 새 task/request + AudioSession 재활성화
         do {
-            try speechManager.resumeAfterPause()
+            speechManager.delegate = self
+            try speechManager.resumeRecognition()
+            isSpeechPipelinePaused = false
             writeState(phase: .recording, partialText: currentAbsoluteText)
             writeHeartbeatNow(source: "resume")
             delegate?.dictationService(self, didChangePhase: .recording)
         } catch {
-            // Fallback: full restart
-            transcriptState.committedPrefix = currentAbsoluteText
-            transcriptState.currentTaskPartial = ""
-            speechManager.stop()
+            // ★ 2차 Fallback: 전체 pipeline 재기동
+            // start()는 내부에서 isPaused=false를 설정하므로 (v2 A-1) 상태 안전
+            serviceLog.warning("event=resumeSession_lightFail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public) fallback=fullRestart")
+            speechManager.stop()  // 잔여 상태 완전 정리
             do {
                 try speechManager.start()
                 speechManager.delegate = self
+                isSpeechPipelinePaused = false
                 writeState(phase: .recording, partialText: currentAbsoluteText)
+                writeHeartbeatNow(source: "resume_fallback")
                 delegate?.dictationService(self, didChangePhase: .recording)
             } catch {
+                isSpeechPipelinePaused = false
+                serviceLog.error("event=resumeSession_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
                 writeError(error.localizedDescription)
             }
         }
@@ -153,23 +173,35 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         transcriptState.committedPrefix = editedText
         transcriptState.currentTaskPartial = ""
 
-        // DEBUG TRACE
-        serviceLog.debug("event=deleteLastCharacter sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) remaining=\(editedText.count, privacy: .public)")
+        if !isAwaitingDeleteResyncResult {
+            serviceLog.debug("event=delete_resync_burst_start sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) remaining=\(editedText.count, privacy: .public)")
+            isAwaitingDeleteResyncResult = true
+            controlIntent = .restarting
 
-        // 3. recognizer restart — 다음 partial이 편집된 base 위에 쌓이도록
-        controlIntent = .restarting
-        speechManager.stop()
-        do {
-            try speechManager.start()
-            speechManager.delegate = self
-            controlIntent = .none
-            serviceLog.debug("event=deleteLastCharacter_resync sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
-        } catch {
-            controlIntent = .none
-            serviceLog.error("event=deleteLastCharacter_resync_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
+            // ★ 변경: 경량 restartRecognition() 우선 → 실패 시 full restart fallback
+            if speechManager.restartRecognition() {
+                speechManager.delegate = self
+                controlIntent = .none
+            } else {
+                // Fallback: engine이 죽었으면 full restart
+                serviceLog.warning("event=delete_resync_lightFail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) fallback=fullRestart")
+                speechManager.stop()
+                do {
+                    try speechManager.start()
+                    speechManager.delegate = self
+                    controlIntent = .none
+                } catch {
+                    controlIntent = .none
+                    isAwaitingDeleteResyncResult = false
+                    serviceLog.error("event=delete_resync_burst_start_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
+                }
+            }
+        } else {
+            // Burst 연속 delete — restart 없이 transcript만 편집
+            serviceLog.debug("event=delete_resync_burst_continue sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) remaining=\(editedText.count, privacy: .public)")
         }
 
-        // 4. 상태 전파 — extension에 업데이트된 텍스트 전달
+        // 상태 전파 — extension에 업데이트된 텍스트 전달
         writeState(phase: .recording, partialText: currentAbsoluteText)
         writeHeartbeatNow(source: "deleteChar")
         delegate?.dictationService(self, didUpdatePartial: currentAbsoluteText)
@@ -200,6 +232,10 @@ final class DictationService: SpeechRecognitionManagerDelegate {
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=service_partial sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) intent=\(String(describing: self.controlIntent), privacy: .public) delegateCall=true")
         hasReceivedSpeech = true
+        if isAwaitingDeleteResyncResult {
+            serviceLog.debug("event=delete_resync_burst_end sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+            isAwaitingDeleteResyncResult = false
+        }
         transcriptState.currentTaskPartial = text
         debouncedWritePartial()
         delegate?.dictationService(self, didUpdatePartial: currentAbsoluteText)
@@ -207,6 +243,7 @@ final class DictationService: SpeechRecognitionManagerDelegate {
 
     func speechRecognition(_ manager: SpeechRecognitionManager, didReceiveFinal text: String) {
         guard controlIntent == .none else { return }
+        isAwaitingDeleteResyncResult = false
         // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=service_final sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
         hasReceivedSpeech = true
@@ -301,32 +338,32 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     // MARK: - Seamless Restart
 
     private func performSeamlessRestart() {
-        // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=seamlessRestart_start sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+        isAwaitingDeleteResyncResult = false
         controlIntent = .restarting
         transcriptState.committedPrefix = currentAbsoluteText
         transcriptState.currentTaskPartial = ""
-        speechManager.stop()
-        do {
-            try speechManager.start()
+
+        // ★ 변경: 경량 restartRecognition() 우선 → 실패 시 full restart fallback
+        if speechManager.restartRecognition() {
             speechManager.delegate = self
             controlIntent = .none
-            // DEBUG TRACE: VoiceRecognition investigation
             serviceLog.debug("event=seamlessRestart_success sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
             writeState(phase: .recording, partialText: currentAbsoluteText)
             writeHeartbeatNow(source: "restart")
-        } catch {
-            // 1회 재시도
+        } else {
+            // Fallback: full pipeline restart
+            serviceLog.warning("event=seamlessRestart_lightFail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) fallback=fullRestart")
+            speechManager.stop()
             do {
                 try speechManager.start()
                 speechManager.delegate = self
                 controlIntent = .none
-                serviceLog.debug("event=seamlessRestart_retry_success sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+                serviceLog.debug("event=seamlessRestart_fallback_success sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
                 writeState(phase: .recording, partialText: currentAbsoluteText)
                 writeHeartbeatNow(source: "restart")
             } catch {
                 controlIntent = .none
-                // DEBUG TRACE: VoiceRecognition investigation
                 serviceLog.error("event=seamlessRestart_fail sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) reason=\(error.localizedDescription, privacy: .public)")
                 writeHeartbeatNow(source: "restart")
                 writeError(error.localizedDescription)
@@ -425,9 +462,17 @@ final class DictationService: SpeechRecognitionManagerDelegate {
     // MARK: - Cleanup
 
     private func cleanup() {
-        // DEBUG TRACE: VoiceRecognition investigation
         serviceLog.debug("event=cleanup sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public) isActive=\(self.isActive, privacy: .public)")
+
+        // ★ v2: paused 상태에서 cleanup 진입 시 engine 리소스 확실히 해제
+        if isSpeechPipelinePaused {
+            serviceLog.debug("event=cleanup_from_paused sid=\(self.transcriptState.sessionId.prefix(8), privacy: .public)")
+            speechManager.stop()
+        }
+
         isActive = false
+        isAwaitingDeleteResyncResult = false
+        isSpeechPipelinePaused = false
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil
         debounceTimer?.invalidate()

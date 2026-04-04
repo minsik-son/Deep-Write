@@ -5,7 +5,6 @@ enum DictationConstants {
         static let commandChanged = "com.translatorkeyboard.dictation.command"
         static let stateChanged = "com.translatorkeyboard.dictation.state"
         static let heartbeatChanged = "com.translatorkeyboard.dictation.heartbeat"
-        static let cancelChanged = "com.translatorkeyboard.dictation.cancel"
         static let killChanged = "com.translatorkeyboard.dictation.kill"
     }
 

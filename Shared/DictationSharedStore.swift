@@ -7,6 +7,17 @@ private let storeLog = Logger(
     category: "store"
 )
 
+enum DictationSharedStoreError: LocalizedError {
+    case containerUnavailable(target: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .containerUnavailable(let target):
+            return "App group container unavailable for \(target)"
+        }
+    }
+}
+
 final class DictationSharedStore {
 
     private let fileManager = FileManager.default
@@ -15,18 +26,18 @@ final class DictationSharedStore {
         fileManager.containerURL(forSecurityApplicationGroupIdentifier: AppConstants.appGroupIdentifier)
     }
 
-    private var commandFileURL: URL? {
-        containerURL?.appendingPathComponent(DictationConstants.SharedFiles.command)
-    }
-
-    private var stateFileURL: URL? {
-        containerURL?.appendingPathComponent(DictationConstants.SharedFiles.state)
+    private func resolveURL(file: String, target: String) throws -> URL {
+        guard let url = containerURL?.appendingPathComponent(file) else {
+            storeLog.error("event=containerUnavailable target=\(target, privacy: .public)")
+            throw DictationSharedStoreError.containerUnavailable(target: target)
+        }
+        return url
     }
 
     // MARK: - Write
 
     func writeCommand(_ payload: DictationCommandPayload) throws {
-        guard let url = commandFileURL else { return }
+        let url = try resolveURL(file: DictationConstants.SharedFiles.command, target: "command")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(payload)
@@ -38,7 +49,7 @@ final class DictationSharedStore {
     }
 
     func writeState(_ payload: DictationStatePayload) throws {
-        guard let url = stateFileURL else { return }
+        let url = try resolveURL(file: DictationConstants.SharedFiles.state, target: "state")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(payload)
@@ -53,7 +64,7 @@ final class DictationSharedStore {
 
     func readCommand() -> DictationCommandPayload? {
         return autoreleasepool {
-            guard let url = commandFileURL else { return nil }
+            guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.command) else { return nil }
             guard let data = try? Data(contentsOf: url) else { return nil }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
@@ -63,7 +74,7 @@ final class DictationSharedStore {
 
     func readState() -> DictationStatePayload? {
         return autoreleasepool {
-            guard let url = stateFileURL else { return nil }
+            guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.state) else { return nil }
             guard let data = try? Data(contentsOf: url) else { return nil }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
@@ -76,14 +87,14 @@ final class DictationSharedStore {
     func clearCommand() {
         // DEBUG TRACE: VoiceRecognition investigation
         storeLog.debug("event=clearCommand")
-        guard let url = commandFileURL else { return }
+        guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.command) else { return }
         try? fileManager.removeItem(at: url)
     }
 
     func clearState() {
         // DEBUG TRACE: VoiceRecognition investigation
         storeLog.debug("event=clearState")
-        guard let url = stateFileURL else { return }
+        guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.state) else { return }
         try? fileManager.removeItem(at: url)
     }
 
@@ -105,12 +116,8 @@ final class DictationSharedStore {
 
     // MARK: - Kill Signal
 
-    private var killFileURL: URL? {
-        containerURL?.appendingPathComponent(DictationConstants.SharedFiles.kill)
-    }
-
     func writeKill(_ payload: DictationKillSignal) throws {
-        guard let url = killFileURL else { return }
+        let url = try resolveURL(file: DictationConstants.SharedFiles.kill, target: "kill")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(payload)
@@ -123,7 +130,7 @@ final class DictationSharedStore {
 
     func readKill() -> DictationKillSignal? {
         return autoreleasepool {
-            guard let url = killFileURL else { return nil }
+            guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.kill) else { return nil }
             guard let data = try? Data(contentsOf: url) else { return nil }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
@@ -134,7 +141,7 @@ final class DictationSharedStore {
     func clearKill() {
         // DEBUG TRACE: VoiceRecognition investigation
         storeLog.debug("event=clearKill")
-        guard let url = killFileURL else { return }
+        guard let url = containerURL?.appendingPathComponent(DictationConstants.SharedFiles.kill) else { return }
         try? fileManager.removeItem(at: url)
     }
 

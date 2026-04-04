@@ -19,7 +19,6 @@ enum StopReason {
     case userDidNotReturnInTime
     case backgroundInterrupted
     case memoryWarning
-    case sceneDisconnect
 }
 
 enum CancelReason {
@@ -74,7 +73,6 @@ final class AppDictationRuntime: DictationServiceDelegate {
     private let dictationService = DictationService()
     private let sharedStore = DictationSharedStore()
 
-    private var heartbeatTimer: Timer?
     private var returnGraceTimer: Timer?
     private var commandObserverToken: UUID?
 
@@ -175,7 +173,8 @@ final class AppDictationRuntime: DictationServiceDelegate {
         // DEBUG TRACE: VoiceRecognition investigation
         runtimeLog.debug("event=resumeSession sid=\(sid.prefix(8), privacy: .public)")
         dictationService.resumeSession()
-        state = .recording(sessionId: sid)
+        // state = .recording은 여기서 설정하지 않음
+        // didChangePhase(.recording) delegate callback에서 확인 후 전이
     }
 
     // MARK: - Clear
@@ -203,10 +202,6 @@ final class AppDictationRuntime: DictationServiceDelegate {
         runtimeLog.debug("event=appWillEnterForeground state=\(String(describing: self.state), privacy: .public) sid=\(self.activeSessionId?.prefix(8) ?? "nil", privacy: .public)")
         // Check for pending kill signals from extension
         checkKillSignal()
-    }
-
-    func handleSceneDidDisconnect() {
-        // Process still alive — runtime keeps running
     }
 
     func handleMemoryWarning() {
@@ -398,8 +393,6 @@ final class AppDictationRuntime: DictationServiceDelegate {
         // DEBUG TRACE: VoiceRecognition investigation
         runtimeLog.debug("event=cleanupSession sid=\(self.activeSessionId?.prefix(8) ?? "none", privacy: .public)")
 
-        heartbeatTimer?.invalidate()
-        heartbeatTimer = nil
         returnGraceTimer?.invalidate()
         returnGraceTimer = nil
 
