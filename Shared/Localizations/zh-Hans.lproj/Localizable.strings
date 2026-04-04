@@ -68,6 +68,7 @@
 "keyboard.error.timeout" = "翻译超时";
 "keyboard.error.offline" = "当前处于离线状态";
 "keyboard.error.rate_limited" = "请稍后再试";
+"dictation.error.voice_timeout" = "未检测到语音，已关闭语音输入";
 "keyboard.error.translate_failed" = "翻译失败";
 "keyboard.status.translating" = "翻译中...";
 "keyboard.error.correct_failed" = "校正失败";

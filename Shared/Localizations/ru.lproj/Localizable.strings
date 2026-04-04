@@ -68,6 +68,7 @@
 "keyboard.error.timeout" = "Время перевода истекло";
 "keyboard.error.offline" = "Нет подключения к интернету";
 "keyboard.error.rate_limited" = "Попробуйте позже";
+"dictation.error.voice_timeout" = "Голосовой ввод закрыт из-за бездействия";
 "keyboard.error.translate_failed" = "Ошибка перевода";
 "keyboard.status.translating" = "Перевод...";
 "keyboard.error.correct_failed" = "Ошибка исправления";

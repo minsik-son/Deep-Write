@@ -68,6 +68,7 @@
 "keyboard.error.timeout" = "Translation timed out";
 "keyboard.error.offline" = "You are offline";
 "keyboard.error.rate_limited" = "Please try again later";
+"dictation.error.voice_timeout" = "Voice closed due to inactivity";
 "keyboard.error.translate_failed" = "Translation failed";
 "keyboard.status.translating" = "Translating...";
 "keyboard.error.correct_failed" = "Correction failed";

@@ -68,6 +68,7 @@
 "keyboard.error.timeout" = "Übersetzung abgelaufen";
 "keyboard.error.offline" = "Sie sind offline";
 "keyboard.error.rate_limited" = "Bitte versuchen Sie es später erneut";
+"dictation.error.voice_timeout" = "Spracheingabe wegen Inaktivität geschlossen";
 "keyboard.error.translate_failed" = "Übersetzung fehlgeschlagen";
 "keyboard.status.translating" = "Übersetze...";
 "keyboard.error.correct_failed" = "Korrektur fehlgeschlagen";

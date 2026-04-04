@@ -68,6 +68,7 @@
 "keyboard.error.timeout" = "La traduction a expiré";
 "keyboard.error.offline" = "Vous êtes hors ligne";
 "keyboard.error.rate_limited" = "Veuillez réessayer plus tard";
+"dictation.error.voice_timeout" = "Voix fermée pour cause d'inactivité";
 "keyboard.error.translate_failed" = "La traduction a échoué";
 "keyboard.status.translating" = "Traduction en cours...";
 "keyboard.error.correct_failed" = "La correction a échoué";

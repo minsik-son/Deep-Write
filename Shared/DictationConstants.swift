@@ -30,7 +30,7 @@ enum DictationConstants {
         static let warmHeartbeatTTL: TimeInterval = 10
         static let coldStartAckTimeout: TimeInterval = 5.0
         static let warmStartAckTimeout: TimeInterval = 1.5
-        static let watchdogTimeout: TimeInterval = 5.0
+        static let watchdogTimeout: TimeInterval = 300
         static let errorAutoResetDelay: TimeInterval = 3.0
         static let stalePayloadTTL: TimeInterval = 120
         static let killSignalTTL: TimeInterval = 30

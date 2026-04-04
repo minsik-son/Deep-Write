@@ -421,7 +421,7 @@ final class DictationSessionCoordinator {
             guard let self = self, self.isActive else { return }
             // DEBUG TRACE: VoiceRecognition investigation
             extensionLog.error("event=watchdog_fire sid=\(self.sessionId.prefix(8), privacy: .public) state=\(String(describing: self.state), privacy: .public) reason=appConnectionLost")
-            self.transitionTo(.error("App connection lost"))
+            self.transitionTo(.error(L("dictation.error.voice_timeout")))
         }
     }
 
