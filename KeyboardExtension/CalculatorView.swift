@@ -185,10 +185,10 @@ final class CalculatorView: UIView {
         NSLayoutConstraint.activate([leadingFill, trailingFill])
 
         let buttonData: [[(String, Int, ButtonType)]] = [
-            [("7", 7, .number), ("8", 8, .number), ("9", 9, .number), ("\u{232B}", 100, .function), ("\u{00F7}", 201, .calcOperator)],
-            [("4", 4, .number), ("5", 5, .number), ("6", 6, .number), ("AC", 101, .function), ("\u{00D7}", 202, .calcOperator)],
-            [("1", 1, .number), ("2", 2, .number), ("3", 3, .number), ("%", 102, .function), ("\u{2212}", 203, .calcOperator)],
-            [("\u{00B1}", 103, .function), ("0", 0, .number), (".", 10, .number), ("=", 300, .equals), ("+", 200, .calcOperator)],
+            [("7", 7, .number), ("8", 8, .number), ("9", 9, .number), ("\u{00F7}", 201, .calcOperator), ("\u{232B}", 100, .function)],
+            [("4", 4, .number), ("5", 5, .number), ("6", 6, .number), ("\u{00D7}", 202, .calcOperator), ("AC", 101, .function)],
+            [("1", 1, .number), ("2", 2, .number), ("3", 3, .number), ("\u{2212}", 203, .calcOperator), ("%", 102, .function)],
+            [("\u{00B1}", 103, .function), ("0", 0, .number), (".", 10, .number), ("+", 200, .calcOperator), ("=", 300, .equals)],
         ]
 
         for rowData in buttonData {
