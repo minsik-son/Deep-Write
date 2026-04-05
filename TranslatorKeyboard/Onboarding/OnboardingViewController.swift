@@ -583,16 +583,20 @@ private extension OnboardingViewController {
         stepStack.spacing = 20
         stepStack.translatesAutoresizingMaskIntoConstraints = false
 
-        // Settings Animation Preview
+        // Settings Animation Preview — previewContainer로 여백 가운데 배치
         let animView = SetupSettingsAnimationView()
         animView.translatesAutoresizingMaskIntoConstraints = false
+
+        let previewContainer = UIView()
+        previewContainer.translatesAutoresizingMaskIntoConstraints = false
+        previewContainer.addSubview(animView)
 
         vc.view.addSubview(titleLabel)
         vc.view.addSubview(trustHeaderStack)
         vc.view.addSubview(trustStack)
         vc.view.addSubview(divider)
         vc.view.addSubview(stepStack)
-        vc.view.addSubview(animView)
+        vc.view.addSubview(previewContainer)
 
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 40),
@@ -615,13 +619,21 @@ private extension OnboardingViewController {
             stepStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
             stepStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
 
-            animView.topAnchor.constraint(equalTo: stepStack.bottomAnchor, constant: 20),
-            animView.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-            animView.widthAnchor.constraint(equalTo: vc.view.widthAnchor, multiplier: 0.55),
-            animView.heightAnchor.constraint(equalToConstant: 160),
+            // previewContainer: stepStack 아래 ~ 화면 하단 사이의 남는 공간
+            previewContainer.topAnchor.constraint(greaterThanOrEqualTo: stepStack.bottomAnchor, constant: 16),
+            previewContainer.bottomAnchor.constraint(lessThanOrEqualTo: vc.view.bottomAnchor, constant: -12),
+            previewContainer.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor),
+            previewContainer.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor),
+
+            // animView: container 내에서 가운데 정렬
+            animView.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
+            animView.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
+            animView.widthAnchor.constraint(equalTo: vc.view.widthAnchor, multiplier: 0.6),
+            animView.heightAnchor.constraint(equalToConstant: 210),
+            animView.topAnchor.constraint(greaterThanOrEqualTo: previewContainer.topAnchor),
+            animView.bottomAnchor.constraint(lessThanOrEqualTo: previewContainer.bottomAnchor),
         ])
 
-        // 애니메이션 시작/정지 — viewDidAppear/Disappear 대응
         animView.startLoop()
 
         registerForegroundObserver()

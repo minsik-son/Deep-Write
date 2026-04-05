@@ -33,6 +33,14 @@
 "onboarding.setup.anim.alert.body" = "翻訳機能にはフルアクセスが必要です。";
 "onboarding.setup.anim.alert.deny" = "許可しない";
 "onboarding.setup.anim.alert.allow" = "許可";
+"onboarding.setup.anim.section.access" = "Translator Keyboardのアクセス許可";
+"onboarding.setup.anim.section.language" = "優先する言語";
+"onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
+"onboarding.setup.anim.row.search" = "検索";
+"onboarding.setup.anim.row.cellular" = "モバイルデータ通信";
+"onboarding.setup.anim.row.language" = "言語";
+"onboarding.setup.anim.language.current" = "日本語";
+"onboarding.setup.anim.detail.note" = "サードパーティのキーボードは入力データにアクセスできます。";
 "onboarding.subscription.restore" = "復元";
 "onboarding.subscription.title" = "Proにアップグレード";
 "onboarding.subscription.benefit.unlimited" = "無制限翻訳";

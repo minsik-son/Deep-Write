@@ -33,6 +33,14 @@
 "onboarding.setup.anim.alert.body" = "Для перевода требуется полный доступ.";
 "onboarding.setup.anim.alert.deny" = "Не разрешать";
 "onboarding.setup.anim.alert.allow" = "Разрешить";
+"onboarding.setup.anim.section.access" = "Доступ Translator Keyboard";
+"onboarding.setup.anim.section.language" = "Предпочитаемый язык";
+"onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence и Siri";
+"onboarding.setup.anim.row.search" = "Поиск";
+"onboarding.setup.anim.row.cellular" = "Сотовые данные";
+"onboarding.setup.anim.row.language" = "Язык";
+"onboarding.setup.anim.language.current" = "Русский";
+"onboarding.setup.anim.detail.note" = "Сторонние клавиатуры могут получить доступ ко всем введённым данным.";
 "onboarding.subscription.restore" = "Восстановить";
 "onboarding.subscription.title" = "Обновить до Pro";
 "onboarding.subscription.benefit.unlimited" = "Безлимитный перевод";

@@ -33,6 +33,14 @@
 "onboarding.setup.anim.alert.body" = "번역 기능을 사용하려면 전체 접근이 필요합니다.";
 "onboarding.setup.anim.alert.deny" = "허용 안 함";
 "onboarding.setup.anim.alert.allow" = "허용";
+"onboarding.setup.anim.section.access" = "Translator Keyboard 접근 허용";
+"onboarding.setup.anim.section.language" = "선호하는 언어";
+"onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence 및 Siri";
+"onboarding.setup.anim.row.search" = "검색";
+"onboarding.setup.anim.row.cellular" = "셀룰러 데이터";
+"onboarding.setup.anim.row.language" = "언어";
+"onboarding.setup.anim.language.current" = "한국어";
+"onboarding.setup.anim.detail.note" = "타사 키보드는 입력하는 모든 데이터에 접근할 수 있습니다.";
 "onboarding.subscription.restore" = "복원";
 "onboarding.subscription.title" = "Pro로 업그레이드";
 "onboarding.subscription.benefit.unlimited" = "무제한 번역";

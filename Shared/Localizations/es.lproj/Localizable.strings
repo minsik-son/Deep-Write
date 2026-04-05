@@ -33,6 +33,14 @@
 "onboarding.setup.anim.alert.body" = "Se requiere acceso completo para las funciones de traducción.";
 "onboarding.setup.anim.alert.deny" = "No permitir";
 "onboarding.setup.anim.alert.allow" = "Permitir";
+"onboarding.setup.anim.section.access" = "Acceso de Translator Keyboard";
+"onboarding.setup.anim.section.language" = "Idioma preferido";
+"onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence y Siri";
+"onboarding.setup.anim.row.search" = "Buscar";
+"onboarding.setup.anim.row.cellular" = "Datos móviles";
+"onboarding.setup.anim.row.language" = "Idioma";
+"onboarding.setup.anim.language.current" = "Español";
+"onboarding.setup.anim.detail.note" = "Los teclados de terceros pueden acceder a todos los datos introducidos.";
 "onboarding.subscription.restore" = "Restaurar";
 "onboarding.subscription.title" = "Actualizar a Pro";
 "onboarding.subscription.benefit.unlimited" = "Traducción ilimitada";
