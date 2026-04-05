@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "Настройка клавиатуры";
 "onboarding.permission.step1" = "Перейдите в Настройки → Основные → Клавиатура → Добавить клавиатуру\nи добавьте Translator Keyboard";
 "onboarding.permission.step2" = "Включите «Полный доступ»\n(Необходим для перевода)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "Клавиатура";
+"onboarding.setup.anim.row.keyboard" = "Клавиатура";
+"onboarding.setup.anim.row.full_access" = "Полный доступ";
+"onboarding.setup.anim.alert.title" = "Разрешить полный доступ?";
+"onboarding.setup.anim.alert.body" = "Для перевода требуется полный доступ.";
+"onboarding.setup.anim.alert.deny" = "Не разрешать";
+"onboarding.setup.anim.alert.allow" = "Разрешить";
 "onboarding.subscription.restore" = "Восстановить";
 "onboarding.subscription.title" = "Обновить до Pro";
 "onboarding.subscription.benefit.unlimited" = "Безлимитный перевод";

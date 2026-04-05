@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "Configuration du clavier";
 "onboarding.permission.step1" = "Allez dans Réglages → Général → Clavier → Ajouter un clavier\net ajoutez Translator Keyboard";
 "onboarding.permission.step2" = "Activez « Accès complet »\n(Requis pour la traduction)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "Clavier";
+"onboarding.setup.anim.row.keyboard" = "Clavier";
+"onboarding.setup.anim.row.full_access" = "Accès complet";
+"onboarding.setup.anim.alert.title" = "Autoriser l'accès complet ?";
+"onboarding.setup.anim.alert.body" = "L'accès complet est nécessaire pour la traduction.";
+"onboarding.setup.anim.alert.deny" = "Ne pas autoriser";
+"onboarding.setup.anim.alert.allow" = "Autoriser";
 "onboarding.subscription.restore" = "Restaurer";
 "onboarding.subscription.title" = "Passer à Pro";
 "onboarding.subscription.benefit.unlimited" = "Traduction illimitée";

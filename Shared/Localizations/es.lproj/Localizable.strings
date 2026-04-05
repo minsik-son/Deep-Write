@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "Configuración del teclado";
 "onboarding.permission.step1" = "Ve a Ajustes → General → Teclado → Añadir teclado\ny añade Translator Keyboard";
 "onboarding.permission.step2" = "Activa 'Permitir acceso completo'\n(Necesario para la traducción)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "Teclado";
+"onboarding.setup.anim.row.keyboard" = "Teclado";
+"onboarding.setup.anim.row.full_access" = "Permitir acceso completo";
+"onboarding.setup.anim.alert.title" = "¿Permitir acceso completo?";
+"onboarding.setup.anim.alert.body" = "Se requiere acceso completo para las funciones de traducción.";
+"onboarding.setup.anim.alert.deny" = "No permitir";
+"onboarding.setup.anim.alert.allow" = "Permitir";
 "onboarding.subscription.restore" = "Restaurar";
 "onboarding.subscription.title" = "Actualizar a Pro";
 "onboarding.subscription.benefit.unlimited" = "Traducción ilimitada";

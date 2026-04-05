@@ -583,33 +583,46 @@ private extension OnboardingViewController {
         stepStack.spacing = 20
         stepStack.translatesAutoresizingMaskIntoConstraints = false
 
+        // Settings Animation Preview
+        let animView = SetupSettingsAnimationView()
+        animView.translatesAutoresizingMaskIntoConstraints = false
+
         vc.view.addSubview(titleLabel)
         vc.view.addSubview(trustHeaderStack)
         vc.view.addSubview(trustStack)
         vc.view.addSubview(divider)
         vc.view.addSubview(stepStack)
+        vc.view.addSubview(animView)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 60),
+            titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 40),
             titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 24),
             titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -24),
 
-            trustHeaderStack.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 32),
+            trustHeaderStack.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 24),
             trustHeaderStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
 
-            trustStack.topAnchor.constraint(equalTo: trustHeaderStack.bottomAnchor, constant: 16),
+            trustStack.topAnchor.constraint(equalTo: trustHeaderStack.bottomAnchor, constant: 12),
             trustStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
             trustStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
 
-            divider.topAnchor.constraint(equalTo: trustStack.bottomAnchor, constant: 28),
+            divider.topAnchor.constraint(equalTo: trustStack.bottomAnchor, constant: 20),
             divider.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
             divider.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
             divider.heightAnchor.constraint(equalToConstant: 0.5),
 
-            stepStack.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 28),
+            stepStack.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 20),
             stepStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
             stepStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
+
+            animView.topAnchor.constraint(equalTo: stepStack.bottomAnchor, constant: 20),
+            animView.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+            animView.widthAnchor.constraint(equalTo: vc.view.widthAnchor, multiplier: 0.55),
+            animView.heightAnchor.constraint(equalToConstant: 160),
         ])
+
+        // 애니메이션 시작/정지 — viewDidAppear/Disappear 대응
+        animView.startLoop()
 
         registerForegroundObserver()
         return vc

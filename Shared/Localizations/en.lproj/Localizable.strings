@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "Keyboard Setup";
 "onboarding.permission.step1" = "Go to Settings → General → Keyboard → Add Keyboard\nand add Translator Keyboard";
 "onboarding.permission.step2" = "Enable 'Allow Full Access'\n(Required for translation)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "Keyboard";
+"onboarding.setup.anim.row.keyboard" = "Keyboard";
+"onboarding.setup.anim.row.full_access" = "Allow Full Access";
+"onboarding.setup.anim.alert.title" = "Allow Full Access?";
+"onboarding.setup.anim.alert.body" = "Full access is required for translation features.";
+"onboarding.setup.anim.alert.deny" = "Don't Allow";
+"onboarding.setup.anim.alert.allow" = "Allow";
 "onboarding.subscription.restore" = "Restore";
 "onboarding.subscription.title" = "Upgrade to Pro";
 "onboarding.subscription.benefit.unlimited" = "Unlimited Translation";

@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "키보드 설정";
 "onboarding.permission.step1" = "설정 → 일반 → 키보드 → 키보드 추가에서\nTranslator Keyboard를 추가하세요";
 "onboarding.permission.step2" = "'전체 접근 허용'을 켜주세요\n(번역 기능에 필요합니다)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "키보드";
+"onboarding.setup.anim.row.keyboard" = "키보드";
+"onboarding.setup.anim.row.full_access" = "전체 접근 허용";
+"onboarding.setup.anim.alert.title" = "전체 접근을 허용하시겠습니까?";
+"onboarding.setup.anim.alert.body" = "번역 기능을 사용하려면 전체 접근이 필요합니다.";
+"onboarding.setup.anim.alert.deny" = "허용 안 함";
+"onboarding.setup.anim.alert.allow" = "허용";
 "onboarding.subscription.restore" = "복원";
 "onboarding.subscription.title" = "Pro로 업그레이드";
 "onboarding.subscription.benefit.unlimited" = "무제한 번역";

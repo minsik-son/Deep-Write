@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "键盘设置";
 "onboarding.permission.step1" = "前往设置 → 通用 → 键盘 → 添加新键盘\n添加 Translator Keyboard";
 "onboarding.permission.step2" = "请开启\"允许完全访问\"\n（翻译功能需要此权限）";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "键盘";
+"onboarding.setup.anim.row.keyboard" = "键盘";
+"onboarding.setup.anim.row.full_access" = "允许完全访问";
+"onboarding.setup.anim.alert.title" = "允许完全访问？";
+"onboarding.setup.anim.alert.body" = "翻译功能需要完全访问权限。";
+"onboarding.setup.anim.alert.deny" = "不允许";
+"onboarding.setup.anim.alert.allow" = "允许";
 "onboarding.subscription.restore" = "恢复购买";
 "onboarding.subscription.title" = "升级到 Pro";
 "onboarding.subscription.benefit.unlimited" = "无限翻译";

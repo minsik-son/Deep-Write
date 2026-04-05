@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "キーボード設定";
 "onboarding.permission.step1" = "設定 → 一般 → キーボード → キーボード追加で\nTranslator Keyboardを追加してください";
 "onboarding.permission.step2" = "「フルアクセスを許可」をオンにしてください\n（翻訳機能に必要です）";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "キーボード";
+"onboarding.setup.anim.row.keyboard" = "キーボード";
+"onboarding.setup.anim.row.full_access" = "フルアクセスを許可";
+"onboarding.setup.anim.alert.title" = "フルアクセスを許可しますか？";
+"onboarding.setup.anim.alert.body" = "翻訳機能にはフルアクセスが必要です。";
+"onboarding.setup.anim.alert.deny" = "許可しない";
+"onboarding.setup.anim.alert.allow" = "許可";
 "onboarding.subscription.restore" = "復元";
 "onboarding.subscription.title" = "Proにアップグレード";
 "onboarding.subscription.benefit.unlimited" = "無制限翻訳";

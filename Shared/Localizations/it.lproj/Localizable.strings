@@ -25,6 +25,14 @@
 "onboarding.permission.title" = "Configurazione tastiera";
 "onboarding.permission.step1" = "Vai su Impostazioni → Generali → Tastiera → Aggiungi tastiera\ne aggiungi Translator Keyboard";
 "onboarding.permission.step2" = "Attiva \"Accesso completo\"\n(Necessario per la traduzione)";
+"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.keyboard" = "Tastiera";
+"onboarding.setup.anim.row.keyboard" = "Tastiera";
+"onboarding.setup.anim.row.full_access" = "Accesso completo";
+"onboarding.setup.anim.alert.title" = "Consentire l'accesso completo?";
+"onboarding.setup.anim.alert.body" = "L'accesso completo è necessario per la traduzione.";
+"onboarding.setup.anim.alert.deny" = "Non consentire";
+"onboarding.setup.anim.alert.allow" = "Consenti";
 "onboarding.subscription.restore" = "Ripristina";
 "onboarding.subscription.title" = "Passa a Pro";
 "onboarding.subscription.benefit.unlimited" = "Traduzione illimitata";
