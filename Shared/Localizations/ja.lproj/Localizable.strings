@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "オンボーディングをやり直す";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "どこでも翻訳できるキーボード";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "手の中のオールインワンキーボード";
 "onboarding.permission.title" = "キーボード設定";
 "onboarding.permission.step1" = "設定 → 一般 → キーボード → キーボード追加で\nTranslator Keyboardを追加してください";
 "onboarding.permission.step2" = "「フルアクセスを許可」をオンにしてください\n（翻訳機能に必要です）";

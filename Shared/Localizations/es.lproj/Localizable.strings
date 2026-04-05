@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Repetir introducción";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Un teclado para traducir en cualquier lugar";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "Tu teclado todo en uno";
 "onboarding.permission.title" = "Configuración del teclado";
 "onboarding.permission.step1" = "Ve a Ajustes → General → Teclado → Añadir teclado\ny añade Translator Keyboard";
 "onboarding.permission.step2" = "Activa 'Permitir acceso completo'\n(Necesario para la traducción)";

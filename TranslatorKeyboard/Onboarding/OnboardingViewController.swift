@@ -454,18 +454,25 @@ class OnboardingViewController: UIViewController {
 private extension OnboardingViewController {
     func makeWelcomePage() -> UIViewController {
         let vc = UIViewController()
-        vc.view.backgroundColor = .systemBackground
+        vc.view.backgroundColor = .white
 
-        let iconView = UIImageView()
-        iconView.image = UIImage(systemName: "globe")
-        iconView.tintColor = .systemBlue
-        iconView.contentMode = .scaleAspectFit
-        iconView.translatesAutoresizingMaskIntoConstraints = false
+        // Hero image — 제공된 최종 히어로 이미지, 없으면 fallback
+        let heroImageView = UIImageView()
+        if let heroImage = UIImage(named: "onboarding_welcome_hero_v1") {
+            heroImageView.image = heroImage
+            heroImageView.contentMode = .scaleAspectFit
+        } else {
+            heroImageView.image = UIImage(systemName: "globe")
+            heroImageView.tintColor = .systemBlue
+            heroImageView.contentMode = .scaleAspectFit
+        }
+        heroImageView.translatesAutoresizingMaskIntoConstraints = false
 
         let titleLabel = UILabel()
-        titleLabel.text = "Translator Keyboard"
-        titleLabel.font = .systemFont(ofSize: 30, weight: .bold)
+        titleLabel.text = L("onboarding.welcome.title")
+        titleLabel.font = .systemFont(ofSize: 32, weight: .bold)
         titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 0
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         let subtitleLabel = UILabel()
@@ -473,19 +480,25 @@ private extension OnboardingViewController {
         subtitleLabel.font = .systemFont(ofSize: 17)
         subtitleLabel.textColor = .secondaryLabel
         subtitleLabel.textAlignment = .center
+        subtitleLabel.numberOfLines = 0
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        vc.view.addSubview(iconView)
+        vc.view.addSubview(heroImageView)
         vc.view.addSubview(titleLabel)
         vc.view.addSubview(subtitleLabel)
 
-        NSLayoutConstraint.activate([
-            iconView.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-            iconView.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor, constant: -80),
-            iconView.widthAnchor.constraint(equalToConstant: 100),
-            iconView.heightAnchor.constraint(equalToConstant: 100),
+        // 이미지가 가로형이므로 좌우 여백 유지하며 적절한 크기로 표시
+        let isHeroAsset = UIImage(named: "onboarding_welcome_hero_v1") != nil
+        let imageHeight: CGFloat = isHeroAsset ? 220 : 100
 
-            titleLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 24),
+        NSLayoutConstraint.activate([
+            heroImageView.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+            heroImageView.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 60),
+            heroImageView.leadingAnchor.constraint(greaterThanOrEqualTo: vc.view.leadingAnchor, constant: 24),
+            heroImageView.trailingAnchor.constraint(lessThanOrEqualTo: vc.view.trailingAnchor, constant: -24),
+            heroImageView.heightAnchor.constraint(equalToConstant: imageHeight),
+
+            titleLabel.topAnchor.constraint(equalTo: heroImageView.bottomAnchor, constant: 32),
             titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 24),
             titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -24),
 

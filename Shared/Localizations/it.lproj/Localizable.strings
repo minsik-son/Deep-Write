@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Ripeti introduzione";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Traduci ovunque con la tua tastiera";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "La tua tastiera tutto in uno";
 "onboarding.permission.title" = "Configurazione tastiera";
 "onboarding.permission.step1" = "Vai su Impostazioni → Generali → Tastiera → Aggiungi tastiera\ne aggiungi Translator Keyboard";
 "onboarding.permission.step2" = "Attiva \"Accesso completo\"\n(Necessario per la traduzione)";

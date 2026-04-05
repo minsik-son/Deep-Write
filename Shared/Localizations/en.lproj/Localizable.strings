@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Redo Onboarding";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Translate anywhere with your keyboard";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "Your all-in-one keyboard";
 "onboarding.permission.title" = "Keyboard Setup";
 "onboarding.permission.step1" = "Go to Settings → General → Keyboard → Add Keyboard\nand add Translator Keyboard";
 "onboarding.permission.step2" = "Enable 'Allow Full Access'\n(Required for translation)";

@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "온보딩 다시 보기";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "어디서든 번역하는 키보드";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "손안의 올인원 키보드";
 "onboarding.permission.title" = "키보드 설정";
 "onboarding.permission.step1" = "설정 → 일반 → 키보드 → 키보드 추가에서\nTranslator Keyboard를 추가하세요";
 "onboarding.permission.step2" = "'전체 접근 허용'을 켜주세요\n(번역 기능에 필요합니다)";

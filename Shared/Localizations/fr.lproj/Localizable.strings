@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Refaire l'introduction";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Traduisez partout avec votre clavier";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "Votre clavier tout-en-un";
 "onboarding.permission.title" = "Configuration du clavier";
 "onboarding.permission.step1" = "Allez dans Réglages → Général → Clavier → Ajouter un clavier\net ajoutez Translator Keyboard";
 "onboarding.permission.step2" = "Activez « Accès complet »\n(Requis pour la traduction)";

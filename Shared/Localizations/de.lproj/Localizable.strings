@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Einführung wiederholen";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Übersetzen Sie überall mit Ihrer Tastatur";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "Ihre All-in-One-Tastatur";
 "onboarding.permission.title" = "Tastatur-Einrichtung";
 "onboarding.permission.step1" = "Gehen Sie zu Einstellungen → Allgemein → Tastatur → Tastatur hinzufügen\nund fügen Sie Translator Keyboard hinzu";
 "onboarding.permission.step2" = "Aktivieren Sie 'Vollzugriff erlauben'\n(Erforderlich für die Übersetzung)";

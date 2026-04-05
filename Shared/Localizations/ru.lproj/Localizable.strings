@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "Повторить введение";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "Переводите где угодно с клавиатуры";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "Ваша клавиатура «все в одном»";
 "onboarding.permission.title" = "Настройка клавиатуры";
 "onboarding.permission.step1" = "Перейдите в Настройки → Основные → Клавиатура → Добавить клавиатуру\nи добавьте Translator Keyboard";
 "onboarding.permission.step2" = "Включите «Полный доступ»\n(Необходим для перевода)";

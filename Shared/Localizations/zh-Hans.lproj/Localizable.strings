@@ -20,7 +20,8 @@
 "settings.redo_onboarding" = "重新查看引导";
 
 // === Onboarding ===
-"onboarding.welcome.subtitle" = "随时随地翻译的键盘";
+"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.subtitle" = "掌中的一体化键盘";
 "onboarding.permission.title" = "键盘设置";
 "onboarding.permission.step1" = "前往设置 → 通用 → 键盘 → 添加新键盘\n添加 Translator Keyboard";
 "onboarding.permission.step2" = "请开启\"允许完全访问\"\n（翻译功能需要此权限）";
