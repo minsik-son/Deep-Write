@@ -38,6 +38,8 @@
 		3BB993CE2F777DCD002EA7C3 /* Array+Safe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993CD2F777DCD002EA7C3 /* Array+Safe.swift */; };
 		3BB993CF2F777DE0002EA7C3 /* ChatReplyGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993D02F777DE0002EA7C3 /* ChatReplyGeneratorView.swift */; };
 		3BB993D02F81EDF1002EA7C3 /* SetupSettingsAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993CF2F81EDF1002EA7C3 /* SetupSettingsAnimationView.swift */; };
+		3BB993D32F824C95002EA7C3 /* VerificationKeyboardSwitchAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993D22F824C95002EA7C3 /* VerificationKeyboardSwitchAnimationView.swift */; };
+		3BB993D42F824C95002EA7C3 /* SuccessCheckAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993D12F824C95002EA7C3 /* SuccessCheckAnimationView.swift */; };
 		3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1A6F9708C27789DA90C42 /* QuickNoteManager.swift */; };
 		3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA63F578073C4EA0A059B928 /* DailyUsageManager.swift */; };
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
@@ -223,6 +225,8 @@
 		3BB993CD2F777DCD002EA7C3 /* Array+Safe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Array+Safe.swift"; sourceTree = "<group>"; };
 		3BB993CF2F81EDF1002EA7C3 /* SetupSettingsAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupSettingsAnimationView.swift; sourceTree = "<group>"; };
 		3BB993D02F777DE0002EA7C3 /* ChatReplyGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyGeneratorView.swift; sourceTree = "<group>"; };
+		3BB993D12F824C95002EA7C3 /* SuccessCheckAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessCheckAnimationView.swift; sourceTree = "<group>"; };
+		3BB993D22F824C95002EA7C3 /* VerificationKeyboardSwitchAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationKeyboardSwitchAnimationView.swift; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
 		479E69162D2A943CC5309D69 /* QuickNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
 		4FE50CA723F2B8942D563859 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
@@ -592,6 +596,8 @@
 		B5272BEEFF8BB77D51B53B8F /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				3BB993D12F824C95002EA7C3 /* SuccessCheckAnimationView.swift */,
+				3BB993D22F824C95002EA7C3 /* VerificationKeyboardSwitchAnimationView.swift */,
 				3BB993CF2F81EDF1002EA7C3 /* SetupSettingsAnimationView.swift */,
 				C63CC5F8905248023302E058 /* OnboardingViewController.swift */,
 			);
@@ -896,6 +902,8 @@
 				66DB83ECA2F043B990BE945B /* FeatureGate.swift in Sources */,
 				3E5922FE0A6B41D79E37A4CD /* DailyUsageManager.swift in Sources */,
 				DU01AA11BB22CC33DD440003 /* DailyUsageData.swift in Sources */,
+				3BB993D32F824C95002EA7C3 /* VerificationKeyboardSwitchAnimationView.swift in Sources */,
+				3BB993D42F824C95002EA7C3 /* SuccessCheckAnimationView.swift in Sources */,
 				KH01AA11BB22CC33DD440003 /* KeychainHelper.swift in Sources */,
 				90C244B176664DB7B8761707 /* AdminMode.swift in Sources */,
 				3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */,

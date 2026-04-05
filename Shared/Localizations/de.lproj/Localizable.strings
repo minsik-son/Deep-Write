@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Einstellungen erneut öffnen";
 "onboarding.cta.back_to_settings" = "Zurück zu Einstellungen";
 "onboarding.verify.title" = "Überprüfen wir, ob die Tastatur eingerichtet ist!";
-"onboarding.verify.instruction" = "Tippen Sie auf das Feld unten und wechseln Sie mit 🌐 zu unserer Tastatur";
+"onboarding.verify.instruction" = "Tippe auf Tastatur öffnen und wechsle dann mit dem 🌐-Button";
 "onboarding.verify.placeholder" = "Tippen Sie hier zum Schreiben";
 "onboarding.verify.waiting" = "Warte auf Tastatur...";
 "onboarding.verify.switch_hint" = "Wechseln Sie mit der 🌐-Taste zu Translator Keyboard";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "Voller Zugriff ist nicht aktiviert";
 "onboarding.verify.full_access_desc" = "Voller Zugriff ist für Übersetzung und Korrektur erforderlich";
 "onboarding.verify.go_settings" = "In Einstellungen aktivieren";
-"onboarding.verify.timeout" = "Tastatur nicht gefunden";
-"onboarding.verify.timeout_desc" = "Die Tastatur wurde möglicherweise nicht hinzugefügt";
+"onboarding.verify.timeout" = "Tastatur nicht gefunden?";
+"onboarding.verify.timeout_desc" = "Falls die Tastatur noch nicht hinzugefügt wurde, tippe auf \U201EZurück zu Einstellungen\U201C und versuche es erneut";
 "onboarding.verify.retry" = "Zurück zu Einstellungen";
+"onboarding.verify.globe_hint" = "Wechsle mit der Globus-Taste die Tastatur";
+"onboarding.verify.open_keyboard" = "Tastatur öffnen";
+"onboarding.verify.waiting_open_keyboard" = "Öffne die Tastatur und wähle One Board über die Globus-Taste aus";
+"onboarding.verify.tap_outside_to_close" = "Tippe außerhalb, um die Tastatur zu schließen";
+"onboarding.verify.success_title_inline" = "Alles ist bereit";
+"onboarding.verify.success_desc_inline" = "Deine Tastatur ist einsatzbereit";
 "onboarding.features.title" = "Das können Sie tun";
 "onboarding.features.translate" = "Echtzeit-Übersetzung";
 "onboarding.features.translate_desc" = "Übersetzen Sie direkt von Ihrer Tastatur";

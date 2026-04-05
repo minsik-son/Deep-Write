@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Riapri Impostazioni";
 "onboarding.cta.back_to_settings" = "Torna alle Impostazioni";
 "onboarding.verify.title" = "Verifichiamo se la tastiera è configurata!";
-"onboarding.verify.instruction" = "Tocca il campo qui sotto e passa alla nostra tastiera usando 🌐";
+"onboarding.verify.instruction" = "Tocca Apri tastiera, poi cambia con il pulsante 🌐";
 "onboarding.verify.placeholder" = "Tocca qui per digitare";
 "onboarding.verify.waiting" = "In attesa della tastiera...";
 "onboarding.verify.switch_hint" = "Passa a Translator Keyboard usando il pulsante 🌐";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "L'accesso completo non è attivato";
 "onboarding.verify.full_access_desc" = "L'accesso completo è necessario per traduzione e correzione";
 "onboarding.verify.go_settings" = "Attiva nelle Impostazioni";
-"onboarding.verify.timeout" = "Tastiera non trovata";
-"onboarding.verify.timeout_desc" = "La tastiera potrebbe non essere stata aggiunta";
+"onboarding.verify.timeout" = "Non trovi la tastiera?";
+"onboarding.verify.timeout_desc" = "Se non è stata aggiunta, tocca 'Torna alle Impostazioni' per riprovare";
 "onboarding.verify.retry" = "Torna alle Impostazioni";
+"onboarding.verify.globe_hint" = "Passa da una tastiera all'altra con il tasto Globo";
+"onboarding.verify.open_keyboard" = "Apri tastiera";
+"onboarding.verify.waiting_open_keyboard" = "Apri la tastiera e tocca il tasto Globo per scegliere One Board";
+"onboarding.verify.tap_outside_to_close" = "Tocca fuori per chiudere la tastiera";
+"onboarding.verify.success_title_inline" = "È tutto pronto";
+"onboarding.verify.success_desc_inline" = "La tastiera è pronta all'uso";
 "onboarding.features.title" = "Ecco cosa puoi fare";
 "onboarding.features.translate" = "Traduzione in tempo reale";
 "onboarding.features.translate_desc" = "Traduci direttamente dalla tastiera";

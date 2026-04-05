@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "다시 설정으로 이동";
 "onboarding.cta.back_to_settings" = "다시 설정해보기";
 "onboarding.verify.title" = "키보드가 잘 설치됐는지 확인해볼게요!";
-"onboarding.verify.instruction" = "아래 입력창을 탭하고 🌐 버튼으로 키보드를 전환해보세요";
+"onboarding.verify.instruction" = "아래의 키보드 열기 버튼을 탭한 뒤, 🌐 버튼으로 키보드를 전환해보세요";
 "onboarding.verify.placeholder" = "여기를 탭해서 입력해보세요";
 "onboarding.verify.waiting" = "키보드를 기다리는 중...";
 "onboarding.verify.switch_hint" = "🌐 버튼으로 Translator Keyboard로 전환해보세요";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "전체 접근이 꺼져 있어요";
 "onboarding.verify.full_access_desc" = "번역·교정 기능을 사용하려면 전체 접근이 필요해요";
 "onboarding.verify.go_settings" = "설정에서 켜기";
-"onboarding.verify.timeout" = "키보드를 찾을 수 없어요";
-"onboarding.verify.timeout_desc" = "키보드가 추가되지 않은 것 같아요";
+"onboarding.verify.timeout" = "키보드를 찾을 수 없나요?";
+"onboarding.verify.timeout_desc" = "키보드가 추가되지 않은 것 같다면 '다시 설정해보기'를 눌러 돌아가세요";
 "onboarding.verify.retry" = "설정으로 돌아가기";
+"onboarding.verify.globe_hint" = "지구본 버튼으로 키보드를 전환해보세요";
+"onboarding.verify.open_keyboard" = "키보드 열기";
+"onboarding.verify.waiting_open_keyboard" = "키보드를 열고 지구본 버튼으로 One Board를 선택해보세요";
+"onboarding.verify.tap_outside_to_close" = "빈 공간을 누르면 키보드가 닫혀요";
+"onboarding.verify.success_title_inline" = "설치에 성공했어요";
+"onboarding.verify.success_desc_inline" = "이제 바로 키보드를 사용할 수 있어요";
 "onboarding.features.title" = "이런 기능을 사용할 수 있어요";
 "onboarding.features.translate" = "실시간 번역";
 "onboarding.features.translate_desc" = "키보드에서 바로 번역";

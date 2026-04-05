@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Reopen Settings";
 "onboarding.cta.back_to_settings" = "Back to Settings";
 "onboarding.verify.title" = "Let's check if the keyboard is set up!";
-"onboarding.verify.instruction" = "Tap the field below and switch to our keyboard using 🌐";
+"onboarding.verify.instruction" = "Tap Open Keyboard below, then switch using the 🌐 button";
 "onboarding.verify.placeholder" = "Tap here to type";
 "onboarding.verify.waiting" = "Waiting for keyboard...";
 "onboarding.verify.switch_hint" = "Switch to Translator Keyboard using the 🌐 button";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "Full Access is not enabled";
 "onboarding.verify.full_access_desc" = "Full Access is required for translation and correction";
 "onboarding.verify.go_settings" = "Enable in Settings";
-"onboarding.verify.timeout" = "Keyboard not found";
-"onboarding.verify.timeout_desc" = "The keyboard may not have been added";
+"onboarding.verify.timeout" = "Can't find the keyboard?";
+"onboarding.verify.timeout_desc" = "If the keyboard hasn't been added, tap 'Back to Settings' to try again";
 "onboarding.verify.retry" = "Go back to Settings";
+"onboarding.verify.globe_hint" = "Switch keyboards with the Globe key";
+"onboarding.verify.open_keyboard" = "Open Keyboard";
+"onboarding.verify.waiting_open_keyboard" = "Open the keyboard, then tap the Globe key to choose One Board";
+"onboarding.verify.tap_outside_to_close" = "Tap outside to close the keyboard";
+"onboarding.verify.success_title_inline" = "You're all set";
+"onboarding.verify.success_desc_inline" = "Your keyboard is ready to use";
 "onboarding.features.title" = "Here's what you can do";
 "onboarding.features.translate" = "Real-time Translation";
 "onboarding.features.translate_desc" = "Translate right from your keyboard";

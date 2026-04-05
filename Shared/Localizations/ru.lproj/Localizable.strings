@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Открыть настройки снова";
 "onboarding.cta.back_to_settings" = "Вернуться к настройкам";
 "onboarding.verify.title" = "Давайте проверим, настроена ли клавиатура!";
-"onboarding.verify.instruction" = "Нажмите на поле ниже и переключитесь на нашу клавиатуру с помощью 🌐";
+"onboarding.verify.instruction" = "Нажмите Открыть клавиатуру, затем переключитесь кнопкой 🌐";
 "onboarding.verify.placeholder" = "Нажмите здесь, чтобы печатать";
 "onboarding.verify.waiting" = "Ожидание клавиатуры...";
 "onboarding.verify.switch_hint" = "Переключитесь на Translator Keyboard с помощью кнопки 🌐";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "Полный доступ не включён";
 "onboarding.verify.full_access_desc" = "Для перевода и коррекции необходим полный доступ";
 "onboarding.verify.go_settings" = "Включить в Настройках";
-"onboarding.verify.timeout" = "Клавиатура не найдена";
-"onboarding.verify.timeout_desc" = "Возможно, клавиатура не была добавлена";
+"onboarding.verify.timeout" = "Не можете найти клавиатуру?";
+"onboarding.verify.timeout_desc" = "Если клавиатура не добавлена, нажмите «Вернуться в Настройки» и попробуйте снова";
 "onboarding.verify.retry" = "Вернуться в Настройки";
+"onboarding.verify.globe_hint" = "Переключайте клавиатуры клавишей Globe";
+"onboarding.verify.open_keyboard" = "Открыть клавиатуру";
+"onboarding.verify.waiting_open_keyboard" = "Откройте клавиатуру и нажмите клавишу Globe, чтобы выбрать One Board";
+"onboarding.verify.tap_outside_to_close" = "Нажмите вне области клавиатуры, чтобы закрыть ее";
+"onboarding.verify.success_title_inline" = "Все готово";
+"onboarding.verify.success_desc_inline" = "Клавиатура готова к использованию";
 "onboarding.features.title" = "Вот что вы можете делать";
 "onboarding.features.translate" = "Перевод в реальном времени";
 "onboarding.features.translate_desc" = "Переводите прямо с клавиатуры";

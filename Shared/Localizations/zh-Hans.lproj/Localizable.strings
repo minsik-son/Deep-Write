@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "重新打开设置";
 "onboarding.cta.back_to_settings" = "返回设置";
 "onboarding.verify.title" = "让我们检查键盘是否已设置好！";
-"onboarding.verify.instruction" = "点击下方输入框，使用🌐按钮切换到我们的键盘";
+"onboarding.verify.instruction" = "点击下方的打开键盘按钮，然后使用🌐按钮切换键盘";
 "onboarding.verify.placeholder" = "点击这里输入";
 "onboarding.verify.waiting" = "等待键盘...";
 "onboarding.verify.switch_hint" = "使用🌐按钮切换到 Translator Keyboard";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "未启用完全访问权限";
 "onboarding.verify.full_access_desc" = "翻译和纠正功能需要完全访问权限";
 "onboarding.verify.go_settings" = "在设置中启用";
-"onboarding.verify.timeout" = "未找到键盘";
-"onboarding.verify.timeout_desc" = "键盘可能尚未添加";
+"onboarding.verify.timeout" = "找不到键盘？";
+"onboarding.verify.timeout_desc" = "如果键盘似乎尚未添加，请点击\U201C返回设置\U201D后重试";
 "onboarding.verify.retry" = "返回设置";
+"onboarding.verify.globe_hint" = "通过地球键切换键盘";
+"onboarding.verify.open_keyboard" = "打开键盘";
+"onboarding.verify.waiting_open_keyboard" = "打开键盘后，点击地球键并选择 One Board";
+"onboarding.verify.tap_outside_to_close" = "点击空白处即可关闭键盘";
+"onboarding.verify.success_title_inline" = "设置完成";
+"onboarding.verify.success_desc_inline" = "现在就可以使用键盘了";
 "onboarding.features.title" = "您可以使用这些功能";
 "onboarding.features.translate" = "实时翻译";
 "onboarding.features.translate_desc" = "直接从键盘翻译";

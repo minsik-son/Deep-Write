@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Reabrir Ajustes";
 "onboarding.cta.back_to_settings" = "Volver a Ajustes";
 "onboarding.verify.title" = "¡Comprobemos si el teclado está configurado!";
-"onboarding.verify.instruction" = "Toca el campo de abajo y cambia a nuestro teclado usando 🌐";
+"onboarding.verify.instruction" = "Toca Abrir teclado y luego cambia usando el botón 🌐";
 "onboarding.verify.placeholder" = "Toca aquí para escribir";
 "onboarding.verify.waiting" = "Esperando el teclado...";
 "onboarding.verify.switch_hint" = "Cambia a Translator Keyboard usando el botón 🌐";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "El acceso completo no está activado";
 "onboarding.verify.full_access_desc" = "Se requiere acceso completo para traducción y corrección";
 "onboarding.verify.go_settings" = "Activar en Ajustes";
-"onboarding.verify.timeout" = "Teclado no encontrado";
-"onboarding.verify.timeout_desc" = "Es posible que el teclado no se haya añadido";
+"onboarding.verify.timeout" = "¿No encuentras el teclado?";
+"onboarding.verify.timeout_desc" = "Si no se ha añadido, toca 'Volver a Ajustes' para intentarlo de nuevo";
 "onboarding.verify.retry" = "Volver a Ajustes";
+"onboarding.verify.globe_hint" = "Cambia de teclado con la tecla Globo";
+"onboarding.verify.open_keyboard" = "Abrir teclado";
+"onboarding.verify.waiting_open_keyboard" = "Abre el teclado y toca la tecla Globo para elegir One Board";
+"onboarding.verify.tap_outside_to_close" = "Toca fuera para cerrar el teclado";
+"onboarding.verify.success_title_inline" = "Todo está listo";
+"onboarding.verify.success_desc_inline" = "Tu teclado ya está listo para usarse";
 "onboarding.features.title" = "Esto es lo que puedes hacer";
 "onboarding.features.translate" = "Traducción en tiempo real";
 "onboarding.features.translate_desc" = "Traduce directamente desde tu teclado";

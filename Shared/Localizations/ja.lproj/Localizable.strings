@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "設定を再度開く";
 "onboarding.cta.back_to_settings" = "設定に戻る";
 "onboarding.verify.title" = "キーボードが正しく設定されたか確認しましょう！";
-"onboarding.verify.instruction" = "下の入力欄をタップして🌐ボタンでキーボードを切り替えてください";
+"onboarding.verify.instruction" = "下のキーボードを開くボタンをタップして、🌐ボタンで切り替えてください";
 "onboarding.verify.placeholder" = "ここをタップして入力してみてください";
 "onboarding.verify.waiting" = "キーボードを待っています...";
 "onboarding.verify.switch_hint" = "🌐ボタンでTranslator Keyboardに切り替えてください";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "フルアクセスがオフになっています";
 "onboarding.verify.full_access_desc" = "翻訳・校正機能にはフルアクセスが必要です";
 "onboarding.verify.go_settings" = "設定でオンにする";
-"onboarding.verify.timeout" = "キーボードが見つかりません";
-"onboarding.verify.timeout_desc" = "キーボードが追加されていないようです";
+"onboarding.verify.timeout" = "キーボードが見つかりませんか？";
+"onboarding.verify.timeout_desc" = "追加されていない場合は「設定に戻る」をタップしてやり直してください";
 "onboarding.verify.retry" = "設定に戻る";
+"onboarding.verify.globe_hint" = "地球儀キーでキーボードを切り替えてください";
+"onboarding.verify.open_keyboard" = "キーボードを開く";
+"onboarding.verify.waiting_open_keyboard" = "キーボードを開いて、地球儀キーからOne Boardを選んでください";
+"onboarding.verify.tap_outside_to_close" = "空いている場所をタップするとキーボードを閉じられます";
+"onboarding.verify.success_title_inline" = "設定が完了しました";
+"onboarding.verify.success_desc_inline" = "キーボードをすぐに使えます";
 "onboarding.features.title" = "こんな機能が使えます";
 "onboarding.features.translate" = "リアルタイム翻訳";
 "onboarding.features.translate_desc" = "キーボードからすぐに翻訳";

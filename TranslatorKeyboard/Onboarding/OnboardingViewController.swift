@@ -107,7 +107,8 @@ class OnboardingViewController: UIViewController {
             pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             pageControl.bottomAnchor.constraint(equalTo: secondaryButton.topAnchor, constant: -12),
 
-            secondaryButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            secondaryButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            secondaryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             secondaryButton.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -8),
             secondaryButtonHeightConstraint,
 
@@ -161,8 +162,18 @@ class OnboardingViewController: UIViewController {
                 return
             }
         case 2:
-            if verificationPassed {
-                goToPage(3)
+            // v6: CTA = 키보드 열기 — warning UI는 유지, keyboard open + recovery polling만
+            if let page = pages[safe: 2] {
+                for subview in page.view.subviews where subview is UITextField {
+                    subview.becomeFirstResponder()
+                    break
+                }
+            }
+            checkKeyboardStatus()
+            if pollingTimer == nil && !verificationPassed {
+                pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+                    self?.checkKeyboardStatus()
+                }
             }
             return
         case 3:
@@ -227,22 +238,27 @@ class OnboardingViewController: UIViewController {
             ctaButton.setTitle(hasVisitedSettings ? L("onboarding.cta.done_settings") : L("onboarding.cta.go_settings"), for: .normal)
             ctaButton.isEnabled = true
             ctaButton.backgroundColor = .systemBlue
-            // 설정에서 돌아온 후: "다시 설정으로 이동" 보조 버튼 표시
+            // 설정에서 돌아온 후: "다시 설정으로 이동" — ctaButton과 같은 크기/구조
             if hasVisitedSettings {
                 secondaryButton.setTitle(L("onboarding.cta.reopen_settings"), for: .normal)
                 secondaryButton.isHidden = false
-                secondaryButtonHeightConstraint.constant = 36
+                secondaryButtonHeightConstraint.constant = 52
+                secondaryButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+                secondaryButton.setTitleColor(.systemBlue, for: .normal)
+                secondaryButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+                secondaryButton.layer.cornerRadius = 14
             }
         case 2:
-            ctaButton.setTitle(L("onboarding.cta.next"), for: .normal)
-            ctaButton.isEnabled = verificationPassed
-            ctaButton.backgroundColor = verificationPassed ? .systemBlue : .systemGray4
-            // "다시 설정해보기" 보조 버튼 — 검증 미통과 시에만 표시
-            if !verificationPassed {
-                secondaryButton.setTitle(L("onboarding.cta.back_to_settings"), for: .normal)
-                secondaryButton.isHidden = false
-                secondaryButtonHeightConstraint.constant = 36
-            }
+            // v4: global CTA 재활용 — 키보드 열기 + 다시 설정해보기
+            ctaButton.setTitle(L("onboarding.verify.open_keyboard"), for: .normal)
+            ctaButton.isEnabled = true
+            ctaButton.backgroundColor = .systemBlue
+            // secondary = 다시 설정해보기 (filled style)
+            secondaryButton.setTitle(L("onboarding.cta.back_to_settings"), for: .normal)
+            secondaryButton.isHidden = false
+            secondaryButtonHeightConstraint.constant = 50
+            secondaryButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+            secondaryButton.layer.cornerRadius = 14
         case 3:
             ctaButton.setTitle(L("onboarding.cta.start"), for: .normal)
             ctaButton.isEnabled = true
@@ -287,8 +303,13 @@ class OnboardingViewController: UIViewController {
     }
 
     @objc private func appDidBecomeActive() {
-        guard currentIndex == 1, hasVisitedSettings else { return }
-        updateCTAForCurrentPage()
+        if currentIndex == 1, hasVisitedSettings {
+            updateCTAForCurrentPage()
+        }
+        // v1 recovery: page 3 foreground 복귀 시 즉시 재확인
+        if currentIndex == 2, !verificationPassed {
+            checkKeyboardStatus()
+        }
     }
 
     // MARK: - Verification Polling
@@ -307,7 +328,7 @@ class OnboardingViewController: UIViewController {
             self?.checkKeyboardStatus()
         }
 
-        timeoutTimer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: false) { [weak self] _ in
+        timeoutTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: false) { [weak self] _ in
             self?.handleTimeout()
         }
     }
@@ -334,14 +355,32 @@ class OnboardingViewController: UIViewController {
 
     private func showVerificationSuccess() {
         stopPolling()
+        guard !verificationPassed else { return }
         verificationPassed = true
-        verificationStatusLabel?.text = L("onboarding.verify.success")
-        verificationStatusLabel?.textColor = .systemGreen
-        updateCTAForCurrentPage()
+
+        // 인라인 성공 애니메이션 표시
+        guard let page = pages[safe: 2] else { return }
+
+        let successView = SuccessCheckAnimationView()
+        successView.translatesAutoresizingMaskIntoConstraints = false
+        page.view.addSubview(successView)
+        NSLayoutConstraint.activate([
+            successView.topAnchor.constraint(equalTo: page.view.topAnchor),
+            successView.bottomAnchor.constraint(equalTo: page.view.bottomAnchor),
+            successView.leadingAnchor.constraint(equalTo: page.view.leadingAnchor),
+            successView.trailingAnchor.constraint(equalTo: page.view.trailingAnchor),
+        ])
+
+        successView.playAnimation()
+
+        // 2초 후 features page로 자동 이동
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.goToPage(3)
+        }
     }
 
     private func showFullAccessRequired() {
-        stopPolling()
+        // v1 recovery: false 감지 시 warning UI만 — polling 유지하여 true 전환 감지 가능
 
         guard let page = pages[safe: 2] else { return }
 
@@ -387,7 +426,9 @@ class OnboardingViewController: UIViewController {
     }
 
     private func handleTimeout() {
-        stopPolling()
+        // v1 recovery: timeout은 warning UI만 — polling은 유지하여 recovery 가능
+        timeoutTimer?.invalidate()
+        timeoutTimer = nil
 
         guard let page = pages[safe: 2] else { return }
 
@@ -730,68 +771,59 @@ private extension OnboardingViewController {
 private extension OnboardingViewController {
     func makeVerificationPage() -> UIViewController {
         let vc = UIViewController()
-        vc.view.backgroundColor = .systemBackground
+        vc.view.backgroundColor = .white
 
-        let titleLabel = UILabel()
-        titleLabel.text = L("onboarding.verify.title")
-        titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
-        titleLabel.textAlignment = .center
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        // v5: title/hint 제거 — 바로 animation부터 시작
 
-        let instructionLabel = UILabel()
-        instructionLabel.text = L("onboarding.verify.instruction")
-        instructionLabel.font = .systemFont(ofSize: 16)
-        instructionLabel.textColor = .secondaryLabel
-        instructionLabel.textAlignment = .center
-        instructionLabel.numberOfLines = 0
-        instructionLabel.translatesAutoresizingMaskIntoConstraints = false
+        // Guide animation
+        let animView = VerificationKeyboardSwitchAnimationView()
+        animView.translatesAutoresizingMaskIntoConstraints = false
 
-        let textField = UITextField()
-        textField.placeholder = L("onboarding.verify.placeholder")
-        textField.borderStyle = .roundedRect
-        textField.backgroundColor = .secondarySystemBackground
-        textField.font = .systemFont(ofSize: 17)
-        textField.textAlignment = .center
-        textField.autocorrectionType = .no
-        textField.autocapitalizationType = .none
-        textField.translatesAutoresizingMaskIntoConstraints = false
+        // Hidden input field for keyboard open
+        let inputField = UITextField()
+        inputField.keyboardType = .default
+        inputField.isSecureTextEntry = false
+        inputField.alpha = 0.01
+        inputField.translatesAutoresizingMaskIntoConstraints = false
 
+        // v5: helper text — 유일한 안내 문장, 폰트 확대
         let statusLabel = UILabel()
         statusLabel.text = L("onboarding.verify.instruction")
-        statusLabel.font = .systemFont(ofSize: 15)
+        statusLabel.font = .systemFont(ofSize: 15, weight: .medium)
         statusLabel.textColor = .secondaryLabel
         statusLabel.textAlignment = .center
         statusLabel.numberOfLines = 0
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         self.verificationStatusLabel = statusLabel
 
-        let tapGesture = UITapGestureRecognizer(target: textField, action: #selector(UIResponder.resignFirstResponder))
+        // Tap gesture to close keyboard
+        let tapGesture = UITapGestureRecognizer(target: inputField, action: #selector(UIResponder.resignFirstResponder))
         tapGesture.cancelsTouchesInView = false
         vc.view.addGestureRecognizer(tapGesture)
 
-        vc.view.addSubview(titleLabel)
-        vc.view.addSubview(instructionLabel)
-        vc.view.addSubview(textField)
+        vc.view.addSubview(animView)
+        vc.view.addSubview(inputField)
         vc.view.addSubview(statusLabel)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 60),
-            titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 24),
-            titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -24),
+            // v5: animation이 첫 요소
+            animView.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 32),
+            animView.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+            animView.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 60),
+            animView.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -60),
+            animView.heightAnchor.constraint(equalTo: animView.widthAnchor, multiplier: 0.7),
 
-            instructionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
-            instructionLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            instructionLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
+            inputField.topAnchor.constraint(equalTo: animView.bottomAnchor, constant: 8),
+            inputField.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+            inputField.widthAnchor.constraint(equalToConstant: 1),
+            inputField.heightAnchor.constraint(equalToConstant: 1),
 
-            textField.topAnchor.constraint(equalTo: instructionLabel.bottomAnchor, constant: 32),
-            textField.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            textField.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
-            textField.heightAnchor.constraint(equalToConstant: 48),
-
-            statusLabel.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
+            statusLabel.topAnchor.constraint(equalTo: animView.bottomAnchor, constant: 20),
             statusLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
             statusLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
         ])
+
+        animView.startLoop()
 
         return vc
     }

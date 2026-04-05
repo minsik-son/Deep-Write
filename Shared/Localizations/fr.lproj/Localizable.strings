@@ -59,7 +59,7 @@
 "onboarding.cta.reopen_settings" = "Rouvrir les Réglages";
 "onboarding.cta.back_to_settings" = "Retour aux Réglages";
 "onboarding.verify.title" = "Vérifions si le clavier est bien configuré !";
-"onboarding.verify.instruction" = "Appuyez sur le champ ci-dessous et passez à notre clavier avec 🌐";
+"onboarding.verify.instruction" = "Touchez Ouvrir le clavier, puis changez avec le bouton 🌐";
 "onboarding.verify.placeholder" = "Appuyez ici pour taper";
 "onboarding.verify.waiting" = "En attente du clavier...";
 "onboarding.verify.switch_hint" = "Passez à Translator Keyboard avec le bouton 🌐";
@@ -67,9 +67,15 @@
 "onboarding.verify.no_full_access" = "L'accès complet n'est pas activé";
 "onboarding.verify.full_access_desc" = "L'accès complet est requis pour la traduction et la correction";
 "onboarding.verify.go_settings" = "Activer dans les Réglages";
-"onboarding.verify.timeout" = "Clavier introuvable";
-"onboarding.verify.timeout_desc" = "Le clavier n'a peut-être pas été ajouté";
+"onboarding.verify.timeout" = "Clavier introuvable ?";
+"onboarding.verify.timeout_desc" = "S'il n'a pas été ajouté, touchez « Retourner aux Réglages » pour réessayer";
 "onboarding.verify.retry" = "Retourner aux Réglages";
+"onboarding.verify.globe_hint" = "Changez de clavier avec la touche Globe";
+"onboarding.verify.open_keyboard" = "Ouvrir le clavier";
+"onboarding.verify.waiting_open_keyboard" = "Ouvrez le clavier, puis touchez la touche Globe pour choisir One Board";
+"onboarding.verify.tap_outside_to_close" = "Touchez en dehors pour fermer le clavier";
+"onboarding.verify.success_title_inline" = "C'est prêt";
+"onboarding.verify.success_desc_inline" = "Votre clavier est prêt à être utilisé";
 "onboarding.features.title" = "Voici ce que vous pouvez faire";
 "onboarding.features.translate" = "Traduction en temps réel";
 "onboarding.features.translate_desc" = "Traduisez directement depuis votre clavier";
