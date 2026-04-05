@@ -591,47 +591,57 @@ private extension OnboardingViewController {
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
         previewContainer.addSubview(animView)
 
+        // v10: infoContainer 도입 — div2를 실제 컨테이너로 묶어 정확한 pt 제어
+        let infoContainer = UIView()
+        infoContainer.translatesAutoresizingMaskIntoConstraints = false
+        infoContainer.addSubview(trustHeaderStack)
+        infoContainer.addSubview(trustStack)
+        infoContainer.addSubview(divider)
+        infoContainer.addSubview(stepStack)
+
         vc.view.addSubview(titleLabel)
-        vc.view.addSubview(trustHeaderStack)
-        vc.view.addSubview(trustStack)
-        vc.view.addSubview(divider)
-        vc.view.addSubview(stepStack)
         vc.view.addSubview(previewContainer)
+        vc.view.addSubview(infoContainer)
 
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 40),
             titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 24),
             titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -24),
 
-            trustHeaderStack.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 24),
-            trustHeaderStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-
-            trustStack.topAnchor.constraint(equalTo: trustHeaderStack.bottomAnchor, constant: 12),
-            trustStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            trustStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
-
-            divider.topAnchor.constraint(equalTo: trustStack.bottomAnchor, constant: 20),
-            divider.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            divider.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
-            divider.heightAnchor.constraint(equalToConstant: 0.5),
-
-            stepStack.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 20),
-            stepStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            stepStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
-
-            // previewContainer: stepStack 아래 ~ 화면 하단 사이의 남는 공간
-            previewContainer.topAnchor.constraint(greaterThanOrEqualTo: stepStack.bottomAnchor, constant: 16),
-            previewContainer.bottomAnchor.constraint(lessThanOrEqualTo: vc.view.bottomAnchor, constant: -12),
+            // div1: previewContainer
+            previewContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 64),
             previewContainer.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor),
             previewContainer.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor),
 
-            // animView: container 내에서 가운데 정렬
             animView.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
-            animView.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
+            animView.topAnchor.constraint(equalTo: previewContainer.topAnchor),
+            animView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
             animView.widthAnchor.constraint(equalTo: vc.view.widthAnchor, multiplier: 0.6),
             animView.heightAnchor.constraint(equalToConstant: 210),
-            animView.topAnchor.constraint(greaterThanOrEqualTo: previewContainer.topAnchor),
-            animView.bottomAnchor.constraint(lessThanOrEqualTo: previewContainer.bottomAnchor),
+
+            // v10: div1-div2 = 96pt, div2-bottom = 12pt (정확한 pt 고정)
+            infoContainer.topAnchor.constraint(equalTo: previewContainer.bottomAnchor, constant: 64),
+            infoContainer.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
+            infoContainer.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
+            infoContainer.bottomAnchor.constraint(equalTo: vc.view.bottomAnchor, constant: -12),
+
+            // infoContainer 내부
+            trustHeaderStack.topAnchor.constraint(equalTo: infoContainer.topAnchor),
+            trustHeaderStack.leadingAnchor.constraint(equalTo: infoContainer.leadingAnchor),
+
+            trustStack.topAnchor.constraint(equalTo: trustHeaderStack.bottomAnchor, constant: 12),
+            trustStack.leadingAnchor.constraint(equalTo: infoContainer.leadingAnchor),
+            trustStack.trailingAnchor.constraint(equalTo: infoContainer.trailingAnchor),
+
+            divider.topAnchor.constraint(equalTo: trustStack.bottomAnchor, constant: 16),
+            divider.leadingAnchor.constraint(equalTo: infoContainer.leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: infoContainer.trailingAnchor),
+            divider.heightAnchor.constraint(equalToConstant: 0.5),
+
+            stepStack.topAnchor.constraint(equalTo: divider.bottomAnchor, constant: 16),
+            stepStack.leadingAnchor.constraint(equalTo: infoContainer.leadingAnchor),
+            stepStack.trailingAnchor.constraint(equalTo: infoContainer.trailingAnchor),
+            stepStack.bottomAnchor.constraint(equalTo: infoContainer.bottomAnchor),
         ])
 
         animView.startLoop()
