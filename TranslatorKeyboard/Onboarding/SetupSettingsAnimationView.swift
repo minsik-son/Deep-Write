@@ -618,9 +618,17 @@ final class SetupSettingsAnimationView: UIView {
             stack.addArrangedSubview(row)
             if i < rows.count - 1 {
                 let sep = makeSeparator()
-                stack.addArrangedSubview(sep)
-                sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
-                sep.leadingAnchor.constraint(equalTo: stack.leadingAnchor, constant: 30).isActive = true
+                let sepWrapper = UIView()
+                sepWrapper.translatesAutoresizingMaskIntoConstraints = false
+                sepWrapper.addSubview(sep)
+                NSLayoutConstraint.activate([
+                    sep.topAnchor.constraint(equalTo: sepWrapper.topAnchor),
+                    sep.leadingAnchor.constraint(equalTo: sepWrapper.leadingAnchor, constant: 30),
+                    sep.trailingAnchor.constraint(equalTo: sepWrapper.trailingAnchor),
+                    sep.bottomAnchor.constraint(equalTo: sepWrapper.bottomAnchor),
+                    sep.heightAnchor.constraint(equalToConstant: 0.5),
+                ])
+                stack.addArrangedSubview(sepWrapper)
             }
         }
         return stack
