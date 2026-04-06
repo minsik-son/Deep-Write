@@ -93,6 +93,11 @@ class TranslationInputView: UIView {
     }()
     private var isCursorTextKitSetUp = false
 
+    // MARK: - Tap-based Caret (Quick Note)
+    var isCaretTapEnabled: Bool = false
+    var onCaretTap: ((Int) -> Void)?
+    private(set) var cursorCharIndex: Int = 0
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -113,6 +118,11 @@ class TranslationInputView: UIView {
 
     private func setupViews() {
         backgroundColor = .clear
+
+        // Tap gesture for caret placement (Quick Note)
+        let caretTap = UITapGestureRecognizer(target: self, action: #selector(handleCaretTap(_:)))
+        caretTap.cancelsTouchesInView = false
+        addGestureRecognizer(caretTap)
 
         addSubview(containerView)
 
@@ -323,6 +333,99 @@ class TranslationInputView: UIView {
         } else {
             counterLabel.textColor = .tertiaryLabel
         }
+    }
+
+    @objc private func handleCaretTap(_ gesture: UITapGestureRecognizer) {
+        guard isCaretTapEnabled else { return }
+        guard let text = inputLabel.text, !text.isEmpty else { return }
+
+        let tapPoint = gesture.location(in: inputLabel)
+        let index = characterIndex(at: tapPoint, in: text)
+        setCursorIndex(index)
+        onCaretTap?(index)
+    }
+
+    func setCursorIndex(_ index: Int) {
+        let text = inputLabel.text ?? ""
+        cursorCharIndex = max(0, min(index, text.count))
+        updateCursorPosition(for: cursorCharIndex)
+    }
+
+    private func characterIndex(at point: CGPoint, in text: String) -> Int {
+        let maxWidth = inputLabel.frame.width
+        guard maxWidth > 0 else { return text.count }
+
+        let font = inputLabel.font!
+        setupCursorTextKitIfNeeded()
+
+        cursorTextContainer.size = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+        cursorTextContainer.lineBreakMode = inputLabel.lineBreakMode
+
+        let fullRange = NSRange(location: 0, length: cursorTextStorage.length)
+        cursorTextStorage.replaceCharacters(in: fullRange, with: text)
+        let newRange = NSRange(location: 0, length: cursorTextStorage.length)
+        let ps = NSMutableParagraphStyle()
+        ps.lineBreakMode = inputLabel.lineBreakMode
+        cursorTextStorage.addAttribute(.font, value: font, range: newRange)
+        cursorTextStorage.addAttribute(.paragraphStyle, value: ps, range: newRange)
+        cursorLayoutManager.ensureLayout(for: cursorTextContainer)
+
+        let glyphIndex = cursorLayoutManager.glyphIndex(for: point, in: cursorTextContainer)
+        let charIndex = cursorLayoutManager.characterIndexForGlyph(at: glyphIndex)
+        return max(0, min(charIndex, text.count))
+    }
+
+    private func updateCursorPosition(for index: Int) {
+        guard let text = inputLabel.text, !text.isEmpty else {
+            cursorLeading?.constant = 0
+            cursorTop?.constant = 0
+            return
+        }
+
+        let maxWidth = inputLabel.frame.width
+        guard maxWidth > 0 else { return }
+
+        let font = inputLabel.font!
+        setupCursorTextKitIfNeeded()
+
+        cursorTextContainer.size = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+        cursorTextContainer.lineBreakMode = inputLabel.lineBreakMode
+
+        let fullRange = NSRange(location: 0, length: cursorTextStorage.length)
+        cursorTextStorage.replaceCharacters(in: fullRange, with: text)
+        let newRange = NSRange(location: 0, length: cursorTextStorage.length)
+        let ps = NSMutableParagraphStyle()
+        ps.lineBreakMode = inputLabel.lineBreakMode
+        cursorTextStorage.addAttribute(.font, value: font, range: newRange)
+        cursorTextStorage.addAttribute(.paragraphStyle, value: ps, range: newRange)
+        cursorLayoutManager.ensureLayout(for: cursorTextContainer)
+
+        // 텍스트 끝 위치
+        if index >= text.count {
+            updateCursorPosition() // 기존 맨끝 로직 재사용
+            return
+        }
+
+        // index 0이면 첫 위치
+        if index == 0 {
+            cursorLeading?.constant = 0
+            cursorTop?.constant = 0
+            return
+        }
+
+        // 지정 index의 glyph 위치
+        let charRange = NSRange(location: index, length: 1)
+        let glyphRange = cursorLayoutManager.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+        guard glyphRange.location != NSNotFound else {
+            updateCursorPosition()
+            return
+        }
+
+        let lineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
+        let glyphLoc = cursorLayoutManager.location(forGlyphAt: glyphRange.location)
+
+        cursorLeading?.constant = glyphLoc.x
+        cursorTop?.constant = lineRect.origin.y
     }
 
     private func setupCursorTextKitIfNeeded() {

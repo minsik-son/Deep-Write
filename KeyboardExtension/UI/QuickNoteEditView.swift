@@ -9,6 +9,7 @@ class QuickNoteEditView: UIView {
     var onCopy: ((String) -> Void)?
     var onClose: (() -> Void)?
     var onClearText: (() -> Void)?
+    var onCursorMoveRequested: ((Int) -> Void)?
 
     // MARK: - UI
 
@@ -39,6 +40,7 @@ class QuickNoteEditView: UIView {
         v.setPlaceholder(L("quicknote.placeholder"))
         v.maxCharacters = AppConstants.Limits.quickNoteMaxLength
         v.hideCounter()
+        v.isCaretTapEnabled = true
         return v
     }()
 
@@ -159,6 +161,16 @@ class QuickNoteEditView: UIView {
     }
 
     // MARK: - Public
+
+    func setupCaretCallback() {
+        noteInputView.onCaretTap = { [weak self] index in
+            self?.onCursorMoveRequested?(index)
+        }
+    }
+
+    func setCursorIndex(_ index: Int) {
+        noteInputView.setCursorIndex(index)
+    }
 
     func configure(with note: QuickNote?) {
         if let note = note {

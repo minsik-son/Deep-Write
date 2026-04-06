@@ -265,7 +265,11 @@ class OnboardingViewController: UIViewController {
         case 3:
             ctaButton.setTitle(L("onboarding.cta.start"), for: .normal)
             ctaButton.isEnabled = true
+            ctaButton.isHidden = false
             ctaButton.backgroundColor = .systemBlue
+            ctaButton.setTitleColor(.white, for: .normal)
+            ctaButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+            ctaButton.alpha = 1.0
         default:
             break
         }

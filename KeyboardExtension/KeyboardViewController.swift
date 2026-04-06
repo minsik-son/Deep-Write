@@ -3676,6 +3676,12 @@ extension KeyboardViewController {
             self?.autoSaveIfNeeded()
             self?.returnToQuickNoteList()
         }
+        // Cursor editing — Quick Note tap caret
+        quickNoteEditView?.setupCaretCallback()
+        quickNoteEditView?.onCursorMoveRequested = { [weak self] index in
+            self?.quickNoteTextInputHandler?.moveCursor(to: index)
+            self?.quickNoteEditView?.setCursorIndex(index)
+        }
     }
 
     private func returnToQuickNoteList() {

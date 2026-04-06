@@ -26,6 +26,7 @@ class TextInputHandler: TextInputHandling {
 
     private(set) var buffer: String = ""
     private(set) var composingText: String = ""
+    private(set) var cursorIndex: Int = 0
 
     var maxNewlineCount: Int = 10
     var maxLength: Int = Int.max
@@ -137,7 +138,9 @@ class TextInputHandler: TextInputHandling {
         } else {
             guard (buffer.count + (composingText.isEmpty ? 0 : 1) + 1) <= maxLength else { return }
             commitComposing()
-            buffer.append(key)
+            let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+            buffer.insert(key, at: idx)
+            cursorIndex += 1
             delegate?.textInputHandler(self, didUpdateBuffer: buffer)
         }
     }
@@ -145,8 +148,10 @@ class TextInputHandler: TextInputHandling {
     func handleBackspace() {
         if !composingText.isEmpty {
             removeLastComposingUnit()
-        } else if !buffer.isEmpty {
-            buffer.removeLast()
+        } else if !buffer.isEmpty && cursorIndex > 0 {
+            let idx = buffer.index(buffer.startIndex, offsetBy: cursorIndex - 1)
+            buffer.remove(at: idx)
+            cursorIndex -= 1
             delegate?.textInputHandler(self, didUpdateBuffer: buffer)
         }
     }
@@ -154,7 +159,9 @@ class TextInputHandler: TextInputHandling {
     func handleSpace() {
         guard (buffer.count + (composingText.isEmpty ? 0 : 1) + 1) <= maxLength else { return }
         commitComposing()
-        buffer.append(" ")
+        let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+        buffer.insert(" ", at: idx)
+        cursorIndex += 1
         delegate?.textInputHandler(self, didUpdateBuffer: buffer)
     }
 
@@ -163,7 +170,9 @@ class TextInputHandler: TextInputHandling {
         let lineCount = buffer.components(separatedBy: "\n").count
         guard lineCount < maxNewlineCount else { return }
         commitComposing()
-        buffer.append("\n")
+        let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+        buffer.insert("\n", at: idx)
+        cursorIndex += 1
         delegate?.textInputHandler(self, didUpdateBuffer: buffer)
     }
 
@@ -171,6 +180,7 @@ class TextInputHandler: TextInputHandling {
         buffer = ""
         composingText = ""
         hangulState = .empty
+        cursorIndex = 0
         delegate?.textInputHandler(self, didUpdateBuffer: buffer)
         delegate?.textInputHandler(self, didUpdateComposing: "")
     }
@@ -339,7 +349,9 @@ class TextInputHandler: TextInputHandling {
 
     func commitComposing() {
         if !composingText.isEmpty {
-            buffer += composingText
+            let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+            buffer.insert(contentsOf: composingText, at: idx)
+            cursorIndex += composingText.count
             composingText = ""
             hangulState = .empty
             delegate?.textInputHandler(self, didUpdateBuffer: buffer)
@@ -355,6 +367,17 @@ class TextInputHandler: TextInputHandling {
         buffer = text
         composingText = ""
         hangulState = .empty
+        cursorIndex = text.count
+    }
+
+    func moveCursor(to index: Int) {
+        commitComposing()
+        cursorIndex = max(0, min(index, buffer.count))
+    }
+
+    func moveCursorToEnd() {
+        commitComposing()
+        cursorIndex = buffer.count
     }
 
     private func removeLastComposingUnit() {
