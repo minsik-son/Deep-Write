@@ -46,14 +46,40 @@ final class LocalizationManager {
 
     var currentLanguage: AppLanguage {
         get {
-            guard let code = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.appLanguage),
-                  let lang = AppLanguage(rawValue: code) else { return .ko }
-            return lang
+            if let code = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.appLanguage),
+               let lang = AppLanguage(rawValue: code) {
+                return lang
+            }
+            // Bootstrap: 저장값 없음 — device language 감지 후 저장
+            let detected = Self.detectDeviceLanguage()
+            AppGroupManager.shared.set(detected.rawValue, forKey: AppConstants.UserDefaultsKeys.appLanguage)
+            return detected
         }
         set {
             AppGroupManager.shared.set(newValue.rawValue, forKey: AppConstants.UserDefaultsKeys.appLanguage)
             loadBundle()
             NotificationCenter.default.post(name: .languageDidChange, object: nil)
+        }
+    }
+
+    /// Device preferred language → AppLanguage. 지원 외 언어는 English fallback.
+    static func detectDeviceLanguage() -> AppLanguage {
+        guard let preferred = Locale.preferredLanguages.first else { return .en }
+        let lower = preferred.lowercased()
+        // zh-Hans / zh-CN 계열
+        if lower.hasPrefix("zh-hans") || lower.hasPrefix("zh-cn") { return .zhHans }
+        // prefix 2글자 매칭
+        let prefix = String(lower.prefix(2))
+        switch prefix {
+        case "ko": return .ko
+        case "en": return .en
+        case "ja": return .ja
+        case "ru": return .ru
+        case "es": return .es
+        case "fr": return .fr
+        case "de": return .de
+        case "it": return .it
+        default:   return .en
         }
     }
 

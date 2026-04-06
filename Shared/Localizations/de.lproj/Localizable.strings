@@ -83,6 +83,20 @@
 "onboarding.features.correct_desc" = "Automatische Rechtschreibprüfung";
 "onboarding.features.clipboard" = "Zwischenablage-Verlauf";
 "onboarding.features.clipboard_desc" = "Kopierten Text schnell wiederverwenden";
+"onboarding.features.title.v2" = "Diese Funktionen kannst du sofort nutzen";
+"onboarding.features.translation" = "Echtzeit-Übersetzung";
+"onboarding.features.translation_desc" = "Beim Tippen direkt übersetzen";
+"onboarding.features.correction" = "KI-Schreibkorrektur";
+"onboarding.features.correction_desc" = "Formulierungen natürlicher machen";
+"onboarding.features.reply" = "KI-Antworten";
+"onboarding.features.reply_desc" = "Schnelle Antworten passend zum Kontext";
+"onboarding.features.saved_phrases" = "Gespeicherte Phrasen";
+"onboarding.features.saved_phrases_desc" = "Häufige Sätze mit einem Tipp einfügen";
+"onboarding.features.extras_label" = "Das geht auch";
+"onboarding.features.quick_note" = "Schnellnotizen";
+"onboarding.features.calculator" = "Rechner";
+"onboarding.features.emoji" = "Emoji";
+"onboarding.features.dictation" = "Spracheingabe";
 
 // === Keyboard Errors & Status ===
 "keyboard.error.full_access" = "Bitte erlauben Sie den Vollzugriff";
@@ -272,7 +286,22 @@
 "paste_guide.step3.title" = "Fertig";
 "paste_guide.step3.detail" = "Sie können die Zwischenablage-Funktion jetzt ohne Benachrichtigungen nutzen.";
 "paste_guide.open_settings" = "Einstellungen öffnen";
-
+"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.detail" = "Aus anderen Apps einsetzen";
+"paste_guide.anim.section.access" = "Translator Keyboard-Zugriff";
+"paste_guide.anim.section.language" = "Bevorzugte Sprache";
+"paste_guide.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
+"paste_guide.anim.row.search" = "Suchen";
+"paste_guide.anim.row.cellular" = "Mobile Daten";
+"paste_guide.anim.row.keyboards" = "Tastaturen";
+"paste_guide.anim.row.paste_from_other_apps" = "Aus anderen Apps einsetzen";
+"paste_guide.anim.row.language" = "Sprache";
+"paste_guide.anim.value.ask" = "Fragen";
+"paste_guide.anim.value.allow" = "Erlauben";
+"paste_guide.anim.value.language_current" = "Deutsch";
+"paste_guide.anim.option.ask" = "Fragen";
+"paste_guide.anim.option.deny" = "Ablehnen";
+"paste_guide.anim.option.allow" = "Erlauben";
 // === Privacy Dashboard ===
 "privacy.header" = "Sehen Sie, welche Daten Translator Keyboard sammelt und nicht sammelt.";
 "privacy.not_collected" = "Nicht gesammelte Daten";

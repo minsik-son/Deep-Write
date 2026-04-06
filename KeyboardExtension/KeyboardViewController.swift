@@ -610,8 +610,9 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func loadKeyboardLanguageSetting() {
-        let code = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage) ?? "ko"
-        let lang = KeyboardLanguage(rawValue: code) ?? .korean
+        let code = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
+            ?? LocalizationManager.detectDeviceLanguage().rawValue
+        let lang = KeyboardLanguage(rawValue: code) ?? .english
         keyboardLayoutView.pairedLanguage = lang
         let current = keyboardLayoutView.getCurrentLanguage()
         if current != .english && current != lang {

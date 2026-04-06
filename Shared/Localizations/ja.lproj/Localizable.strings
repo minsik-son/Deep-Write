@@ -83,6 +83,20 @@
 "onboarding.features.correct_desc" = "自動でスペルチェック・修正";
 "onboarding.features.clipboard" = "クリップボード履歴";
 "onboarding.features.clipboard_desc" = "コピーしたテキストをすぐに再利用";
+"onboarding.features.title.v2" = "こんな機能をすぐ使えます";
+"onboarding.features.translation" = "リアルタイム翻訳";
+"onboarding.features.translation_desc" = "入力しながらそのまま翻訳";
+"onboarding.features.correction" = "AI文章補正";
+"onboarding.features.correction_desc" = "より自然な表現に整える";
+"onboarding.features.reply" = "AI返信作成";
+"onboarding.features.reply_desc" = "状況に合った返信をすばやく作成";
+"onboarding.features.saved_phrases" = "保存フレーズ";
+"onboarding.features.saved_phrases_desc" = "よく使う文章をすぐ入力";
+"onboarding.features.extras_label" = "こんなこともできます";
+"onboarding.features.quick_note" = "クイックメモ";
+"onboarding.features.calculator" = "計算機";
+"onboarding.features.emoji" = "絵文字";
+"onboarding.features.dictation" = "音声入力";
 
 // === Keyboard Errors & Status ===
 "keyboard.error.full_access" = "フルアクセスを許可してください";
@@ -272,6 +286,22 @@
 "paste_guide.step3.title" = "完了";
 "paste_guide.step3.detail" = "ペースト通知なしでクリップボード機能を使用できます。";
 "paste_guide.open_settings" = "設定へ移動";
+"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.detail" = "ほかのAppからペースト";
+"paste_guide.anim.section.access" = "Translator Keyboardのアクセス許可";
+"paste_guide.anim.section.language" = "優先する言語";
+"paste_guide.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
+"paste_guide.anim.row.search" = "検索";
+"paste_guide.anim.row.cellular" = "モバイルデータ通信";
+"paste_guide.anim.row.keyboards" = "キーボード";
+"paste_guide.anim.row.paste_from_other_apps" = "ほかのAppからペースト";
+"paste_guide.anim.row.language" = "言語";
+"paste_guide.anim.value.ask" = "確認";
+"paste_guide.anim.value.allow" = "許可";
+"paste_guide.anim.value.language_current" = "日本語";
+"paste_guide.anim.option.ask" = "確認";
+"paste_guide.anim.option.deny" = "拒否";
+"paste_guide.anim.option.allow" = "許可";
 
 // === Privacy Dashboard ===
 "privacy.header" = "Translator Keyboardが収集するデータと収集しないデータをご確認ください。";

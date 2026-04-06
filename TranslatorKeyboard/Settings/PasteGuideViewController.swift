@@ -34,6 +34,25 @@ class PasteGuideViewController: UIViewController {
             contentStack.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40),
         ])
 
+        // v2: Animation guide — 폭 축소 + 높이 300 + center align
+        let animWrapper = UIView()
+        animWrapper.translatesAutoresizingMaskIntoConstraints = false
+
+        let animView = PasteGuideSettingsAnimationView()
+        animView.translatesAutoresizingMaskIntoConstraints = false
+        animWrapper.addSubview(animView)
+
+        NSLayoutConstraint.activate([
+            animView.centerXAnchor.constraint(equalTo: animWrapper.centerXAnchor),
+            animView.topAnchor.constraint(equalTo: animWrapper.topAnchor),
+            animView.bottomAnchor.constraint(equalTo: animWrapper.bottomAnchor),
+            animView.widthAnchor.constraint(equalTo: animWrapper.widthAnchor, multiplier: 0.82),
+            animView.heightAnchor.constraint(equalToConstant: 300),
+        ])
+
+        contentStack.addArrangedSubview(animWrapper)
+        animView.startLoop()
+
         // Description
         let descLabel = UILabel()
         descLabel.text = L("paste_guide.description")

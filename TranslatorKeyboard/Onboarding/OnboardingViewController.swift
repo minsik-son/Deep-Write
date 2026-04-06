@@ -149,32 +149,25 @@ class OnboardingViewController: UIViewController {
     @objc private func ctaTapped() {
         switch currentIndex {
         case 1:
+            // swap v1: CTA = 다시 설정으로 이동 (설정 앱 열기)
             if !hasVisitedSettings {
                 hasVisitedSettings = true
                 let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
                 defaults.set(true, forKey: "onboarding_returned_from_settings")
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-                return
-            } else {
-                goToPage(2)
-                return
             }
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url)
+            }
+            return
         case 2:
-            // v6: CTA = 키보드 열기 — warning UI는 유지, keyboard open + recovery polling만
+            // swap v1: CTA = 다시 설정해보기 → setup page로 돌아가기
+            stopPolling()
             if let page = pages[safe: 2] {
-                for subview in page.view.subviews where subview is UITextField {
-                    subview.becomeFirstResponder()
-                    break
+                for subview in page.view.subviews where subview.tag == 901 || subview.tag == 902 {
+                    subview.removeFromSuperview()
                 }
             }
-            checkKeyboardStatus()
-            if pollingTimer == nil && !verificationPassed {
-                pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                    self?.checkKeyboardStatus()
-                }
-            }
+            goToPage(1)
             return
         case 3:
             showPaywallAfterOnboarding()
@@ -187,20 +180,22 @@ class OnboardingViewController: UIViewController {
     @objc private func secondaryTapped() {
         switch currentIndex {
         case 1:
-            // "다시 설정으로 이동" — 설정 앱 다시 열기
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
+            // swap v1: secondary = 설정을 완료했어요 → verification page로 이동
+            goToPage(2)
         case 2:
-            // "다시 설정해보기" — Page 1로 돌아가기
-            stopPolling()
-            // 검증 페이지의 동적 뷰 정리 (fullAccess 경고, 타임아웃 메시지 등)
+            // swap v1: secondary = 키보드 열기 → keyboard open + recovery polling
             if let page = pages[safe: 2] {
-                for subview in page.view.subviews where subview.tag == 901 || subview.tag == 902 {
-                    subview.removeFromSuperview()
+                for subview in page.view.subviews where subview is UITextField {
+                    subview.becomeFirstResponder()
+                    break
                 }
             }
-            goToPage(1)
+            checkKeyboardStatus()
+            if pollingTimer == nil && !verificationPassed {
+                pollingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+                    self?.checkKeyboardStatus()
+                }
+            }
         default:
             break
         }
@@ -235,29 +230,37 @@ class OnboardingViewController: UIViewController {
             ctaButton.isEnabled = true
             ctaButton.backgroundColor = .systemBlue
         case 1:
-            ctaButton.setTitle(hasVisitedSettings ? L("onboarding.cta.done_settings") : L("onboarding.cta.go_settings"), for: .normal)
+            // swap v1: CTA = 다시 설정으로 이동, secondary = 설정을 완료했어요
+            ctaButton.setTitle(hasVisitedSettings ? L("onboarding.cta.reopen_settings") : L("onboarding.cta.go_settings"), for: .normal)
             ctaButton.isEnabled = true
             ctaButton.backgroundColor = .systemBlue
-            // 설정에서 돌아온 후: "다시 설정으로 이동" — ctaButton과 같은 크기/구조
+            // swap v2: secondary(위) = 설정을 완료했어요 (primary blue), CTA(아래) = 다시 설정으로 이동 (secondary light)
             if hasVisitedSettings {
-                secondaryButton.setTitle(L("onboarding.cta.reopen_settings"), for: .normal)
+                // 위 버튼 = primary blue filled
+                secondaryButton.setTitle(L("onboarding.cta.done_settings"), for: .normal)
                 secondaryButton.isHidden = false
                 secondaryButtonHeightConstraint.constant = 52
-                secondaryButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
-                secondaryButton.setTitleColor(.systemBlue, for: .normal)
+                secondaryButton.backgroundColor = .systemBlue
+                secondaryButton.setTitleColor(.white, for: .normal)
                 secondaryButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
                 secondaryButton.layer.cornerRadius = 14
+                // 아래 버튼 = secondary light
+                ctaButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+                ctaButton.setTitleColor(.systemBlue, for: .normal)
             }
         case 2:
-            // v4: global CTA 재활용 — 키보드 열기 + 다시 설정해보기
-            ctaButton.setTitle(L("onboarding.verify.open_keyboard"), for: .normal)
+            // swap v2: secondary(위) = 키보드 열기 (primary blue), CTA(아래) = 다시 설정해보기 (secondary light)
+            ctaButton.setTitle(L("onboarding.cta.back_to_settings"), for: .normal)
             ctaButton.isEnabled = true
-            ctaButton.backgroundColor = .systemBlue
-            // secondary = 다시 설정해보기 (filled style)
-            secondaryButton.setTitle(L("onboarding.cta.back_to_settings"), for: .normal)
+            ctaButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+            ctaButton.setTitleColor(.systemBlue, for: .normal)
+            // 위 버튼 = primary blue filled
+            secondaryButton.setTitle(L("onboarding.verify.open_keyboard"), for: .normal)
             secondaryButton.isHidden = false
-            secondaryButtonHeightConstraint.constant = 50
-            secondaryButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+            secondaryButtonHeightConstraint.constant = 52
+            secondaryButton.backgroundColor = .systemBlue
+            secondaryButton.setTitleColor(.white, for: .normal)
+            secondaryButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
             secondaryButton.layer.cornerRadius = 14
         case 3:
             ctaButton.setTitle(L("onboarding.cta.start"), for: .normal)
@@ -834,44 +837,217 @@ private extension OnboardingViewController {
 private extension OnboardingViewController {
     func makeFeaturesPage() -> UIViewController {
         let vc = UIViewController()
-        vc.view.backgroundColor = .systemBackground
+        // v4: 메인 홈과 동일한 약한 회색 배경
+        vc.view.backgroundColor = AppColors.bg
 
         let titleLabel = UILabel()
-        titleLabel.text = L("onboarding.features.title")
-        titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
-        titleLabel.textAlignment = .center
+        titleLabel.text = L("onboarding.features.title.v2")
+        titleLabel.font = .systemFont(ofSize: 26, weight: .heavy)
+        titleLabel.textAlignment = .left
+        titleLabel.textColor = AppColors.text
+        titleLabel.numberOfLines = 0
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        let features: [(icon: String, title: String, description: String)] = [
-            ("textformat", L("onboarding.features.translate"), L("onboarding.features.translate_desc")),
-            ("pencil.and.outline", L("onboarding.features.correct"), L("onboarding.features.correct_desc")),
-            ("doc.on.clipboard", L("onboarding.features.clipboard"), L("onboarding.features.clipboard_desc")),
+        // v4: Core 5 — 흰색 grouped card 안에 row + divider
+        let coreFeatures: [(iconAsset: String, title: String, desc: String)] = [
+            ("onboarding_icon_translate", L("onboarding.features.translation"), L("onboarding.features.translation_desc")),
+            ("onboarding_icon_correction", L("onboarding.features.correction"), L("onboarding.features.correction_desc")),
+            ("onboarding_icon_reply", L("onboarding.features.reply"), L("onboarding.features.reply_desc")),
+            ("onboarding_icon_clipboard", L("onboarding.features.clipboard"), L("onboarding.features.clipboard_desc")),
+            ("onboarding_icon_saved_phrases", L("onboarding.features.saved_phrases"), L("onboarding.features.saved_phrases_desc")),
         ]
 
-        let featureStack = UIStackView()
-        featureStack.axis = .vertical
-        featureStack.spacing = 28
-        featureStack.translatesAutoresizingMaskIntoConstraints = false
+        let groupedCard = UIView()
+        groupedCard.backgroundColor = AppColors.card
+        groupedCard.layer.cornerRadius = 16
+        groupedCard.translatesAutoresizingMaskIntoConstraints = false
 
-        for feature in features {
-            let row = makeFeatureRow(icon: feature.icon, title: feature.title, description: feature.description)
-            featureStack.addArrangedSubview(row)
+        let rowStack = UIStackView()
+        rowStack.axis = .vertical
+        rowStack.spacing = 0
+        rowStack.translatesAutoresizingMaskIntoConstraints = false
+
+        for (i, f) in coreFeatures.enumerated() {
+            let row = makeFeatureListRow(iconAsset: f.iconAsset, title: f.title, desc: f.desc)
+            rowStack.addArrangedSubview(row)
+            if i < coreFeatures.count - 1 {
+                let divider = UIView()
+                divider.backgroundColor = AppColors.border
+                divider.translatesAutoresizingMaskIntoConstraints = false
+
+                let dividerWrapper = UIView()
+                dividerWrapper.translatesAutoresizingMaskIntoConstraints = false
+                dividerWrapper.addSubview(divider)
+                NSLayoutConstraint.activate([
+                    divider.topAnchor.constraint(equalTo: dividerWrapper.topAnchor),
+                    divider.leadingAnchor.constraint(equalTo: dividerWrapper.leadingAnchor, constant: 67),
+                    divider.trailingAnchor.constraint(equalTo: dividerWrapper.trailingAnchor),
+                    divider.bottomAnchor.constraint(equalTo: dividerWrapper.bottomAnchor),
+                    divider.heightAnchor.constraint(equalToConstant: 0.5),
+                ])
+                rowStack.addArrangedSubview(dividerWrapper)
+            }
         }
 
+        groupedCard.addSubview(rowStack)
+        NSLayoutConstraint.activate([
+            rowStack.topAnchor.constraint(equalTo: groupedCard.topAnchor),
+            rowStack.bottomAnchor.constraint(equalTo: groupedCard.bottomAnchor),
+            rowStack.leadingAnchor.constraint(equalTo: groupedCard.leadingAnchor),
+            rowStack.trailingAnchor.constraint(equalTo: groupedCard.trailingAnchor),
+        ])
+
+        // v4: Extras — "이것도 돼요" + 흰색 compact card
+        let extrasLabel = UILabel()
+        extrasLabel.text = L("onboarding.features.extras_label")
+        extrasLabel.font = .systemFont(ofSize: 11, weight: .bold)
+        extrasLabel.textColor = AppColors.textMuted
+        extrasLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let extraCard = UIView()
+        extraCard.backgroundColor = AppColors.card
+        extraCard.layer.cornerRadius = 12
+        extraCard.translatesAutoresizingMaskIntoConstraints = false
+
+        let extraRow = makeExtraCompactRow(iconAsset: "onboarding_icon_quick_note", title: L("onboarding.features.quick_note"))
+        extraCard.addSubview(extraRow)
+        NSLayoutConstraint.activate([
+            extraRow.topAnchor.constraint(equalTo: extraCard.topAnchor),
+            extraRow.bottomAnchor.constraint(equalTo: extraCard.bottomAnchor),
+            extraRow.leadingAnchor.constraint(equalTo: extraCard.leadingAnchor),
+            extraRow.trailingAnchor.constraint(equalTo: extraCard.trailingAnchor),
+        ])
+
         vc.view.addSubview(titleLabel)
-        vc.view.addSubview(featureStack)
+        vc.view.addSubview(groupedCard)
+        vc.view.addSubview(extrasLabel)
+        vc.view.addSubview(extraCard)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 60),
-            titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 24),
-            titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -24),
+            titleLabel.topAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            titleLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 22),
+            titleLabel.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -22),
 
-            featureStack.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 40),
-            featureStack.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 32),
-            featureStack.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -32),
+            groupedCard.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 22),
+            groupedCard.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 16),
+            groupedCard.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -16),
+
+            extrasLabel.topAnchor.constraint(equalTo: groupedCard.bottomAnchor, constant: 16),
+            extrasLabel.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 20),
+
+            extraCard.topAnchor.constraint(equalTo: extrasLabel.bottomAnchor, constant: 10),
+            extraCard.leadingAnchor.constraint(equalTo: vc.view.leadingAnchor, constant: 16),
+            extraCard.trailingAnchor.constraint(equalTo: vc.view.trailingAnchor, constant: -16),
         ])
 
         return vc
+    }
+
+    /// v4: Feature list row — 홈 activity row 스타일, icon wrapper 포함
+    func makeFeatureListRow(iconAsset: String, title: String, desc: String) -> UIView {
+        let row = UIView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        // Icon wrapper — 연회색 rounded square (홈 activity row 동일)
+        let iconWrapper = UIView()
+        iconWrapper.backgroundColor = UIColor(red: 242/255, green: 243/255, blue: 245/255, alpha: 1.0)
+        iconWrapper.layer.cornerRadius = 12
+        iconWrapper.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconView = UIImageView()
+        iconView.image = UIImage(named: iconAsset)
+        iconView.contentMode = .scaleAspectFit
+        iconView.clipsToBounds = true
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconWrapper.addSubview(iconView)
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.textColor = AppColors.text
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let descLabel = UILabel()
+        descLabel.text = desc
+        descLabel.font = .systemFont(ofSize: 12)
+        descLabel.textColor = AppColors.textMuted
+        descLabel.numberOfLines = 1
+        descLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        row.addSubview(iconWrapper)
+        row.addSubview(titleLabel)
+        row.addSubview(descLabel)
+
+        NSLayoutConstraint.activate([
+            row.heightAnchor.constraint(equalToConstant: 62),
+
+            iconWrapper.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 8),
+            iconWrapper.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            iconWrapper.widthAnchor.constraint(equalToConstant: 40),
+            iconWrapper.heightAnchor.constraint(equalToConstant: 40),
+
+            iconView.centerXAnchor.constraint(equalTo: iconWrapper.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconWrapper.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24),
+
+            titleLabel.topAnchor.constraint(equalTo: row.topAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: iconWrapper.trailingAnchor, constant: 9),
+            titleLabel.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -14),
+
+            descLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+            descLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            descLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+        ])
+
+        return row
+    }
+
+    /// v4: Extra compact row — 홈 스타일 icon wrapper
+    func makeExtraCompactRow(iconAsset: String, title: String) -> UIView {
+        let row = UIView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconWrapper = UIView()
+        iconWrapper.backgroundColor = UIColor(red: 242/255, green: 243/255, blue: 245/255, alpha: 1.0)
+        iconWrapper.layer.cornerRadius = 12
+        iconWrapper.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconView = UIImageView()
+        iconView.image = UIImage(named: iconAsset)
+        iconView.contentMode = .scaleAspectFit
+        iconView.clipsToBounds = true
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconWrapper.addSubview(iconView)
+
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: 14, weight: .semibold)
+        label.textColor = AppColors.textSub
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        row.addSubview(iconWrapper)
+        row.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            row.heightAnchor.constraint(equalToConstant: 52),
+
+            iconWrapper.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 14),
+            iconWrapper.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            iconWrapper.widthAnchor.constraint(equalToConstant: 40),
+            iconWrapper.heightAnchor.constraint(equalToConstant: 40),
+
+            iconView.centerXAnchor.constraint(equalTo: iconWrapper.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconWrapper.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24),
+
+            label.leadingAnchor.constraint(equalTo: iconWrapper.trailingAnchor, constant: 13),
+            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: row.trailingAnchor, constant: -14),
+        ])
+
+        return row
     }
 
     func makeFeatureRow(icon: String, title: String, description: String) -> UIView {

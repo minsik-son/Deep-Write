@@ -83,6 +83,20 @@
 "onboarding.features.correct_desc" = "自动拼写检查和纠正";
 "onboarding.features.clipboard" = "剪贴板历史";
 "onboarding.features.clipboard_desc" = "快速重用复制的文本";
+"onboarding.features.title.v2" = "这些功能现在就能用";
+"onboarding.features.translation" = "实时翻译";
+"onboarding.features.translation_desc" = "边输入边翻译";
+"onboarding.features.correction" = "AI 语句润色";
+"onboarding.features.correction_desc" = "让表达更自然";
+"onboarding.features.reply" = "AI 回复生成";
+"onboarding.features.reply_desc" = "快速生成贴合情境的回复";
+"onboarding.features.saved_phrases" = "常用短语";
+"onboarding.features.saved_phrases_desc" = "一键输入常用句子";
+"onboarding.features.extras_label" = "还能做这些";
+"onboarding.features.quick_note" = "快捷笔记";
+"onboarding.features.calculator" = "计算器";
+"onboarding.features.emoji" = "表情";
+"onboarding.features.dictation" = "语音输入";
 
 // === Keyboard Errors & Status ===
 "keyboard.error.full_access" = "请允许完全访问";
@@ -272,7 +286,22 @@
 "paste_guide.step3.title" = "完成";
 "paste_guide.step3.detail" = "现在可以无通知地使用剪贴板功能。";
 "paste_guide.open_settings" = "前往设置";
-
+"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.detail" = "从其他 App 粘贴";
+"paste_guide.anim.section.access" = "Translator Keyboard 访问权限";
+"paste_guide.anim.section.language" = "偏好语言";
+"paste_guide.anim.row.apple_intelligence" = "Apple Intelligence与Siri";
+"paste_guide.anim.row.search" = "搜索";
+"paste_guide.anim.row.cellular" = "蜂窝数据";
+"paste_guide.anim.row.keyboards" = "键盘";
+"paste_guide.anim.row.paste_from_other_apps" = "从其他 App 粘贴";
+"paste_guide.anim.row.language" = "语言";
+"paste_guide.anim.value.ask" = "询问";
+"paste_guide.anim.value.allow" = "允许";
+"paste_guide.anim.value.language_current" = "简体中文";
+"paste_guide.anim.option.ask" = "询问";
+"paste_guide.anim.option.deny" = "拒绝";
+"paste_guide.anim.option.allow" = "允许";
 // === Privacy Dashboard ===
 "privacy.header" = "查看Translator Keyboard收集和不收集的数据。";
 "privacy.not_collected" = "未收集的数据";

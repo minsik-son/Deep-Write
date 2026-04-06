@@ -83,6 +83,20 @@
 "onboarding.features.correct_desc" = "Автоматическая проверка орфографии";
 "onboarding.features.clipboard" = "История буфера обмена";
 "onboarding.features.clipboard_desc" = "Быстро используйте скопированный текст";
+"onboarding.features.title.v2" = "Вот что можно делать сразу";
+"onboarding.features.translation" = "Перевод в реальном времени";
+"onboarding.features.translation_desc" = "Переводите прямо во время ввода";
+"onboarding.features.correction" = "ИИ-коррекция текста";
+"onboarding.features.correction_desc" = "Делает фразы более естественными";
+"onboarding.features.reply" = "Ответы с ИИ";
+"onboarding.features.reply_desc" = "Быстро создавайте ответы по ситуации";
+"onboarding.features.saved_phrases" = "Сохраненные фразы";
+"onboarding.features.saved_phrases_desc" = "Вставляйте частые фразы одним нажатием";
+"onboarding.features.extras_label" = "А ещё можно";
+"onboarding.features.quick_note" = "Быстрые заметки";
+"onboarding.features.calculator" = "Калькулятор";
+"onboarding.features.emoji" = "Эмодзи";
+"onboarding.features.dictation" = "Голосовой ввод";
 
 // === Keyboard Errors & Status ===
 "keyboard.error.full_access" = "Пожалуйста, разрешите полный доступ";
@@ -272,7 +286,22 @@
 "paste_guide.step3.title" = "Готово";
 "paste_guide.step3.detail" = "Теперь вы можете использовать буфер обмена без уведомлений.";
 "paste_guide.open_settings" = "Открыть Настройки";
-
+"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.detail" = "Вставка из других приложений";
+"paste_guide.anim.section.access" = "Доступ Translator Keyboard";
+"paste_guide.anim.section.language" = "Предпочитаемый язык";
+"paste_guide.anim.row.apple_intelligence" = "Apple Intelligence и Siri";
+"paste_guide.anim.row.search" = "Поиск";
+"paste_guide.anim.row.cellular" = "Сотовые данные";
+"paste_guide.anim.row.keyboards" = "Клавиатуры";
+"paste_guide.anim.row.paste_from_other_apps" = "Вставка из других приложений";
+"paste_guide.anim.row.language" = "Язык";
+"paste_guide.anim.value.ask" = "Спрашивать";
+"paste_guide.anim.value.allow" = "Разрешить";
+"paste_guide.anim.value.language_current" = "Русский";
+"paste_guide.anim.option.ask" = "Спрашивать";
+"paste_guide.anim.option.deny" = "Запретить";
+"paste_guide.anim.option.allow" = "Разрешить";
 // === Privacy Dashboard ===
 "privacy.header" = "Узнайте, какие данные Translator Keyboard собирает и не собирает.";
 "privacy.not_collected" = "Данные не собираются";

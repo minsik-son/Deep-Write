@@ -83,6 +83,20 @@
 "onboarding.features.correct_desc" = "자동으로 맞춤법 교정";
 "onboarding.features.clipboard" = "클립보드 히스토리";
 "onboarding.features.clipboard_desc" = "복사한 텍스트 빠르게 재사용";
+"onboarding.features.title.v2" = "이런 기능을 바로 쓸 수 있어요";
+"onboarding.features.translation" = "실시간 번역";
+"onboarding.features.translation_desc" = "입력하면서 바로 번역";
+"onboarding.features.correction" = "AI 문장 교정";
+"onboarding.features.correction_desc" = "더 자연스럽게 다듬기";
+"onboarding.features.reply" = "AI 답장 생성";
+"onboarding.features.reply_desc" = "상황에 맞는 답장 빠르게 작성";
+"onboarding.features.saved_phrases" = "저장 문구";
+"onboarding.features.saved_phrases_desc" = "자주 쓰는 문장을 한 번에 입력";
+"onboarding.features.extras_label" = "이것도 돼요";
+"onboarding.features.quick_note" = "퀵노트";
+"onboarding.features.calculator" = "계산기";
+"onboarding.features.emoji" = "이모지";
+"onboarding.features.dictation" = "음성 입력";
 
 // === Keyboard Errors & Status ===
 "keyboard.error.full_access" = "전체 접근을 허용해주세요";
@@ -272,6 +286,22 @@
 "paste_guide.step3.title" = "완료";
 "paste_guide.step3.detail" = "이제 붙여넣기 알림 없이 클립보드 기능을 사용할 수 있습니다.";
 "paste_guide.open_settings" = "설정으로 바로 이동";
+"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.detail" = "다른 앱에서 붙여넣기";
+"paste_guide.anim.section.access" = "Translator Keyboard 접근 허용";
+"paste_guide.anim.section.language" = "선호하는 언어";
+"paste_guide.anim.row.apple_intelligence" = "Apple Intelligence 및 Siri";
+"paste_guide.anim.row.search" = "검색";
+"paste_guide.anim.row.cellular" = "셀룰러 데이터";
+"paste_guide.anim.row.keyboards" = "키보드";
+"paste_guide.anim.row.paste_from_other_apps" = "다른 앱에서 붙여넣기";
+"paste_guide.anim.row.language" = "언어";
+"paste_guide.anim.value.ask" = "묻기";
+"paste_guide.anim.value.allow" = "허용";
+"paste_guide.anim.value.language_current" = "한국어";
+"paste_guide.anim.option.ask" = "묻기";
+"paste_guide.anim.option.deny" = "거부";
+"paste_guide.anim.option.allow" = "허용";
 
 // === Privacy Dashboard ===
 "privacy.header" = "Translator Keyboard가 수집하는 데이터와 수집하지 않는 데이터를 확인하세요.";
