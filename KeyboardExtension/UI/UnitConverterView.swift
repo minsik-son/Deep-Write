@@ -49,12 +49,20 @@ final class UnitConverterView: UIView {
         }
     }
 
+    // MARK: - Picker Target
+
+    private enum PickerTarget {
+        case from
+        case to
+    }
+
     // MARK: - State
 
     private var currentCategory: UnitCategory = .length
     private var fromUnitIndex: Int = 0
     private var toUnitIndex: Int = 1
     private var inputValue: String = ""
+    private var activePickerTarget: PickerTarget?
 
     // MARK: - Formatter
 
@@ -110,6 +118,7 @@ final class UnitConverterView: UIView {
     private let displayContainer: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
+        v.clipsToBounds = false
         return v
     }()
 
@@ -123,21 +132,19 @@ final class UnitConverterView: UIView {
         return l
     }()
 
-    private let fromUnitButton: UIButton = {
+    private let fromUnitChipButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
         btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.contentHorizontalAlignment = .left
+        btn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 8)
+        btn.layer.cornerRadius = 13
+        btn.clipsToBounds = true
+        let chevron = UIImage(systemName: "chevron.down",
+                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 9, weight: .semibold))
+        btn.setImage(chevron, for: .normal)
+        btn.semanticContentAttribute = .forceRightToLeft
+        btn.imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: 0)
         return btn
-    }()
-
-    private let arrowLabel: UILabel = {
-        let l = UILabel()
-        l.text = "\u{2192}"
-        l.font = .systemFont(ofSize: 16, weight: .regular)
-        l.textAlignment = .center
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
     }()
 
     private let toLabel: UILabel = {
@@ -150,11 +157,18 @@ final class UnitConverterView: UIView {
         return l
     }()
 
-    private let toUnitButton: UIButton = {
+    private let toUnitChipButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
         btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.contentHorizontalAlignment = .left
+        btn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 8)
+        btn.layer.cornerRadius = 13
+        btn.clipsToBounds = true
+        let chevron = UIImage(systemName: "chevron.down",
+                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 9, weight: .semibold))
+        btn.setImage(chevron, for: .normal)
+        btn.semanticContentAttribute = .forceRightToLeft
+        btn.imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: 0)
         return btn
     }()
 
@@ -176,11 +190,43 @@ final class UnitConverterView: UIView {
         return sv
     }()
 
+    // Picker views
+    private let unitPickerContainer: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.isHidden = true
+        v.layer.cornerRadius = 12
+        v.layer.shadowColor = UIColor.black.cgColor
+        v.layer.shadowOffset = CGSize(width: 0, height: 2)
+        v.layer.shadowRadius = 8
+        v.layer.shadowOpacity = 0.15
+        return v
+    }()
+
+    private let unitPickerStack: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.spacing = 6
+        sv.alignment = .center
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        return sv
+    }()
+
+    private var pickerTopConstraint: NSLayoutConstraint?
+
+    // Row references for picker positioning
+    private let fromRow = UIView()
+    private let toRow = UIView()
+
     // MARK: - Colors
 
     private struct Colors {
         static let accentBlue = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)
         static let accentTeal = UIColor(red: 0.0, green: 0.749, blue: 0.647, alpha: 1.0)
+        static let chipBgLight = UIColor(red: 0.90, green: 0.90, blue: 0.92, alpha: 1.0)
+        static let chipBgDark = UIColor(red: 0.22, green: 0.22, blue: 0.24, alpha: 1.0)
+        static let pickerBgLight = UIColor.white
+        static let pickerBgDark = UIColor(red: 0.18, green: 0.18, blue: 0.20, alpha: 1.0)
         static let functionBgLight = UIColor(red: 0.65, green: 0.65, blue: 0.65, alpha: 1.0)
         static let functionBgDark = UIColor(red: 0.4, green: 0.4, blue: 0.4, alpha: 1.0)
         static let numberBgLight = UIColor(red: 0.88, green: 0.88, blue: 0.88, alpha: 1.0)
@@ -219,19 +265,21 @@ final class UnitConverterView: UIView {
         categorySegment.selectedSegmentIndex = 0
 
         // Display area
-        let fromRow = UIView()
         fromRow.translatesAutoresizingMaskIntoConstraints = false
-        let toRow = UIView()
         toRow.translatesAutoresizingMaskIntoConstraints = false
 
         displayContainer.addSubview(fromRow)
         displayContainer.addSubview(swapButton)
         displayContainer.addSubview(toRow)
 
-        fromRow.addSubview(fromUnitButton)
+        fromRow.addSubview(fromUnitChipButton)
         fromRow.addSubview(fromLabel)
-        toRow.addSubview(toUnitButton)
+        toRow.addSubview(toUnitChipButton)
         toRow.addSubview(toLabel)
+
+        // Picker container (above display)
+        displayContainer.addSubview(unitPickerContainer)
+        unitPickerContainer.addSubview(unitPickerStack)
 
         NSLayoutConstraint.activate([
             // Header
@@ -274,27 +322,37 @@ final class UnitConverterView: UIView {
             toRow.trailingAnchor.constraint(equalTo: swapButton.leadingAnchor, constant: -8),
             toRow.bottomAnchor.constraint(equalTo: displayContainer.bottomAnchor),
 
-            // From row
-            fromUnitButton.leadingAnchor.constraint(equalTo: fromRow.leadingAnchor),
-            fromUnitButton.centerYAnchor.constraint(equalTo: fromRow.centerYAnchor),
-            fromUnitButton.widthAnchor.constraint(equalToConstant: 36),
+            // From row — chip + label
+            fromUnitChipButton.leadingAnchor.constraint(equalTo: fromRow.leadingAnchor),
+            fromUnitChipButton.centerYAnchor.constraint(equalTo: fromRow.centerYAnchor),
+            fromUnitChipButton.heightAnchor.constraint(equalToConstant: 26),
 
-            fromLabel.leadingAnchor.constraint(equalTo: fromUnitButton.trailingAnchor, constant: 4),
+            fromLabel.leadingAnchor.constraint(equalTo: fromUnitChipButton.trailingAnchor, constant: 8),
             fromLabel.trailingAnchor.constraint(equalTo: fromRow.trailingAnchor),
             fromLabel.topAnchor.constraint(equalTo: fromRow.topAnchor),
             fromLabel.bottomAnchor.constraint(equalTo: fromRow.bottomAnchor),
             fromLabel.heightAnchor.constraint(equalToConstant: 34),
 
-            // To row
-            toUnitButton.leadingAnchor.constraint(equalTo: toRow.leadingAnchor),
-            toUnitButton.centerYAnchor.constraint(equalTo: toRow.centerYAnchor),
-            toUnitButton.widthAnchor.constraint(equalToConstant: 36),
+            // To row — chip + label
+            toUnitChipButton.leadingAnchor.constraint(equalTo: toRow.leadingAnchor),
+            toUnitChipButton.centerYAnchor.constraint(equalTo: toRow.centerYAnchor),
+            toUnitChipButton.heightAnchor.constraint(equalToConstant: 26),
 
-            toLabel.leadingAnchor.constraint(equalTo: toUnitButton.trailingAnchor, constant: 4),
+            toLabel.leadingAnchor.constraint(equalTo: toUnitChipButton.trailingAnchor, constant: 8),
             toLabel.trailingAnchor.constraint(equalTo: toRow.trailingAnchor),
             toLabel.topAnchor.constraint(equalTo: toRow.topAnchor),
             toLabel.bottomAnchor.constraint(equalTo: toRow.bottomAnchor),
             toLabel.heightAnchor.constraint(equalToConstant: 34),
+
+            // Picker container
+            unitPickerContainer.leadingAnchor.constraint(equalTo: displayContainer.leadingAnchor),
+            unitPickerContainer.trailingAnchor.constraint(lessThanOrEqualTo: displayContainer.trailingAnchor),
+            unitPickerContainer.heightAnchor.constraint(equalToConstant: 36),
+
+            unitPickerStack.topAnchor.constraint(equalTo: unitPickerContainer.topAnchor, constant: 4),
+            unitPickerStack.leadingAnchor.constraint(equalTo: unitPickerContainer.leadingAnchor, constant: 6),
+            unitPickerStack.trailingAnchor.constraint(equalTo: unitPickerContainer.trailingAnchor, constant: -6),
+            unitPickerStack.bottomAnchor.constraint(equalTo: unitPickerContainer.bottomAnchor, constant: -4),
 
             // Button grid
             buttonGrid.topAnchor.constraint(equalTo: displayContainer.bottomAnchor, constant: 4),
@@ -304,6 +362,10 @@ final class UnitConverterView: UIView {
             buttonGrid.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -4),
             buttonGrid.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
         ])
+
+        // Default picker position (will be updated when shown)
+        pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: fromRow.bottomAnchor, constant: 2)
+        pickerTopConstraint?.isActive = true
 
         let leadingFill = buttonGrid.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4)
         leadingFill.priority = .defaultHigh
@@ -367,8 +429,8 @@ final class UnitConverterView: UIView {
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         categorySegment.addTarget(self, action: #selector(categoryChanged), for: .valueChanged)
         swapButton.addTarget(self, action: #selector(swapTapped), for: .touchUpInside)
-        fromUnitButton.addTarget(self, action: #selector(cycleFromUnit), for: .touchUpInside)
-        toUnitButton.addTarget(self, action: #selector(cycleToUnit), for: .touchUpInside)
+        fromUnitChipButton.addTarget(self, action: #selector(fromChipTapped), for: .touchUpInside)
+        toUnitChipButton.addTarget(self, action: #selector(toChipTapped), for: .touchUpInside)
     }
 
     @objc private func insertTapped() {
@@ -384,6 +446,7 @@ final class UnitConverterView: UIView {
 
     @objc private func categoryChanged() {
         guard let cat = UnitCategory(rawValue: categorySegment.selectedSegmentIndex) else { return }
+        hidePicker()
         currentCategory = cat
         fromUnitIndex = 0
         toUnitIndex = min(1, cat.units.count - 1)
@@ -393,6 +456,7 @@ final class UnitConverterView: UIView {
     }
 
     @objc private func swapTapped() {
+        hidePicker()
         let temp = fromUnitIndex
         fromUnitIndex = toUnitIndex
         toUnitIndex = temp
@@ -400,27 +464,16 @@ final class UnitConverterView: UIView {
         updateDisplay()
     }
 
-    @objc private func cycleFromUnit() {
-        let units = currentCategory.units
-        fromUnitIndex = (fromUnitIndex + 1) % units.count
-        if fromUnitIndex == toUnitIndex {
-            fromUnitIndex = (fromUnitIndex + 1) % units.count
-        }
-        hapticFeedback.impactOccurred()
-        updateDisplay()
+    @objc private func fromChipTapped() {
+        togglePicker(for: .from)
     }
 
-    @objc private func cycleToUnit() {
-        let units = currentCategory.units
-        toUnitIndex = (toUnitIndex + 1) % units.count
-        if toUnitIndex == fromUnitIndex {
-            toUnitIndex = (toUnitIndex + 1) % units.count
-        }
-        hapticFeedback.impactOccurred()
-        updateDisplay()
+    @objc private func toChipTapped() {
+        togglePicker(for: .to)
     }
 
     @objc private func numpadTapped(_ sender: UIButton) {
+        hidePicker()
         hapticFeedback.impactOccurred()
         let tag = sender.tag
 
@@ -451,6 +504,105 @@ final class UnitConverterView: UIView {
         updateDisplay()
     }
 
+    // MARK: - Picker
+
+    private func togglePicker(for target: PickerTarget) {
+        if activePickerTarget == target {
+            hidePicker()
+        } else {
+            showPicker(for: target)
+        }
+    }
+
+    private func showPicker(for target: PickerTarget) {
+        // If switching targets, reset immediately without animation
+        if activePickerTarget != nil {
+            unitPickerContainer.layer.removeAllAnimations()
+            unitPickerContainer.alpha = 0
+        }
+
+        activePickerTarget = target
+        rebuildPickerItems(for: target)
+
+        // Position picker near the target row
+        pickerTopConstraint?.isActive = false
+        switch target {
+        case .from:
+            pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: fromRow.bottomAnchor, constant: 2)
+        case .to:
+            pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: toRow.bottomAnchor, constant: 2)
+        }
+        pickerTopConstraint?.isActive = true
+
+        unitPickerContainer.isHidden = false
+        unitPickerContainer.alpha = 0
+        UIView.animate(withDuration: 0.15) {
+            self.unitPickerContainer.alpha = 1
+        }
+
+        hapticFeedback.impactOccurred()
+    }
+
+    private func hidePicker() {
+        guard activePickerTarget != nil else { return }
+        activePickerTarget = nil
+        UIView.animate(withDuration: 0.1, animations: {
+            self.unitPickerContainer.alpha = 0
+        }) { _ in
+            self.unitPickerContainer.isHidden = true
+        }
+    }
+
+    private func rebuildPickerItems(for target: PickerTarget) {
+        unitPickerStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        let units = currentCategory.units
+        let selectedIndex = target == .from ? fromUnitIndex : toUnitIndex
+
+        for (i, unit) in units.enumerated() {
+            let btn = UIButton(type: .system)
+            btn.setTitle(unit.0, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+            btn.tag = i
+            btn.layer.cornerRadius = 12
+            btn.clipsToBounds = true
+            btn.contentEdgeInsets = UIEdgeInsets(top: 4, left: 12, bottom: 4, right: 12)
+            btn.addTarget(self, action: #selector(pickerItemTapped(_:)), for: .touchUpInside)
+
+            if i == selectedIndex {
+                btn.backgroundColor = Colors.accentTeal
+                btn.setTitleColor(.white, for: .normal)
+            } else {
+                btn.backgroundColor = isDark ? Colors.chipBgDark : Colors.chipBgLight
+                btn.setTitleColor(isDark ? .white : .black, for: .normal)
+            }
+
+            unitPickerStack.addArrangedSubview(btn)
+        }
+    }
+
+    @objc private func pickerItemTapped(_ sender: UIButton) {
+        guard let target = activePickerTarget else { return }
+        let newIndex = sender.tag
+
+        switch target {
+        case .from:
+            if newIndex == toUnitIndex {
+                toUnitIndex = fromUnitIndex
+            }
+            fromUnitIndex = newIndex
+        case .to:
+            if newIndex == fromUnitIndex {
+                fromUnitIndex = toUnitIndex
+            }
+            toUnitIndex = newIndex
+        }
+
+        hapticFeedback.impactOccurred()
+        hidePicker()
+        updateDisplay()
+    }
+
     // MARK: - Conversion
 
     private func convertedValue() -> Double? {
@@ -474,8 +626,8 @@ final class UnitConverterView: UIView {
     private func updateDisplay() {
         let units = currentCategory.units
 
-        fromUnitButton.setTitle(units[fromUnitIndex].0, for: .normal)
-        toUnitButton.setTitle(units[toUnitIndex].0, for: .normal)
+        fromUnitChipButton.setTitle(units[fromUnitIndex].0, for: .normal)
+        toUnitChipButton.setTitle(units[toUnitIndex].0, for: .normal)
 
         if inputValue.isEmpty {
             fromLabel.text = "0"
@@ -489,6 +641,9 @@ final class UnitConverterView: UIView {
             let result = convertedValueString()
             toLabel.text = result.isEmpty ? "0" : result
         }
+
+        applyChipStyle(fromUnitChipButton)
+        applyChipStyle(toUnitChipButton)
     }
 
     // MARK: - Theme
@@ -504,12 +659,9 @@ final class UnitConverterView: UIView {
             backgroundColor = theme.keyboardBackground
             fromLabel.textColor = theme.keyTextColor
             toLabel.textColor = theme.keyTextColor
-            arrowLabel.textColor = theme.keyTextColor.withAlphaComponent(0.5)
             insertButton.tintColor = theme.keyTextColor
             closeButton.tintColor = theme.keyTextColor
             swapButton.tintColor = theme.keyTextColor
-            fromUnitButton.setTitleColor(Colors.accentTeal, for: .normal)
-            toUnitButton.setTitleColor(Colors.accentTeal, for: .normal)
         } else {
             backgroundColor = isDark
                 ? UIColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1.0)
@@ -518,13 +670,15 @@ final class UnitConverterView: UIView {
             let textColor: UIColor = isDark ? .white : .black
             fromLabel.textColor = textColor
             toLabel.textColor = textColor
-            arrowLabel.textColor = isDark ? UIColor(white: 0.5, alpha: 1) : UIColor(white: 0.5, alpha: 1)
             insertButton.tintColor = textColor
             closeButton.tintColor = textColor
             swapButton.tintColor = textColor
-            fromUnitButton.setTitleColor(Colors.accentTeal, for: .normal)
-            toUnitButton.setTitleColor(Colors.accentTeal, for: .normal)
         }
+
+        applyChipStyle(fromUnitChipButton)
+        applyChipStyle(toUnitChipButton)
+
+        unitPickerContainer.backgroundColor = isDark ? Colors.pickerBgDark : Colors.pickerBgLight
 
         // Update numpad button colors
         for rowStack in buttonGrid.arrangedSubviews {
@@ -534,6 +688,12 @@ final class UnitConverterView: UIView {
                 applyButtonColor(btn)
             }
         }
+    }
+
+    private func applyChipStyle(_ chip: UIButton) {
+        chip.backgroundColor = isDark ? Colors.chipBgDark : Colors.chipBgLight
+        chip.setTitleColor(Colors.accentTeal, for: .normal)
+        chip.tintColor = Colors.accentTeal
     }
 
     private func applyButtonColor(_ btn: UIButton) {
