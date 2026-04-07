@@ -685,6 +685,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "Generatore di risposte";
 "settings.toolbar.item.dictation" = "Dettatura";
+"settings.toolbar.item.cursorLeft" = "Cursore a sinistra";
+"settings.toolbar.item.cursorRight" = "Cursore a destra";
+"settings.toolbar.item.deleteWord" = "Elimina parola";
+"settings.toolbar.item.undo" = "Annulla";
+"settings.toolbar.item.redo" = "Ripeti";
+"settings.toolbar.item.selectAll" = "Seleziona tutto";
+"settings.toolbar.item.copy" = "Copia";
+"settings.toolbar.item.paste" = "Incolla";
+"settings.toolbar.item.cut" = "Taglia";
+"settings.toolbar.item.caseTransform" = "Cambia maiuscole";
 "chatreply.tone.friendly" = "Amichevole";
 "chatreply.tone.polite" = "Cortese";
 "chatreply.tone.cool" = "Figo";
@@ -733,3 +743,27 @@
 "chatreply.a11y.skip" = "Salta la direzione e genera";
 "chatreply.a11y.direction_input" = "Inserimento direzione risposta";
 "chatreply.a11y.loading_status" = "Generazione risposte in corso, attendere prego";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "Annulla non è disponibile in questo campo";
+"toolbar.redo_unavailable" = "Ripristina non è disponibile in questo campo";
+"toolbar.select_unavailable" = "La selezione non è disponibile per le restrizioni di iOS";
+"toolbar.copy_unavailable" = "Copia non è disponibile per le restrizioni di iOS";
+"toolbar.cut_unavailable" = "Taglia non è disponibile per le restrizioni di iOS";
+"toolbar.paste_no_access" = "Accesso completo richiesto per incollare";
+"toolbar.paste_empty" = "Niente da incollare";
+"toolbar.case_no_word" = "Nessuna parola da trasformare";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "Data/Ora";
+"settings.toolbar.item.dismissKeyboard" = "Nascondi tastiera";
+"settings.toolbar.item.unitConverter" = "Convertitore";
+"datetime.date" = "Data";
+"datetime.time" = "Ora";
+"datetime.datetime" = "Data + Ora";
+"datetime.iso" = "Data ISO";
+"unit.category.length" = "Lunghezza";
+"unit.category.weight" = "Peso";
+"unit.category.temperature" = "Temp";
+"unit.category.volume" = "Volume";
+"unit.insert" = "Inserisci";

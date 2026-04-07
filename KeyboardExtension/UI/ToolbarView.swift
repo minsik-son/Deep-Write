@@ -17,6 +17,24 @@ class ToolbarView: UIView {
     var onChatReplyGeneratorTap: (() -> Void)?
     var onDictationTap: (() -> Void)?
 
+    // Productivity editing tools
+    var onCursorLeftTap: (() -> Void)?
+    var onCursorRightTap: (() -> Void)?
+    var onDeleteWordTap: (() -> Void)?
+    var onUndoTap: (() -> Void)?
+    var onRedoTap: (() -> Void)?
+    var onSelectAllTap: (() -> Void)?
+    var onCopyTap: (() -> Void)?
+    var onPasteTap: (() -> Void)?
+    var onCutTap: (() -> Void)?
+    var onCaseTransformTap: (() -> Void)?
+
+    // New features
+    var onDateTimeInsertTap: (() -> Void)?
+    var onDateTimeInsertLongPress: (() -> Void)?
+    var onDismissKeyboardTap: (() -> Void)?
+    var onUnitConverterTap: (() -> Void)?
+
     // MARK: - Toolbar Views
 
     private let toolbarStack: UIStackView = {
@@ -192,7 +210,10 @@ class ToolbarView: UIView {
 
         let iconRenderSize: CGFloat = 20
 
-        for item in items {
+        // Defensive filter: skip unsupported host text items
+        let filtered = items.filter { !ToolbarConfiguration.unsupportedHostTextItems.contains($0) }
+
+        for item in filtered {
             switch item {
             case .settings:
                 if !settingsLinkSizeConfigured {
@@ -240,9 +261,44 @@ class ToolbarView: UIView {
             case .dictation:
                 toolbarStack.addArrangedSubview(
                     makeToolbarButton(iconName: "icon_toolbar_dictation", action: #selector(dictationTapped), tag: 9, iconSize: iconRenderSize))
+
+            // Productivity editing tools — lucide SVG assets
+            case .cursorLeft:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_cursor_left", action: #selector(cursorLeftTapped), tag: 10, iconSize: iconRenderSize))
+            case .cursorRight:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_cursor_right", action: #selector(cursorRightTapped), tag: 11, iconSize: iconRenderSize))
+            case .deleteWord:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_delete_word", action: #selector(deleteWordTapped), tag: 12, iconSize: iconRenderSize))
+            case .undo:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_undo", action: #selector(undoTapped), tag: 13, iconSize: iconRenderSize))
+            case .redo:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_redo", action: #selector(redoTapped), tag: 14, iconSize: iconRenderSize))
+            case .selectAll:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_select_all", action: #selector(selectAllTapped), tag: 15, iconSize: iconRenderSize))
+            case .copy:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_copy", action: #selector(copyTapped), tag: 16, iconSize: iconRenderSize))
+            case .paste:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_paste", action: #selector(pasteTapped), tag: 17, iconSize: iconRenderSize))
+            case .cut:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_cut", action: #selector(cutTapped), tag: 18, iconSize: iconRenderSize))
+            case .caseTransform:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_case", action: #selector(caseTransformTapped), tag: 19, iconSize: iconRenderSize))
+
+            case .dateTimeInsert:
+                let btn = makeToolbarButton(iconName: "icon_toolbar_datetime", action: #selector(dateTimeInsertTapped), tag: 20, iconSize: iconRenderSize)
+                let longPress = UILongPressGestureRecognizer(target: self, action: #selector(dateTimeInsertLongPressed(_:)))
+                longPress.minimumPressDuration = 0.4
+                btn.addGestureRecognizer(longPress)
+                toolbarStack.addArrangedSubview(btn)
+            case .dismissKeyboard:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_dismiss", action: #selector(dismissKeyboardTapped), tag: 21, iconSize: iconRenderSize))
+            case .unitConverter:
+                toolbarStack.addArrangedSubview(makeToolbarButton(iconName: "icon_toolbar_unit_converter", action: #selector(unitConverterTapped), tag: 22, iconSize: iconRenderSize))
             }
         }
     }
+
+    // makeSFToolbarButton removed — all toolbar items now use lucide SVG assets
 
     private func makeToolbarButton(iconName: String, action: Selector, tag: Int, iconSize: CGFloat) -> UIButton {
         let btn = UIButton(type: .system)
@@ -493,6 +549,24 @@ class ToolbarView: UIView {
     @objc private func dictationTapped() {
         onDictationTap?()
     }
+
+    @objc private func cursorLeftTapped() { onCursorLeftTap?() }
+    @objc private func cursorRightTapped() { onCursorRightTap?() }
+    @objc private func deleteWordTapped() { onDeleteWordTap?() }
+    @objc private func undoTapped() { onUndoTap?() }
+    @objc private func redoTapped() { onRedoTap?() }
+    @objc private func selectAllTapped() { onSelectAllTap?() }
+    @objc private func copyTapped() { onCopyTap?() }
+    @objc private func pasteTapped() { onPasteTap?() }
+    @objc private func cutTapped() { onCutTap?() }
+    @objc private func caseTransformTapped() { onCaseTransformTap?() }
+    @objc private func dateTimeInsertTapped() { onDateTimeInsertTap?() }
+    @objc private func dateTimeInsertLongPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        onDateTimeInsertLongPress?()
+    }
+    @objc private func dismissKeyboardTapped() { onDismissKeyboardTap?() }
+    @objc private func unitConverterTapped() { onUnitConverterTap?() }
 
     @objc private func emojiButtonTapped() {
         onEmojiKeyboardToggle?()

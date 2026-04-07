@@ -685,6 +685,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "回复生成";
 "settings.toolbar.item.dictation" = "语音输入";
+"settings.toolbar.item.cursorLeft" = "光标左移";
+"settings.toolbar.item.cursorRight" = "光标右移";
+"settings.toolbar.item.deleteWord" = "删除单词";
+"settings.toolbar.item.undo" = "撤销";
+"settings.toolbar.item.redo" = "重做";
+"settings.toolbar.item.selectAll" = "全选";
+"settings.toolbar.item.copy" = "复制";
+"settings.toolbar.item.paste" = "粘贴";
+"settings.toolbar.item.cut" = "剪切";
+"settings.toolbar.item.caseTransform" = "大小写转换";
 "chatreply.tone.friendly" = "友好的";
 "chatreply.tone.polite" = "礼貌的";
 "chatreply.tone.cool" = "酷酷的";
@@ -733,3 +743,27 @@
 "chatreply.a11y.skip" = "跳过方向直接生成";
 "chatreply.a11y.direction_input" = "回复方向输入";
 "chatreply.a11y.loading_status" = "正在生成回复，请稍候";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "此输入框不支持撤销";
+"toolbar.redo_unavailable" = "此输入框不支持重做";
+"toolbar.select_unavailable" = "由于iOS限制，无法在此输入框中选择";
+"toolbar.copy_unavailable" = "由于iOS限制，无法在此输入框中复制";
+"toolbar.cut_unavailable" = "由于iOS限制，无法在此输入框中剪切";
+"toolbar.paste_no_access" = "粘贴需要完全访问权限";
+"toolbar.paste_empty" = "没有可粘贴的文本";
+"toolbar.case_no_word" = "没有可转换的单词";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "日期/时间";
+"settings.toolbar.item.dismissKeyboard" = "收起键盘";
+"settings.toolbar.item.unitConverter" = "单位转换";
+"datetime.date" = "日期";
+"datetime.time" = "时间";
+"datetime.datetime" = "日期 + 时间";
+"datetime.iso" = "ISO日期";
+"unit.category.length" = "长度";
+"unit.category.weight" = "重量";
+"unit.category.temperature" = "温度";
+"unit.category.volume" = "容量";
+"unit.insert" = "插入";

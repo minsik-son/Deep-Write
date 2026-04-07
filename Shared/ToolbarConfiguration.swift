@@ -13,6 +13,21 @@ enum ToolbarItemType: String, CaseIterable, Equatable {
     case calculator
     case chatReplyGenerator
     case dictation
+    // Productivity editing tools
+    case cursorLeft
+    case cursorRight
+    case deleteWord
+    case undo
+    case redo
+    case selectAll
+    case copy
+    case paste
+    case cut
+    case caseTransform
+    // New features
+    case dateTimeInsert
+    case dismissKeyboard
+    case unitConverter
 }
 
 // MARK: - Toolbar Configuration
@@ -24,6 +39,11 @@ struct ToolbarConfiguration {
         .quickNote, .correction, .translation
     ]
 
+    /// Host text에서 iOS API 제약상 동작 불가능한 항목
+    static let unsupportedHostTextItems: Set<ToolbarItemType> = [
+        .undo, .redo, .selectAll, .copy, .cut
+    ]
+
     private static let userDefaultsKey = AppConstants.UserDefaultsKeys.toolbarItems
 
     static func load() -> [ToolbarItemType] {
@@ -33,15 +53,25 @@ struct ToolbarConfiguration {
             return defaultItems
         }
 
-        var items = rawArray.compactMap { ToolbarItemType(rawValue: $0) }
+        let items = rawArray.compactMap { ToolbarItemType(rawValue: $0) }
 
         if items.isEmpty {
             return defaultItems
         }
 
-        // settings is now user-customizable like any other item
+        // Sanitize: remove unsupported host text items (legacy migration)
+        let sanitized = items.filter { !unsupportedHostTextItems.contains($0) }
 
-        return items
+        if sanitized.isEmpty {
+            return defaultItems
+        }
+
+        // Migrate: save back if unsupported items were removed
+        if sanitized.count != items.count {
+            save(sanitized)
+        }
+
+        return sanitized
     }
 
     static func save(_ items: [ToolbarItemType]) {

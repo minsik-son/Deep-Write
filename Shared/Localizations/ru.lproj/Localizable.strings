@@ -685,6 +685,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "Генератор ответов";
 "settings.toolbar.item.dictation" = "Диктовка";
+"settings.toolbar.item.cursorLeft" = "Курсор влево";
+"settings.toolbar.item.cursorRight" = "Курсор вправо";
+"settings.toolbar.item.deleteWord" = "Удалить слово";
+"settings.toolbar.item.undo" = "Отменить";
+"settings.toolbar.item.redo" = "Повторить";
+"settings.toolbar.item.selectAll" = "Выделить всё";
+"settings.toolbar.item.copy" = "Копировать";
+"settings.toolbar.item.paste" = "Вставить";
+"settings.toolbar.item.cut" = "Вырезать";
+"settings.toolbar.item.caseTransform" = "Изменить регистр";
 "chatreply.tone.friendly" = "Дружелюбный";
 "chatreply.tone.polite" = "Вежливый";
 "chatreply.tone.cool" = "Крутой";
@@ -733,3 +743,27 @@
 "chatreply.a11y.skip" = "Пропустить направление и сгенерировать";
 "chatreply.a11y.direction_input" = "Ввод направления ответа";
 "chatreply.a11y.loading_status" = "Генерация ответов, пожалуйста подождите";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "Отмена недоступна в этом поле ввода";
+"toolbar.redo_unavailable" = "Повтор недоступен в этом поле ввода";
+"toolbar.select_unavailable" = "Выделение недоступно из-за ограничений iOS";
+"toolbar.copy_unavailable" = "Копирование недоступно из-за ограничений iOS";
+"toolbar.cut_unavailable" = "Вырезание недоступно из-за ограничений iOS";
+"toolbar.paste_no_access" = "Для вставки требуется полный доступ";
+"toolbar.paste_empty" = "Нечего вставлять";
+"toolbar.case_no_word" = "Нет слова для преобразования";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "Дата/Время";
+"settings.toolbar.item.dismissKeyboard" = "Скрыть клавиатуру";
+"settings.toolbar.item.unitConverter" = "Конвертер";
+"datetime.date" = "Дата";
+"datetime.time" = "Время";
+"datetime.datetime" = "Дата + Время";
+"datetime.iso" = "ISO дата";
+"unit.category.length" = "Длина";
+"unit.category.weight" = "Вес";
+"unit.category.temperature" = "Темп";
+"unit.category.volume" = "Объём";
+"unit.insert" = "Вставить";

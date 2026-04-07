@@ -686,6 +686,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "답변 생성";
 "settings.toolbar.item.dictation" = "음성 입력";
+"settings.toolbar.item.cursorLeft" = "커서 왼쪽";
+"settings.toolbar.item.cursorRight" = "커서 오른쪽";
+"settings.toolbar.item.deleteWord" = "단어 삭제";
+"settings.toolbar.item.undo" = "실행 취소";
+"settings.toolbar.item.redo" = "다시 실행";
+"settings.toolbar.item.selectAll" = "전체 선택";
+"settings.toolbar.item.copy" = "복사";
+"settings.toolbar.item.paste" = "붙여넣기";
+"settings.toolbar.item.cut" = "잘라내기";
+"settings.toolbar.item.caseTransform" = "대소문자 변환";
 "chatreply.tone.friendly" = "친근한";
 "chatreply.tone.polite" = "정중한";
 "chatreply.tone.cool" = "쿨한";
@@ -734,3 +744,27 @@
 "chatreply.a11y.skip" = "방향 건너뛰고 생성";
 "chatreply.a11y.direction_input" = "답변 방향 입력";
 "chatreply.a11y.loading_status" = "답변 생성 중, 잠시만 기다려주세요";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "이 입력창에서는 실행 취소를 사용할 수 없어요";
+"toolbar.redo_unavailable" = "이 입력창에서는 다시 실행을 사용할 수 없어요";
+"toolbar.select_unavailable" = "iOS 보안 제한으로 이 입력창에서는 선택할 수 없어요";
+"toolbar.copy_unavailable" = "iOS 보안 제한으로 이 입력창에서는 복사할 수 없어요";
+"toolbar.cut_unavailable" = "iOS 보안 제한으로 이 입력창에서는 잘라내기를 사용할 수 없어요";
+"toolbar.paste_no_access" = "붙여넣기를 사용하려면 전체 접근 권한이 필요해요";
+"toolbar.paste_empty" = "붙여넣을 텍스트가 없어요";
+"toolbar.case_no_word" = "변환할 단어가 없어요";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "날짜/시간";
+"settings.toolbar.item.dismissKeyboard" = "키보드 내리기";
+"settings.toolbar.item.unitConverter" = "단위 변환";
+"datetime.date" = "날짜";
+"datetime.time" = "시간";
+"datetime.datetime" = "날짜 + 시간";
+"datetime.iso" = "ISO 날짜";
+"unit.category.length" = "길이";
+"unit.category.weight" = "무게";
+"unit.category.temperature" = "온도";
+"unit.category.volume" = "부피";
+"unit.insert" = "삽입";

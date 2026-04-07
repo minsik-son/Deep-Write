@@ -6,7 +6,9 @@ final class ToolbarCustomizationViewController: UIViewController {
 
     private var currentItems: [ToolbarItemType] = []
     private var originalItems: [ToolbarItemType] = []
-    private let allAvailableItems: [ToolbarItemType] = ToolbarItemType.allCases
+    private let allAvailableItems: [ToolbarItemType] = ToolbarItemType.allCases.filter {
+        !ToolbarConfiguration.unsupportedHostTextItems.contains($0)
+    }
     private var isEditMode = false
     private let maxSlots = 8
 
@@ -135,6 +137,19 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .calculator:   return "icon_toolbar_calculator"
         case .chatReplyGenerator: return "icon_toolbar_chat_reply"
         case .dictation:    return "icon_toolbar_dictation"
+        case .cursorLeft:   return "icon_toolbar_cursor_left"
+        case .cursorRight:  return "icon_toolbar_cursor_right"
+        case .deleteWord:   return "icon_toolbar_delete_word"
+        case .undo:         return "icon_toolbar_undo"
+        case .redo:         return "icon_toolbar_redo"
+        case .selectAll:    return "icon_toolbar_select_all"
+        case .copy:         return "icon_toolbar_copy"
+        case .paste:        return "icon_toolbar_paste"
+        case .cut:          return "icon_toolbar_cut"
+        case .caseTransform: return "icon_toolbar_case"
+        case .dateTimeInsert: return "icon_toolbar_datetime"
+        case .dismissKeyboard: return "icon_toolbar_dismiss"
+        case .unitConverter: return "icon_toolbar_unit_converter"
         }
     }
 
@@ -150,6 +165,19 @@ final class ToolbarCustomizationViewController: UIViewController {
         case .calculator:   return L("settings.toolbar.item.calculator")
         case .chatReplyGenerator: return L("settings.toolbar.item.chatReplyGenerator")
         case .dictation:    return L("settings.toolbar.item.dictation")
+        case .cursorLeft:   return L("settings.toolbar.item.cursorLeft")
+        case .cursorRight:  return L("settings.toolbar.item.cursorRight")
+        case .deleteWord:   return L("settings.toolbar.item.deleteWord")
+        case .undo:         return L("settings.toolbar.item.undo")
+        case .redo:         return L("settings.toolbar.item.redo")
+        case .selectAll:    return L("settings.toolbar.item.selectAll")
+        case .copy:         return L("settings.toolbar.item.copy")
+        case .paste:        return L("settings.toolbar.item.paste")
+        case .cut:          return L("settings.toolbar.item.cut")
+        case .caseTransform: return L("settings.toolbar.item.caseTransform")
+        case .dateTimeInsert: return L("settings.toolbar.item.dateTimeInsert")
+        case .dismissKeyboard: return L("settings.toolbar.item.dismissKeyboard")
+        case .unitConverter: return L("settings.toolbar.item.unitConverter")
         }
     }
 

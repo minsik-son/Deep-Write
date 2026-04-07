@@ -686,6 +686,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "返信ジェネレーター";
 "settings.toolbar.item.dictation" = "音声入力";
+"settings.toolbar.item.cursorLeft" = "カーソル左";
+"settings.toolbar.item.cursorRight" = "カーソル右";
+"settings.toolbar.item.deleteWord" = "単語削除";
+"settings.toolbar.item.undo" = "元に戻す";
+"settings.toolbar.item.redo" = "やり直す";
+"settings.toolbar.item.selectAll" = "すべて選択";
+"settings.toolbar.item.copy" = "コピー";
+"settings.toolbar.item.paste" = "ペースト";
+"settings.toolbar.item.cut" = "カット";
+"settings.toolbar.item.caseTransform" = "大文字/小文字変換";
 "chatreply.tone.friendly" = "フレンドリー";
 "chatreply.tone.polite" = "丁寧";
 "chatreply.tone.cool" = "クール";
@@ -734,3 +744,27 @@
 "chatreply.a11y.skip" = "方向をスキップして生成";
 "chatreply.a11y.direction_input" = "返信の方向入力";
 "chatreply.a11y.loading_status" = "返信を生成中です。お待ちください";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "この入力欄では取り消しが使えません";
+"toolbar.redo_unavailable" = "この入力欄ではやり直しが使えません";
+"toolbar.select_unavailable" = "iOSの制限により、この入力欄では選択できません";
+"toolbar.copy_unavailable" = "iOSの制限により、この入力欄ではコピーできません";
+"toolbar.cut_unavailable" = "iOSの制限により、この入力欄では切り取りできません";
+"toolbar.paste_no_access" = "貼り付けにはフルアクセスが必要です";
+"toolbar.paste_empty" = "貼り付けるテキストがありません";
+"toolbar.case_no_word" = "変換する単語がありません";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "日付/時刻";
+"settings.toolbar.item.dismissKeyboard" = "キーボードを隠す";
+"settings.toolbar.item.unitConverter" = "単位変換";
+"datetime.date" = "日付";
+"datetime.time" = "時刻";
+"datetime.datetime" = "日付 + 時刻";
+"datetime.iso" = "ISO日付";
+"unit.category.length" = "長さ";
+"unit.category.weight" = "重さ";
+"unit.category.temperature" = "温度";
+"unit.category.volume" = "体積";
+"unit.insert" = "挿入";

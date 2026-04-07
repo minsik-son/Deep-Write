@@ -686,6 +686,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "Reply Generator";
 "settings.toolbar.item.dictation" = "Dictation";
+"settings.toolbar.item.cursorLeft" = "Cursor Left";
+"settings.toolbar.item.cursorRight" = "Cursor Right";
+"settings.toolbar.item.deleteWord" = "Delete Word";
+"settings.toolbar.item.undo" = "Undo";
+"settings.toolbar.item.redo" = "Redo";
+"settings.toolbar.item.selectAll" = "Select All";
+"settings.toolbar.item.copy" = "Copy";
+"settings.toolbar.item.paste" = "Paste";
+"settings.toolbar.item.cut" = "Cut";
+"settings.toolbar.item.caseTransform" = "Change Case";
 "chatreply.tone.friendly" = "Friendly";
 "chatreply.tone.polite" = "Polite";
 "chatreply.tone.cool" = "Cool";
@@ -734,3 +744,27 @@
 "chatreply.a11y.skip" = "Skip direction and generate";
 "chatreply.a11y.direction_input" = "Reply direction input";
 "chatreply.a11y.loading_status" = "Generating replies, please wait";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "Undo is not available in this input field";
+"toolbar.redo_unavailable" = "Redo is not available in this input field";
+"toolbar.select_unavailable" = "Selection is not available in this input field";
+"toolbar.copy_unavailable" = "Copy is not available in this input field";
+"toolbar.cut_unavailable" = "Cut is not available in this input field";
+"toolbar.paste_no_access" = "Full Access required to paste";
+"toolbar.paste_empty" = "Nothing to paste";
+"toolbar.case_no_word" = "No word to transform";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "Date/Time";
+"settings.toolbar.item.dismissKeyboard" = "Hide Keyboard";
+"settings.toolbar.item.unitConverter" = "Unit Converter";
+"datetime.date" = "Date";
+"datetime.time" = "Time";
+"datetime.datetime" = "Date + Time";
+"datetime.iso" = "ISO Date";
+"unit.category.length" = "Length";
+"unit.category.weight" = "Weight";
+"unit.category.temperature" = "Temp";
+"unit.category.volume" = "Volume";
+"unit.insert" = "Insert";

@@ -685,6 +685,16 @@
 
 "settings.toolbar.item.chatReplyGenerator" = "Générateur de réponses";
 "settings.toolbar.item.dictation" = "Dictée";
+"settings.toolbar.item.cursorLeft" = "Curseur gauche";
+"settings.toolbar.item.cursorRight" = "Curseur droite";
+"settings.toolbar.item.deleteWord" = "Supprimer mot";
+"settings.toolbar.item.undo" = "Annuler";
+"settings.toolbar.item.redo" = "Rétablir";
+"settings.toolbar.item.selectAll" = "Tout sélectionner";
+"settings.toolbar.item.copy" = "Copier";
+"settings.toolbar.item.paste" = "Coller";
+"settings.toolbar.item.cut" = "Couper";
+"settings.toolbar.item.caseTransform" = "Changer la casse";
 "chatreply.tone.friendly" = "Amical";
 "chatreply.tone.polite" = "Poli";
 "chatreply.tone.cool" = "Cool";
@@ -733,3 +743,27 @@
 "chatreply.a11y.skip" = "Ignorer la direction et générer";
 "chatreply.a11y.direction_input" = "Saisie de la direction de réponse";
 "chatreply.a11y.loading_status" = "Génération des réponses en cours, veuillez patienter";
+
+// === Toolbar Productivity ===
+"toolbar.undo_unavailable" = "Annuler n'est pas disponible dans ce champ";
+"toolbar.redo_unavailable" = "Rétablir n'est pas disponible dans ce champ";
+"toolbar.select_unavailable" = "La sélection n'est pas disponible dans ce champ en raison des restrictions iOS";
+"toolbar.copy_unavailable" = "Copier n'est pas disponible dans ce champ en raison des restrictions iOS";
+"toolbar.cut_unavailable" = "Couper n'est pas disponible dans ce champ en raison des restrictions iOS";
+"toolbar.paste_no_access" = "L'accès complet est requis pour coller";
+"toolbar.paste_empty" = "Rien à coller";
+"toolbar.case_no_word" = "Aucun mot à transformer";
+
+// === New Toolbar Features ===
+"settings.toolbar.item.dateTimeInsert" = "Date/Heure";
+"settings.toolbar.item.dismissKeyboard" = "Masquer clavier";
+"settings.toolbar.item.unitConverter" = "Convertisseur";
+"datetime.date" = "Date";
+"datetime.time" = "Heure";
+"datetime.datetime" = "Date + Heure";
+"datetime.iso" = "Date ISO";
+"unit.category.length" = "Longueur";
+"unit.category.weight" = "Poids";
+"unit.category.temperature" = "Temp";
+"unit.category.volume" = "Volume";
+"unit.insert" = "Insérer";

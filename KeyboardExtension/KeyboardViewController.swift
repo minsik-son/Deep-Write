@@ -62,6 +62,13 @@ class KeyboardViewController: UIInputViewController {
     private var calculatorView: CalculatorView?
     private var modeBeforeCalculator: KeyboardMode?
 
+    // MARK: - Unit Converter
+    private var unitConverterView: UnitConverterView?
+    private var modeBeforeUnitConverter: KeyboardMode?
+
+    // MARK: - Date/Time Insert
+    private var dateTimeMenuView: UIView?
+
     // MARK: - Chat Reply Generator
     private var chatReplyView: ChatReplyGeneratorView?
     private var chatReplyManager: ChatReplyManager?
@@ -304,6 +311,17 @@ class KeyboardViewController: UIInputViewController {
             switchMode(to: .defaultMode)
         }
 
+        // 단위 변환기 정리
+        if let converter = unitConverterView {
+            converter.removeFromSuperview()
+            unitConverterView = nil
+            modeBeforeUnitConverter = nil
+            switchMode(to: .defaultMode)
+        }
+
+        // 날짜/시간 메뉴 정리
+        hideDateTimeMenu()
+
         // Chat Reply Generator 메모리 확보
         if chatReplyView != nil {
             chatReplyManager?.cancelPending()
@@ -417,6 +435,16 @@ class KeyboardViewController: UIInputViewController {
             calculatorView = nil
             modeBeforeCalculator = nil
         }
+
+        // 단위 변환기 정리
+        if let converter = unitConverterView {
+            converter.removeFromSuperview()
+            unitConverterView = nil
+            modeBeforeUnitConverter = nil
+        }
+
+        // 날짜/시간 메뉴 정리
+        hideDateTimeMenu()
 
         // Chat Reply Generator 정리
         if currentMode == .chatReplyMode {
@@ -1113,6 +1141,78 @@ class KeyboardViewController: UIInputViewController {
             self?.dismissSuggestions()
         }
 
+        // Productivity editing tools — host text only
+        toolbarView.onCursorLeftTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarCursorLeft()
+        }
+        toolbarView.onCursorRightTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarCursorRight()
+        }
+        toolbarView.onDeleteWordTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarDeleteWord()
+        }
+        toolbarView.onUndoTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarUndo()
+        }
+        toolbarView.onRedoTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarRedo()
+        }
+        toolbarView.onSelectAllTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarSelectAll()
+        }
+        toolbarView.onCopyTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarCopy()
+        }
+        toolbarView.onPasteTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarPaste()
+        }
+        toolbarView.onCutTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarCut()
+        }
+        toolbarView.onCaseTransformTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleToolbarCaseTransform()
+        }
+
+        // New features
+        toolbarView.onDateTimeInsertTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.handleDateTimeInsert()
+        }
+        toolbarView.onDateTimeInsertLongPress = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.showDateTimeMenu()
+        }
+        toolbarView.onDismissKeyboardTap = { [weak self] in
+            self?.dismissKeyboard()
+        }
+        toolbarView.onUnitConverterTap = { [weak self] in
+            self?.hideContextMenu()
+            self?.hideStatusPopup()
+            self?.showUnitConverter()
+        }
+
         // Keyboard layout — always present
         keyboardLayoutView.onKeyTap = { [weak self] key in
             self?.handleKeyTap(key)
@@ -1411,6 +1511,16 @@ class KeyboardViewController: UIInputViewController {
             calculatorView = nil
             modeBeforeCalculator = nil
         }
+
+        // 단위 변환기가 열려있으면 먼저 닫기
+        if let converter = unitConverterView {
+            converter.removeFromSuperview()
+            unitConverterView = nil
+            modeBeforeUnitConverter = nil
+        }
+
+        // 날짜/시간 메뉴 닫기
+        hideDateTimeMenu()
 
         // chatReplyMode 이탈 시 전체 정리
         if previousMode == .chatReplyMode && mode != .chatReplyMode {
@@ -2806,6 +2916,8 @@ class KeyboardViewController: UIInputViewController {
         quickNoteEditView?.updateAppearance(isDark: isDark)
         calculatorView?.applyTheme(theme)
         calculatorView?.updateAppearance(isDark: isDark)
+        unitConverterView?.applyTheme(theme)
+        unitConverterView?.updateAppearance(isDark: isDark)
         chatReplyView?.applyTheme(theme)
         chatReplyView?.updateAppearance(isDark: isDark)
     }
@@ -3248,6 +3360,8 @@ extension KeyboardViewController {
         }
 
         closeCalculator()
+        closeUnitConverter()
+        hideDateTimeMenu()
         hideEmojiKeyboard()
         hideClipboardHistory()
         hideSavedPhrases()
@@ -3943,5 +4057,307 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
 
         coordinator.forceShutdown(reason: "user_stop")
         dismissDictation()
+    }
+
+    // MARK: - Toolbar Productivity Editing (Host Text)
+
+    private func handleToolbarCursorLeft() {
+        commitDefaultComposing()
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+    }
+
+    private func handleToolbarCursorRight() {
+        commitDefaultComposing()
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+    }
+
+    private func handleToolbarDeleteWord() {
+        commitDefaultComposing()
+
+        guard let context = textDocumentProxy.documentContextBeforeInput, !context.isEmpty else { return }
+
+        let chars = Array(context)
+        var count = 0
+        var i = chars.count - 1
+
+        // Skip trailing whitespace
+        while i >= 0 && (chars[i].isWhitespace || chars[i].isNewline) {
+            count += 1
+            i -= 1
+        }
+
+        // Skip word characters
+        while i >= 0 && !chars[i].isWhitespace && !chars[i].isNewline {
+            count += 1
+            i -= 1
+        }
+
+        guard count > 0 else { return }
+        for _ in 0..<count {
+            textDocumentProxy.deleteBackward()
+        }
+    }
+
+    private func handleToolbarPaste() {
+        guard hasFullAccess() else {
+            showToast(L("toolbar.paste_no_access"))
+            return
+        }
+        guard UIPasteboard.general.hasStrings, let text = UIPasteboard.general.string, !text.isEmpty else {
+            showToast(L("toolbar.paste_empty"))
+            return
+        }
+        commitDefaultComposing()
+        textDocumentProxy.insertText(text)
+    }
+
+    private func handleToolbarCaseTransform() {
+        commitDefaultComposing()
+
+        guard let context = textDocumentProxy.documentContextBeforeInput, !context.isEmpty else {
+            showToast(L("toolbar.case_no_word"))
+            return
+        }
+
+        // Find last word
+        let chars = Array(context)
+        var end = chars.count - 1
+
+        // Skip trailing whitespace
+        while end >= 0 && (chars[end].isWhitespace || chars[end].isNewline) {
+            end -= 1
+        }
+        guard end >= 0 else {
+            showToast(L("toolbar.case_no_word"))
+            return
+        }
+
+        var start = end
+        while start > 0 && !chars[start - 1].isWhitespace && !chars[start - 1].isNewline {
+            start -= 1
+        }
+
+        let word = String(chars[start...end])
+        let deleteCount = chars.count - start  // includes trailing whitespace
+
+        // Delete from cursor back to word start
+        for _ in 0..<deleteCount {
+            textDocumentProxy.deleteBackward()
+        }
+
+        // Transform case
+        let transformed: String
+        if word == word.lowercased() {
+            transformed = word.uppercased()
+        } else {
+            transformed = word.lowercased()
+        }
+
+        // Re-insert transformed word + trailing whitespace
+        let trailing = String(chars[(end + 1)...])
+        textDocumentProxy.insertText(transformed + trailing)
+    }
+
+    private func handleToolbarUndo() {
+        showToast(L("toolbar.undo_unavailable"))
+    }
+
+    private func handleToolbarRedo() {
+        showToast(L("toolbar.redo_unavailable"))
+    }
+
+    private func handleToolbarSelectAll() {
+        showToast(L("toolbar.select_unavailable"))
+    }
+
+    private func handleToolbarCopy() {
+        showToast(L("toolbar.copy_unavailable"))
+    }
+
+    private func handleToolbarCut() {
+        showToast(L("toolbar.cut_unavailable"))
+    }
+
+    // MARK: - Date/Time Insert
+
+    private func handleDateTimeInsert() {
+        commitDefaultComposing()
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale.current
+        let dateString = formatter.string(from: Date())
+        textDocumentProxy.insertText(dateString)
+    }
+
+    private func showDateTimeMenu() {
+        hideDateTimeMenu()
+        guard let inputView = self.inputView else { return }
+
+        let overlay = UIView()
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.01)
+        inputView.addSubview(overlay)
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: inputView.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        let tapDismiss = UITapGestureRecognizer(target: self, action: #selector(dateTimeMenuDismissed))
+        overlay.addGestureRecognizer(tapDismiss)
+
+        let isDark = textDocumentProxy.keyboardAppearance == .dark
+
+        let menu = UIStackView()
+        menu.axis = .vertical
+        menu.spacing = 1
+        menu.layer.cornerRadius = 12
+        menu.clipsToBounds = true
+        menu.translatesAutoresizingMaskIntoConstraints = false
+        menu.backgroundColor = isDark ? UIColor(white: 0.2, alpha: 1) : UIColor(white: 0.85, alpha: 1)
+
+        let now = Date()
+        let locale = Locale.current
+
+        // Date only
+        let dateFmt = DateFormatter()
+        dateFmt.dateStyle = .medium
+        dateFmt.timeStyle = .none
+        dateFmt.locale = locale
+
+        // Time only
+        let timeFmt = DateFormatter()
+        timeFmt.dateStyle = .none
+        timeFmt.timeStyle = .short
+        timeFmt.locale = locale
+
+        // Date + Time
+        let dateTimeFmt = DateFormatter()
+        dateTimeFmt.dateStyle = .medium
+        dateTimeFmt.timeStyle = .short
+        dateTimeFmt.locale = locale
+
+        // ISO
+        let isoFmt = DateFormatter()
+        isoFmt.dateFormat = "yyyy-MM-dd"
+
+        let options: [(String, String)] = [
+            (L("datetime.date"), dateFmt.string(from: now)),
+            (L("datetime.time"), timeFmt.string(from: now)),
+            (L("datetime.datetime"), dateTimeFmt.string(from: now)),
+            (L("datetime.iso"), isoFmt.string(from: now)),
+        ]
+
+        for (label, value) in options {
+            let btn = UIButton(type: .system)
+            let display = "\(label)  \(value)"
+            btn.setTitle(display, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .regular)
+            btn.setTitleColor(isDark ? .white : .label, for: .normal)
+            btn.backgroundColor = isDark ? UIColor(white: 0.15, alpha: 1) : .white
+            btn.contentHorizontalAlignment = .leading
+            btn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+            btn.accessibilityValue = value
+            btn.addTarget(self, action: #selector(dateTimeOptionTapped(_:)), for: .touchUpInside)
+            menu.addArrangedSubview(btn)
+        }
+
+        overlay.addSubview(menu)
+        NSLayoutConstraint.activate([
+            menu.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+            menu.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -60),
+            menu.widthAnchor.constraint(equalToConstant: 260),
+        ])
+
+        overlay.alpha = 0
+        UIView.animate(withDuration: 0.2) { overlay.alpha = 1 }
+
+        dateTimeMenuView = overlay
+        inputView.bringSubviewToFront(toastLabel)
+    }
+
+    @objc private func dateTimeOptionTapped(_ sender: UIButton) {
+        guard let value = sender.accessibilityValue else { return }
+        commitDefaultComposing()
+        textDocumentProxy.insertText(value)
+        hideDateTimeMenu()
+    }
+
+    @objc private func dateTimeMenuDismissed() {
+        hideDateTimeMenu()
+    }
+
+    private func hideDateTimeMenu() {
+        guard let menu = dateTimeMenuView else { return }
+        UIView.animate(withDuration: 0.15, animations: {
+            menu.alpha = 0
+        }) { _ in
+            menu.removeFromSuperview()
+        }
+        dateTimeMenuView = nil
+    }
+
+    // MARK: - Unit Converter
+
+    private func showUnitConverter() {
+        guard let inputView = self.inputView else { return }
+
+        modeBeforeUnitConverter = currentMode
+
+        unitConverterView?.removeFromSuperview()
+        unitConverterView = nil
+
+        keyboardLayoutView.prepareForDismiss()
+
+        let converter = UnitConverterView()
+        converter.translatesAutoresizingMaskIntoConstraints = false
+
+        converter.onClose = { [weak self] in
+            self?.closeUnitConverter()
+        }
+        converter.onInsert = { [weak self] text in
+            self?.textDocumentProxy.insertText(text)
+        }
+
+        inputView.addSubview(converter)
+        unitConverterView = converter
+
+        NSLayoutConstraint.activate([
+            converter.topAnchor.constraint(equalTo: inputView.topAnchor),
+            converter.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
+            converter.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
+            converter.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
+        ])
+
+        toolbarView.isHidden = true
+        keyboardLayoutView.isHidden = true
+
+        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let theme = loadTheme()
+        converter.applyTheme(theme)
+        converter.updateAppearance(isDark: isDark)
+
+        converter.alpha = 0
+        UIView.animate(withDuration: 0.2) { converter.alpha = 1 }
+
+        inputView.bringSubviewToFront(toastLabel)
+        checkMemorySafetyNet()
+    }
+
+    private func closeUnitConverter() {
+        guard let converter = unitConverterView else { return }
+
+        converter.removeFromSuperview()
+        unitConverterView = nil
+
+        if let previousMode = modeBeforeUnitConverter {
+            modeBeforeUnitConverter = nil
+            switchMode(to: previousMode)
+        } else {
+            toolbarView.isHidden = false
+            keyboardLayoutView.isHidden = false
+        }
     }
 }
