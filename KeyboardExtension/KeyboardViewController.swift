@@ -610,9 +610,17 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func loadKeyboardLanguageSetting() {
+        // v2: additional languages toggle 로딩
+        let enabled = AppGroupManager.shared.bool(forKey: "additional_keyboard_language_enabled")
+        keyboardLayoutView.additionalLanguagesEnabled = enabled
+
         let code = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
-            ?? LocalizationManager.detectDeviceLanguage().rawValue
-        let lang = KeyboardLanguage(rawValue: code) ?? .english
+        let lang: KeyboardLanguage
+        if enabled, let code = code, let saved = KeyboardLanguage(rawValue: code) {
+            lang = saved
+        } else {
+            lang = .english
+        }
         keyboardLayoutView.pairedLanguage = lang
         let current = keyboardLayoutView.getCurrentLanguage()
         if current != .english && current != lang {
@@ -2907,6 +2915,10 @@ extension KeyboardViewController: TextInputHandlerDelegate {
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
+                // v2: cursor sync
+                if let ci = quickNoteTextInputHandler?.cursorIndex {
+                    quickNoteEditView?.setCursorIndex(ci)
+                }
             }
         case .chatReplyMode:
             break
@@ -2931,6 +2943,10 @@ extension KeyboardViewController: TextInputHandlerDelegate {
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
+                // v2: cursor sync
+                if let ci = quickNoteTextInputHandler?.cursorIndex {
+                    quickNoteEditView?.setCursorIndex(ci)
+                }
             }
         case .chatReplyMode:
             break

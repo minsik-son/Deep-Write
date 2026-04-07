@@ -56,6 +56,14 @@ class LayoutSettingsViewController: UITableViewController {
 
     private var selectedLanguageCode: String = "ko"
 
+    // v2: Additional languages toggle
+    private lazy var additionalLanguagesSwitch: UISwitch = {
+        let toggle = UISwitch()
+        toggle.isOn = AppGroupManager.shared.bool(forKey: "additional_keyboard_language_enabled")
+        toggle.addTarget(self, action: #selector(additionalLanguagesToggled(_:)), for: .valueChanged)
+        return toggle
+    }()
+
     init() {
         super.init(style: .insetGrouped)
     }
@@ -79,19 +87,20 @@ class LayoutSettingsViewController: UITableViewController {
 
     // MARK: - UITableViewDataSource
 
-    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+    override func numberOfSections(in tableView: UITableView) -> Int { 3 }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return 4  // Number Row + Key Tap Preview + Latin Special Characters + Period Key
-        case 1: return languageOptions.count
+        case 1: return 1  // Additional languages toggle
+        case 2: return additionalLanguagesSwitch.isOn ? languageOptions.count : 0
         default: return 0
         }
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
-        case 1: return L("settings.keyboard_language")
+        case 2: return additionalLanguagesSwitch.isOn ? L("settings.keyboard_language") : nil
         default: return nil
         }
     }
@@ -127,6 +136,12 @@ class LayoutSettingsViewController: UITableViewController {
                 cell.contentConfiguration = config
             }
         case 1:
+            // v2: Additional languages toggle
+            config.text = L("settings.additional_languages")
+            cell.contentConfiguration = config
+            cell.accessoryView = additionalLanguagesSwitch
+            cell.selectionStyle = .none
+        case 2:
             let option = languageOptions[indexPath.row]
             config.text = option.displayName
             cell.contentConfiguration = config
@@ -143,18 +158,13 @@ class LayoutSettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        guard indexPath.section == 1 else { return }
+        guard indexPath.section == 2 else { return }
 
         let option = languageOptions[indexPath.row]
         selectedLanguageCode = option.code
         AppGroupManager.shared.set(option.code, forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
 
-        // 앱 UI 언어도 함께 변경
-        if let appLang = AppLanguage(rawValue: option.code) {
-            LocalizationManager.shared.currentLanguage = appLang
-        }
-
-        tableView.reloadSections(IndexSet(integer: 1), with: .none)
+        tableView.reloadSections(IndexSet(integer: 2), with: .none)
     }
 
     // MARK: - Actions
@@ -173,5 +183,10 @@ class LayoutSettingsViewController: UITableViewController {
 
     @objc private func periodKeyToggled(_ sender: UISwitch) {
         AppGroupManager.shared.set(sender.isOn, forKey: AppConstants.UserDefaultsKeys.showPeriodKey)
+    }
+
+    @objc private func additionalLanguagesToggled(_ sender: UISwitch) {
+        AppGroupManager.shared.set(sender.isOn, forKey: "additional_keyboard_language_enabled")
+        tableView.reloadData()
     }
 }

@@ -197,7 +197,7 @@ class TextInputHandler: TextInputHandling {
 
         guard isConsonant || isVowel else {
             commitComposing()
-            buffer.append(key)
+            insertCharIntoBuffer(key)
             delegate?.textInputHandler(self, didUpdateBuffer: buffer)
             return
         }
@@ -213,7 +213,7 @@ class TextInputHandler: TextInputHandling {
             } else if isVowel {
                 guard (buffer.count + 1) <= maxLength else { return }
                 commitComposing()
-                buffer.append(key)
+                insertCharIntoBuffer(key)
                 delegate?.textInputHandler(self, didUpdateBuffer: buffer)
                 return
             }
@@ -247,7 +247,7 @@ class TextInputHandler: TextInputHandling {
                     // Can't compound - commit and start fresh → 글자 수 +1
                     guard (buffer.count + 1 + 1) <= maxLength else { return }
                     commitComposing()
-                    buffer.append(key)
+                    insertCharIntoBuffer(key)
                     hangulState = .empty
                     composingText = ""
                     delegate?.textInputHandler(self, didUpdateBuffer: buffer)
@@ -286,7 +286,7 @@ class TextInputHandler: TextInputHandling {
                     // 복합 종성 분리 → 글자 수 +1
                     guard (buffer.count + 1 + 1) <= maxLength else { return }
                     let syllable = composeSyllable(initial: initial, vowel: vowel, final: split.first)
-                    buffer.append(syllable)
+                    insertIntoBuffer(String(syllable))
 
                     hangulState = .initialVowel(split.secondInitial, vowelIdx)
                     composingText = composeSyllable(initial: split.secondInitial, vowel: vowelIdx, final: 0)
@@ -296,7 +296,7 @@ class TextInputHandler: TextInputHandling {
                     // 단순 종성 → 다음 글자 초성으로 → 글자 수 +1
                     guard (buffer.count + 1 + 1) <= maxLength else { return }
                     let syllable = composeSyllable(initial: initial, vowel: vowel, final: 0)
-                    buffer.append(syllable)
+                    insertIntoBuffer(String(syllable))
 
                     hangulState = .initialVowel(newInitial, vowelIdx)
                     composingText = composeSyllable(initial: newInitial, vowel: vowelIdx, final: 0)
@@ -304,7 +304,7 @@ class TextInputHandler: TextInputHandling {
                 } else {
                     guard (buffer.count + 1 + 1) <= maxLength else { return }
                     commitComposing()
-                    buffer.append(key)
+                    insertCharIntoBuffer(key)
                     hangulState = .empty
                     composingText = ""
                     delegate?.textInputHandler(self, didUpdateBuffer: buffer)
@@ -368,6 +368,20 @@ class TextInputHandler: TextInputHandling {
         composingText = ""
         hangulState = .empty
         cursorIndex = text.count
+    }
+
+    /// v2: cursorIndex 위치에 텍스트 삽입 + index 증가
+    private func insertIntoBuffer(_ text: String) {
+        let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+        buffer.insert(contentsOf: text, at: idx)
+        cursorIndex += text.count
+    }
+
+    /// v2: cursorIndex 위치에 단일 문자 삽입
+    private func insertCharIntoBuffer(_ ch: Character) {
+        let idx = buffer.index(buffer.startIndex, offsetBy: min(cursorIndex, buffer.count))
+        buffer.insert(ch, at: idx)
+        cursorIndex += 1
     }
 
     func moveCursor(to index: Int) {

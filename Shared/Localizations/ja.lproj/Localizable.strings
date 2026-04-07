@@ -16,6 +16,7 @@
 "settings.terms" = "Terms of Use";
 "settings.app_language" = "アプリの言語";
 "settings.keyboard_language" = "キーボード言語";
+"settings.additional_languages" = "追加キーボード言語";
 "settings.number_row" = "数字行";
 "settings.redo_onboarding" = "オンボーディングをやり直す";
 

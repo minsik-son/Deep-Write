@@ -16,6 +16,7 @@
 "settings.terms" = "Nutzungsbedingungen";
 "settings.app_language" = "App-Sprache";
 "settings.keyboard_language" = "Tastatursprache";
+"settings.additional_languages" = "Zusätzliche Sprachen";
 "settings.number_row" = "Zahlenreihe";
 "settings.redo_onboarding" = "Einführung wiederholen";
 

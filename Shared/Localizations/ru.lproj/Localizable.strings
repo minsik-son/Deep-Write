@@ -16,6 +16,7 @@
 "settings.terms" = "Условия использования";
 "settings.app_language" = "Язык приложения";
 "settings.keyboard_language" = "Язык клавиатуры";
+"settings.additional_languages" = "Дополнительные языки";
 "settings.number_row" = "Числовой ряд";
 "settings.redo_onboarding" = "Повторить введение";
 

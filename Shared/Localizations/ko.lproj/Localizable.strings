@@ -16,6 +16,7 @@
 "settings.terms" = "Terms of Use";
 "settings.app_language" = "앱 언어";
 "settings.keyboard_language" = "키보드 언어";
+"settings.additional_languages" = "추가 키보드 언어";
 "settings.number_row" = "숫자 줄";
 "settings.redo_onboarding" = "온보딩 다시 보기";
 

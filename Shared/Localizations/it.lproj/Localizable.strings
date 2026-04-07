@@ -16,6 +16,7 @@
 "settings.terms" = "Termini di utilizzo";
 "settings.app_language" = "Lingua dell'app";
 "settings.keyboard_language" = "Lingua tastiera";
+"settings.additional_languages" = "Lingue aggiuntive";
 "settings.number_row" = "Riga numeri";
 "settings.redo_onboarding" = "Ripeti introduzione";
 

@@ -16,6 +16,7 @@
 "settings.terms" = "Terms of Use";
 "settings.app_language" = "Idioma de la app";
 "settings.keyboard_language" = "Idioma del teclado";
+"settings.additional_languages" = "Idiomas adicionales";
 "settings.number_row" = "Fila de números";
 "settings.redo_onboarding" = "Repetir introducción";
 

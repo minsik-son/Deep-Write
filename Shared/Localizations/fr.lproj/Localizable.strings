@@ -16,6 +16,7 @@
 "settings.terms" = "Conditions d'utilisation";
 "settings.app_language" = "Langue de l'application";
 "settings.keyboard_language" = "Langue du clavier";
+"settings.additional_languages" = "Langues supplémentaires";
 "settings.number_row" = "Rangée de chiffres";
 "settings.redo_onboarding" = "Refaire l'introduction";
 

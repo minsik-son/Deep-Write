@@ -16,6 +16,7 @@
 "settings.terms" = "Terms of Use";
 "settings.app_language" = "App Language";
 "settings.keyboard_language" = "Keyboard Language";
+"settings.additional_languages" = "Additional languages";
 "settings.number_row" = "Number Row";
 "settings.redo_onboarding" = "Redo Onboarding";
 

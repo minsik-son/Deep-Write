@@ -75,8 +75,17 @@ class KeyboardLayoutView: UIView {
 
     var onHeightChangeNeeded: (() -> Void)?
 
-    var pairedLanguage: KeyboardLanguage = .korean {
+    var pairedLanguage: KeyboardLanguage = .english {
         didSet { if oldValue != pairedLanguage { buildKeyboard() } }
+    }
+
+    /// v2: 추가 언어 토글 + paired language 둘 다 충족해야 globe 표시
+    var additionalLanguagesEnabled: Bool = false {
+        didSet { if oldValue != additionalLanguagesEnabled { buildKeyboard() } }
+    }
+
+    var hasAdditionalLanguage: Bool {
+        return additionalLanguagesEnabled && pairedLanguage != .english
     }
 
     private var currentLanguage: KeyboardLanguage = .english
@@ -392,10 +401,19 @@ class KeyboardLayoutView: UIView {
             functionKey = Self.abcKey
         }
 
-        if showPeriodKey {
-            return [functionKey, "__GLOBE_A__", " ", ".", "\u{23CE}"]
+        // Phase 1: 추가 언어 없으면 globe 숨김 + space 확장
+        if hasAdditionalLanguage {
+            if showPeriodKey {
+                return [functionKey, "__GLOBE_A__", " ", ".", "\u{23CE}"]
+            } else {
+                return [functionKey, "__GLOBE_A__", " ", "\u{23CE}"]
+            }
         } else {
-            return [functionKey, "__GLOBE_A__", " ", "\u{23CE}"]
+            if showPeriodKey {
+                return [functionKey, " ", ".", "\u{23CE}"]
+            } else {
+                return [functionKey, " ", "\u{23CE}"]
+            }
         }
     }
 
@@ -807,7 +825,9 @@ class KeyboardLayoutView: UIView {
     // MARK: - Bottom row (+=♥, 🌐A, space, period, return)
 
     private func buildBottomRow(container: UIView, keys: [String], rowIndex: Int) {
-        let funcKeyWidth: CGFloat = 50    // +=♥, 🌐A
+        // v2: globe OFF 시 function key가 globe 폭을 흡수
+        let globeKeyWidth: CGFloat = 50
+        let funcKeyWidth: CGFloat = hasAdditionalLanguage ? 50 : 50 + globeKeyWidth + Layout.keySpacingH
         let periodKeyWidth: CGFloat = 34  // "."
         let hasPeriod = keys.contains(".")
         // period OFF: return absorbs period space

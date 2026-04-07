@@ -228,7 +228,13 @@ class TranslationInputView: UIView {
         updateCounter(count: text.count)
         notifyHeightChangeIfNeeded()
         layoutIfNeeded()
-        updateCursorPosition()
+        // v2: caret tap 활성화 시 cursor index 유지, 아니면 맨 끝
+        if isCaretTapEnabled {
+            cursorCharIndex = min(cursorCharIndex, text.count)
+            updateCursorPosition(for: cursorCharIndex)
+        } else {
+            updateCursorPosition()
+        }
     }
 
     func setPlaceholder(_ text: String) {
@@ -320,7 +326,12 @@ class TranslationInputView: UIView {
         updateCounter(count: textBuffer.count)
         notifyHeightChangeIfNeeded()
         layoutIfNeeded()
-        updateCursorPosition()
+        if isCaretTapEnabled {
+            cursorCharIndex = min(cursorCharIndex, textBuffer.count)
+            updateCursorPosition(for: cursorCharIndex)
+        } else {
+            updateCursorPosition()
+        }
     }
 
     private func updateCounter(count: Int) {
@@ -370,9 +381,20 @@ class TranslationInputView: UIView {
         cursorTextStorage.addAttribute(.paragraphStyle, value: ps, range: newRange)
         cursorLayoutManager.ensureLayout(for: cursorTextContainer)
 
+        // v2: nearest insertion index — glyph rect 중간 기준
         let glyphIndex = cursorLayoutManager.glyphIndex(for: point, in: cursorTextContainer)
         let charIndex = cursorLayoutManager.characterIndexForGlyph(at: glyphIndex)
-        return max(0, min(charIndex, text.count))
+        let clamped = max(0, min(charIndex, text.count - 1))
+
+        // glyph rect의 중간 x보다 오른쪽이면 글자 뒤 (index + 1)
+        let glyphRange = NSRange(location: glyphIndex, length: 1)
+        let glyphRect = cursorLayoutManager.boundingRect(forGlyphRange: glyphRange, in: cursorTextContainer)
+        let midX = glyphRect.origin.x + glyphRect.size.width / 2
+
+        if point.x > midX {
+            return min(clamped + 1, text.count)
+        }
+        return clamped
     }
 
     private func updateCursorPosition(for index: Int) {
@@ -408,23 +430,72 @@ class TranslationInputView: UIView {
 
         // index 0이면 첫 위치
         if index == 0 {
-            cursorLeading?.constant = 0
-            cursorTop?.constant = 0
+            // 첫 글자의 줄 시작
+            let glyphRange = cursorLayoutManager.glyphRange(forCharacterRange: NSRange(location: 0, length: 1), actualCharacterRange: nil)
+            if glyphRange.location != NSNotFound {
+                let lineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
+                cursorLeading?.constant = 0
+                cursorTop?.constant = lineRect.origin.y
+            } else {
+                cursorLeading?.constant = 0
+                cursorTop?.constant = 0
+            }
             return
         }
 
-        // 지정 index의 glyph 위치
-        let charRange = NSRange(location: index, length: 1)
-        let glyphRange = cursorLayoutManager.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
-        guard glyphRange.location != NSNotFound else {
+        // v2: insertion caret = index-1 글자의 trailing edge
+        let prevCharRange = NSRange(location: index - 1, length: 1)
+        let prevGlyphRange = cursorLayoutManager.glyphRange(forCharacterRange: prevCharRange, actualCharacterRange: nil)
+        guard prevGlyphRange.location != NSNotFound else {
             updateCursorPosition()
             return
         }
 
-        let lineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
-        let glyphLoc = cursorLayoutManager.location(forGlyphAt: glyphRange.location)
+        // 개행 직후면 다음 줄 x=0
+        let prevChar = (text as NSString).character(at: index - 1)
+        if prevChar == 0x0A { // \n
+            let lineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: prevGlyphRange.location, effectiveRange: nil)
+            cursorLeading?.constant = 0
+            cursorTop?.constant = lineRect.origin.y + lineRect.size.height
+            return
+        }
 
-        cursorLeading?.constant = glyphLoc.x
+        // 이전 글자의 trailing edge
+        let lineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: prevGlyphRange.location, effectiveRange: nil)
+        let glyphLoc = cursorLayoutManager.location(forGlyphAt: prevGlyphRange.location)
+
+        let ctFont = font as CTFont
+        var character: UniChar = prevChar
+        var glyph: CGGlyph = 0
+        var advance = CGSize.zero
+        var cursorX: CGFloat
+        if CTFontGetGlyphsForCharacters(ctFont, &character, &glyph, 1) {
+            CTFontGetAdvancesForGlyphs(ctFont, .horizontal, &glyph, &advance, 1)
+            cursorX = glyphLoc.x + advance.width
+        } else {
+            let singleRange = NSRange(location: prevGlyphRange.location, length: 1)
+            let boundingRect = cursorLayoutManager.boundingRect(forGlyphRange: singleRange, in: cursorTextContainer)
+            cursorX = boundingRect.maxX
+        }
+
+        // 줄 끝을 넘으면 다음 줄 시작으로
+        if cursorX > lineRect.origin.x + lineRect.size.width - 1 {
+            // wrap된 경우 — 다음 index의 glyph 위치 사용
+            if index < (text as NSString).length {
+                let nextGlyphRange = cursorLayoutManager.glyphRange(forCharacterRange: NSRange(location: index, length: 1), actualCharacterRange: nil)
+                if nextGlyphRange.location != NSNotFound {
+                    let nextLineRect = cursorLayoutManager.lineFragmentRect(forGlyphAt: nextGlyphRange.location, effectiveRange: nil)
+                    let nextGlyphLoc = cursorLayoutManager.location(forGlyphAt: nextGlyphRange.location)
+                    if nextLineRect.origin.y > lineRect.origin.y {
+                        cursorLeading?.constant = nextGlyphLoc.x
+                        cursorTop?.constant = nextLineRect.origin.y
+                        return
+                    }
+                }
+            }
+        }
+
+        cursorLeading?.constant = cursorX
         cursorTop?.constant = lineRect.origin.y
     }
 

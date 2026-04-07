@@ -16,6 +16,7 @@
 "settings.terms" = "Terms of Use";
 "settings.app_language" = "应用语言";
 "settings.keyboard_language" = "键盘语言";
+"settings.additional_languages" = "附加键盘语言";
 "settings.number_row" = "数字行";
 "settings.redo_onboarding" = "重新查看引导";
 
