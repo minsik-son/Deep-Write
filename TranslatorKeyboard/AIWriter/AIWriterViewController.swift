@@ -730,50 +730,144 @@ class AIWriterViewController: UIViewController {
 
     // MARK: - Template Section
 
+    // MARK: - Quick Templates Accordion
+
+    private var isTemplatesExpanded = false
+    private var templatesExpandedCard: UIView?  // v2: collapse 대상 = 카드 전체
+    private var templatesChevron: UIImageView?
+
     private func setupTemplateSection() {
+        // Toggle header — full-width tappable row
+        let headerCard = UIView()
+        headerCard.backgroundColor = AppColors.card
+        headerCard.layer.cornerRadius = 14
+        headerCard.layer.shadowColor = UIColor.black.cgColor
+        headerCard.layer.shadowOpacity = 0.04
+        headerCard.layer.shadowOffset = CGSize(width: 0, height: 1)
+        headerCard.layer.shadowRadius = 3
+        headerCard.translatesAutoresizingMaskIntoConstraints = false
+
         let titleLabel = UILabel()
         titleLabel.text = L("ai_writer.templates_title")
-        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        titleLabel.textColor = AppColors.textSub
-        contentStack.addArrangedSubview(titleLabel)
-        contentStack.setCustomSpacing(10, after: titleLabel)
+        titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.textColor = AppColors.text
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        let templateScroll = UIScrollView()
-        templateScroll.showsHorizontalScrollIndicator = false
-        templateScroll.translatesAutoresizingMaskIntoConstraints = false
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = L("ai_writer.templates_expand_hint")
+        subtitleLabel.font = .systemFont(ofSize: 12)
+        subtitleLabel.textColor = AppColors.textMuted
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        let templateStack = UIStackView()
-        templateStack.axis = .horizontal
-        templateStack.spacing = 8
-        templateStack.translatesAutoresizingMaskIntoConstraints = false
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.down"))
+        chevron.tintColor = AppColors.textMuted
+        chevron.contentMode = .scaleAspectFit
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        self.templatesChevron = chevron
 
-        templateScroll.addSubview(templateStack)
+        headerCard.addSubview(titleLabel)
+        headerCard.addSubview(subtitleLabel)
+        headerCard.addSubview(chevron)
+
         NSLayoutConstraint.activate([
-            templateStack.leadingAnchor.constraint(equalTo: templateScroll.contentLayoutGuide.leadingAnchor),
-            templateStack.trailingAnchor.constraint(equalTo: templateScroll.contentLayoutGuide.trailingAnchor),
-            templateStack.topAnchor.constraint(equalTo: templateScroll.contentLayoutGuide.topAnchor),
-            templateStack.bottomAnchor.constraint(equalTo: templateScroll.contentLayoutGuide.bottomAnchor),
-            templateStack.heightAnchor.constraint(equalTo: templateScroll.frameLayoutGuide.heightAnchor),
+            titleLabel.topAnchor.constraint(equalTo: headerCard.topAnchor, constant: 14),
+            titleLabel.leadingAnchor.constraint(equalTo: headerCard.leadingAnchor, constant: 16),
+
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+            subtitleLabel.leadingAnchor.constraint(equalTo: headerCard.leadingAnchor, constant: 16),
+            subtitleLabel.bottomAnchor.constraint(equalTo: headerCard.bottomAnchor, constant: -14),
+
+            chevron.trailingAnchor.constraint(equalTo: headerCard.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: headerCard.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 14),
+            chevron.heightAnchor.constraint(equalToConstant: 14),
         ])
 
+        let headerTap = UITapGestureRecognizer(target: self, action: #selector(toggleTemplatesAccordion))
+        headerCard.addGestureRecognizer(headerTap)
+        headerCard.isUserInteractionEnabled = true
+
+        // Expanded container — vertical template list
+        // v2: expandedCard를 UIStackView arrangedSubview로 — collapse 시 공간 완전 제거
+        let expandedCard = UIView()
+        expandedCard.backgroundColor = AppColors.card
+        expandedCard.layer.cornerRadius = 14
+        expandedCard.clipsToBounds = true
+        expandedCard.isHidden = true  // 초기 접힘
+        expandedCard.alpha = 0
+        expandedCard.translatesAutoresizingMaskIntoConstraints = false
+
+        let expandedStack = UIStackView()
+        expandedStack.axis = .vertical
+        expandedStack.spacing = 0
+        expandedStack.translatesAutoresizingMaskIntoConstraints = false
+
         for (i, template) in aiWriterTemplates.enumerated() {
-            let btn = UIButton(type: .system)
-            btn.setTitle("\(template.emoji) \(L(template.nameKey))", for: .normal)
-            btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-            btn.setTitleColor(AppColors.text, for: .normal)
-            btn.backgroundColor = AppColors.card
-            btn.layer.cornerRadius = 18
-            btn.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
-            btn.layer.shadowColor = UIColor.black.cgColor
-            btn.layer.shadowOpacity = 0.04
-            btn.layer.shadowOffset = CGSize(width: 0, height: 1)
-            btn.layer.shadowRadius = 3
-            btn.tag = i
-            btn.addTarget(self, action: #selector(templateTapped(_:)), for: .touchUpInside)
-            templateStack.addArrangedSubview(btn)
+            let row = UIButton(type: .system)
+            row.setTitle(L(template.nameKey), for: .normal)
+            row.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+            row.setTitleColor(AppColors.text, for: .normal)
+            row.contentHorizontalAlignment = .left
+            row.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+            row.tag = i
+            row.addTarget(self, action: #selector(templateTapped(_:)), for: .touchUpInside)
+            expandedStack.addArrangedSubview(row)
+
+            if i < aiWriterTemplates.count - 1 {
+                let sep = UIView()
+                sep.backgroundColor = AppColors.border
+                sep.translatesAutoresizingMaskIntoConstraints = false
+                expandedStack.addArrangedSubview(sep)
+                sep.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
+            }
         }
 
-        contentStack.addArrangedSubview(templateScroll)
+        expandedCard.addSubview(expandedStack)
+        NSLayoutConstraint.activate([
+            expandedStack.topAnchor.constraint(equalTo: expandedCard.topAnchor),
+            expandedStack.bottomAnchor.constraint(equalTo: expandedCard.bottomAnchor),
+            expandedStack.leadingAnchor.constraint(equalTo: expandedCard.leadingAnchor),
+            expandedStack.trailingAnchor.constraint(equalTo: expandedCard.trailingAnchor),
+        ])
+
+        self.templatesExpandedCard = expandedCard
+
+        // v2: sectionStack으로 재구성 — UIStackView hidden arrangedSubview = 공간 0
+        let sectionStack = UIStackView(arrangedSubviews: [headerCard, expandedCard])
+        sectionStack.axis = .vertical
+        sectionStack.spacing = 8
+        sectionStack.translatesAutoresizingMaskIntoConstraints = false
+
+        contentStack.addArrangedSubview(sectionStack)
+    }
+
+    @objc private func toggleTemplatesAccordion() {
+        isTemplatesExpanded.toggle()
+        let expanded = isTemplatesExpanded
+
+        if expanded {
+            // 펼치기
+            templatesExpandedCard?.isHidden = false
+            templatesExpandedCard?.alpha = 0
+            templatesExpandedCard?.transform = CGAffineTransform(translationX: 0, y: -6)
+            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseInOut) {
+                self.templatesExpandedCard?.alpha = 1
+                self.templatesExpandedCard?.transform = .identity
+                self.templatesChevron?.transform = CGAffineTransform(rotationAngle: .pi)
+                self.contentStack.layoutIfNeeded()
+            }
+        } else {
+            // 접기
+            UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut, animations: {
+                self.templatesExpandedCard?.alpha = 0
+                self.templatesExpandedCard?.transform = CGAffineTransform(translationX: 0, y: -6)
+                self.templatesChevron?.transform = .identity
+                self.contentStack.layoutIfNeeded()
+            }, completion: { _ in
+                self.templatesExpandedCard?.isHidden = true
+                self.templatesExpandedCard?.transform = .identity
+            })
+        }
     }
 
     // MARK: - Options Card (grouped list-row style)

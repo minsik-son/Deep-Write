@@ -554,6 +554,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "빠른 템플릿";
+"ai_writer.templates_expand_hint" = "탭하여 모든 템플릿 보기";
 "template.job_reply" = "취업 답장";
 "template.job_reply.prompt" = "취업 지원/면접 이메일에 답장. 핵심: [핵심 내용]";
 "template.meeting_reschedule" = "일정 변경";

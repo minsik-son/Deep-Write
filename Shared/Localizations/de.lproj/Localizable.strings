@@ -553,6 +553,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "Schnellvorlagen";
+"ai_writer.templates_expand_hint" = "Tippen, um alle Vorlagen anzuzeigen";
 "template.job_reply" = "Jobantwort";
 "template.job_reply.prompt" = "Antwort auf eine Bewerbung/Interview-E-Mail. Kernpunkte: [Ihre Kernpunkte]";
 "template.meeting_reschedule" = "Umplanen";

@@ -2362,6 +2362,12 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Trackpad Cursor Movement
 
     private func handleCursorMove(horizontal: Int, vertical: Int) {
+        // v3: Quick Note editing 중에는 메모 내부 커서 이동
+        if currentMode == .quickNoteMode, case .editing = quickNoteSubState {
+            moveQuickNoteCursor(horizontal: horizontal, vertical: vertical)
+            return
+        }
+
         if horizontal != 0 {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: horizontal)
         }
@@ -2370,6 +2376,51 @@ class KeyboardViewController: UIInputViewController {
                 moveUp()
             } else {
                 moveDown()
+            }
+        }
+    }
+
+    /// Quick Note 내부 cursor 이동 — trackpad 대응
+    private func moveQuickNoteCursor(horizontal: Int, vertical: Int) {
+        guard let handler = quickNoteTextInputHandler else { return }
+
+        if horizontal != 0 {
+            handler.moveCursor(to: handler.cursorIndex + horizontal)
+            quickNoteEditView?.setCursorIndex(handler.cursorIndex)
+        }
+
+        if vertical != 0 {
+            let text = handler.fullText
+            let lines = text.components(separatedBy: "\n")
+            // 현재 cursor가 몇 번째 줄, 몇 번째 column인지 계산
+            var charCount = 0
+            var currentLine = 0
+            var currentCol = 0
+            for (i, line) in lines.enumerated() {
+                let lineLen = line.count + (i < lines.count - 1 ? 1 : 0) // \n 포함
+                if charCount + lineLen > handler.cursorIndex {
+                    currentLine = i
+                    currentCol = handler.cursorIndex - charCount
+                    break
+                }
+                charCount += lineLen
+                if i == lines.count - 1 {
+                    currentLine = i
+                    currentCol = handler.cursorIndex - charCount + lineLen
+                }
+            }
+
+            let targetLine = max(0, min(currentLine + vertical, lines.count - 1))
+            if targetLine != currentLine {
+                // target 줄의 column 위치 계산
+                let targetCol = min(currentCol, lines[targetLine].count)
+                var newIndex = 0
+                for i in 0..<targetLine {
+                    newIndex += lines[i].count + 1 // +1 for \n
+                }
+                newIndex += targetCol
+                handler.moveCursor(to: newIndex)
+                quickNoteEditView?.setCursorIndex(handler.cursorIndex)
             }
         }
     }

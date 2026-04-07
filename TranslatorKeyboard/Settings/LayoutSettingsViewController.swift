@@ -54,7 +54,7 @@ class LayoutSettingsViewController: UITableViewController {
         LanguageOption(code: "ru", displayName: "Русский"),
     ]
 
-    private var selectedLanguageCode: String = "ko"
+    private var selectedLanguageCode: String?
 
     // v2: Additional languages toggle
     private lazy var additionalLanguagesSwitch: UISwitch = {
@@ -76,7 +76,12 @@ class LayoutSettingsViewController: UITableViewController {
         super.viewDidLoad()
         title = L("settings.layout")
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "LayoutCell")
-        selectedLanguageCode = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage) ?? "ko"
+        // v3: 토글 ON + 실제 저장값이 있을 때만 선택 표시
+        if additionalLanguagesSwitch.isOn {
+            selectedLanguageCode = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
+        } else {
+            selectedLanguageCode = nil
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -187,6 +192,12 @@ class LayoutSettingsViewController: UITableViewController {
 
     @objc private func additionalLanguagesToggled(_ sender: UISwitch) {
         AppGroupManager.shared.set(sender.isOn, forKey: "additional_keyboard_language_enabled")
+        // v3: OFF 시 선택 초기화, ON 시 기존 저장값 없으면 nil
+        if !sender.isOn {
+            selectedLanguageCode = nil
+        } else {
+            selectedLanguageCode = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
+        }
         tableView.reloadData()
     }
 }

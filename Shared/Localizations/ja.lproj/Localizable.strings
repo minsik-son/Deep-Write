@@ -554,6 +554,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "クイックテンプレート";
+"ai_writer.templates_expand_hint" = "タップして全テンプレートを表示";
 "template.job_reply" = "求職返信";
 "template.job_reply.prompt" = "求人/面接メールへの返信。要点: [要点]";
 "template.meeting_reschedule" = "日程変更";

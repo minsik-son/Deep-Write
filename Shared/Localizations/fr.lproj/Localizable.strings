@@ -553,6 +553,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "Modèles rapides";
+"ai_writer.templates_expand_hint" = "Touchez pour afficher tous les modèles";
 "template.job_reply" = "Réponse emploi";
 "template.job_reply.prompt" = "Répondre à un email de candidature/entretien. Points clés : [vos points clés]";
 "template.meeting_reschedule" = "Reporter";

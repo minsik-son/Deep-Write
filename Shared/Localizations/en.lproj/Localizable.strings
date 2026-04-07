@@ -554,6 +554,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "Quick Templates";
+"ai_writer.templates_expand_hint" = "Tap to show all templates";
 "template.job_reply" = "Job Reply";
 "template.job_reply.prompt" = "Write a reply to a job application/interview email. Key points: [your key points]";
 "template.meeting_reschedule" = "Reschedule";

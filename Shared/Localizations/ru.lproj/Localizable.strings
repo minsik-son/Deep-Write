@@ -553,6 +553,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "Быстрые шаблоны";
+"ai_writer.templates_expand_hint" = "Нажмите, чтобы показать все шаблоны";
 "template.job_reply" = "Ответ на вакансию";
 "template.job_reply.prompt" = "Ответ на письмо о работе/собеседовании. Ключевые моменты: [ваши ключевые моменты]";
 "template.meeting_reschedule" = "Перенос";

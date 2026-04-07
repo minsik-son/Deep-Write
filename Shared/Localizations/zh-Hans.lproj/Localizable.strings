@@ -553,6 +553,7 @@
 
 // AI Writer v2 - Templates
 "ai_writer.templates_title" = "快速模板";
+"ai_writer.templates_expand_hint" = "点击查看所有模板";
 "template.job_reply" = "求职回复";
 "template.job_reply.prompt" = "回复求职/面试邮件。要点: [要点]";
 "template.meeting_reschedule" = "改期";
