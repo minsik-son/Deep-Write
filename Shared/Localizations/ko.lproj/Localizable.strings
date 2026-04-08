@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "설정";
 "settings.section.appearance" = "화면";
-"settings.dark_mode" = "다크 모드";
+"settings.dark_mode" = "메인 앱 다크 모드";
 "settings.section.keyboard" = "키보드 설정";
 "settings.keyboard_theme" = "키보드 테마";
 "settings.language" = "언어";
@@ -768,3 +768,13 @@
 "unit.category.temperature" = "온도";
 "unit.category.volume" = "부피";
 "unit.insert" = "삽입";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "키보드 화면 모드";
+"settings.keyboard_appearance.automatic" = "자동";
+"settings.keyboard_appearance.light" = "라이트";
+"settings.keyboard_appearance.dark" = "다크";
+"settings.keyboard_appearance.footer" = "자동을 선택하면 키보드가 표시되는 앱이나 웹사이트의 화면 모드를 따라갑니다.";
+"theme.premium_rose_carbon" = "로즈 카본";
+"theme.premium_crimson_ivory" = "크림슨 아이보리";
+"theme.premium_lilac_sky" = "라일락 스카이";

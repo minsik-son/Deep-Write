@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "設定";
 "settings.section.appearance" = "外観";
-"settings.dark_mode" = "ダークモード";
+"settings.dark_mode" = "メインアプリのダークモード";
 "settings.section.keyboard" = "キーボード設定";
 "settings.keyboard_theme" = "キーボードテーマ";
 "settings.language" = "言語";
@@ -768,3 +768,13 @@
 "unit.category.temperature" = "温度";
 "unit.category.volume" = "体積";
 "unit.insert" = "挿入";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "キーボード表示";
+"settings.keyboard_appearance.automatic" = "自動";
+"settings.keyboard_appearance.light" = "ライト";
+"settings.keyboard_appearance.dark" = "ダーク";
+"settings.keyboard_appearance.footer" = "自動を選ぶと、キーボードが表示されるアプリやWebサイトの表示に合わせます。";
+"theme.premium_rose_carbon" = "ローズカーボン";
+"theme.premium_crimson_ivory" = "クリムゾンアイボリー";
+"theme.premium_lilac_sky" = "ライラックスカイ";

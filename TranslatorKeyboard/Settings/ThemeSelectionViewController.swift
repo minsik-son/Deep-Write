@@ -86,6 +86,9 @@ class ThemeSelectionViewController: UIViewController {
         "premium_rose_gold":        [.minimal],
         "premium_frost_crystal":    [.minimal],
         "premium_brushed_steel":    [.minimal],
+        "premium_rose_carbon":      [.minimal],
+        "premium_crimson_ivory":    [.minimal],
+        "premium_lilac_sky":        [.minimal],
     ]
 
     private var selectedCategory: ThemeCategory = .all

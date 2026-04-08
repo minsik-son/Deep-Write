@@ -1936,6 +1936,9 @@ class AIWriterViewController: UIViewController {
             }
         }
 
+        // 빈 필드로 남은 placeholder [xxx] 제거 — AI에 리터럴 bracket 텍스트 전송 방지
+        prompt = prompt.replacingOccurrences(of: "\\s*\\[.*?\\]", with: "", options: .regularExpression)
+
         return prompt
     }
 
@@ -2115,8 +2118,15 @@ class AIWriterViewController: UIViewController {
     }
 
     @objc private func regenerateTapped() {
-        guard !lastPrompt.isEmpty else { return }
-        requestCompose(prompt: lastPrompt)
+        if let template = activeTemplate {
+            let prompt = assembleTemplatePrompt(template: template).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !prompt.isEmpty else { return }
+            lastPrompt = prompt
+            requestCompose(prompt: prompt)
+        } else {
+            guard !lastPrompt.isEmpty else { return }
+            requestCompose(prompt: lastPrompt)
+        }
     }
 
     // MARK: - Result Actions

@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "Einstellungen";
 "settings.section.appearance" = "Darstellung";
-"settings.dark_mode" = "Dunkelmodus";
+"settings.dark_mode" = "Dunkelmodus der App";
 "settings.section.keyboard" = "Tastatureinstellungen";
 "settings.keyboard_theme" = "Tastaturdesign";
 "settings.language" = "Sprache";
@@ -767,3 +767,13 @@
 "unit.category.temperature" = "Temp";
 "unit.category.volume" = "Volumen";
 "unit.insert" = "Einfügen";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "Tastaturdarstellung";
+"settings.keyboard_appearance.automatic" = "Automatisch";
+"settings.keyboard_appearance.light" = "Hell";
+"settings.keyboard_appearance.dark" = "Dunkel";
+"settings.keyboard_appearance.footer" = "Automatisch folgt dem Erscheinungsbild der App oder Website, in der die Tastatur angezeigt wird.";
+"theme.premium_rose_carbon" = "Rose Carbon";
+"theme.premium_crimson_ivory" = "Karmesin Elfenbein";
+"theme.premium_lilac_sky" = "Fliederhimmel";

@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "Paramètres";
 "settings.section.appearance" = "Apparence";
-"settings.dark_mode" = "Mode sombre";
+"settings.dark_mode" = "Mode sombre de l'app";
 "settings.section.keyboard" = "Paramètres du clavier";
 "settings.keyboard_theme" = "Thème du clavier";
 "settings.language" = "Langue";
@@ -767,3 +767,13 @@
 "unit.category.temperature" = "Temp";
 "unit.category.volume" = "Volume";
 "unit.insert" = "Insérer";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "Apparence du clavier";
+"settings.keyboard_appearance.automatic" = "Automatique";
+"settings.keyboard_appearance.light" = "Clair";
+"settings.keyboard_appearance.dark" = "Sombre";
+"settings.keyboard_appearance.footer" = "Le mode automatique suit l'apparence de l'app ou du site web où le clavier est affiché.";
+"theme.premium_rose_carbon" = "Rose Carbone";
+"theme.premium_crimson_ivory" = "Cramoisi Ivoire";
+"theme.premium_lilac_sky" = "Ciel Lilas";

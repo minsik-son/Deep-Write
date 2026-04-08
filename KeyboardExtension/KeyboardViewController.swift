@@ -355,6 +355,8 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("📌 settingsLinkHostingController isNil=\(self.settingsLinkHostingController == nil), container.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
         #endif
 
+        applyKeyboardInterfaceStyleOverride()
+
         // ════════════════════════════════════════════
         // 조기 해제 복원 — 같은 인스턴스 재사용 시 (알림센터, 앱 스위처 등)
         // viewWillDisappear에서 정리한 리소스를 필요 시 재생성
@@ -917,7 +919,7 @@ class KeyboardViewController: UIInputViewController {
 
         // 생성 직후 테마 적용
         let theme = loadTheme()
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let isDark = resolvedKeyboardIsDark()
         translationLanguageBar.applyTheme(theme)
         translationLanguageBar.updateAppearance(isDark: isDark)
         translationInputView.applyTheme(theme)
@@ -966,7 +968,7 @@ class KeyboardViewController: UIInputViewController {
 
         // 생성 직후 테마 적용
         let theme = loadTheme()
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let isDark = resolvedKeyboardIsDark()
         correctionLanguageBar.applyTheme(theme)
         correctionLanguageBar.updateAppearance(isDark: isDark)
         correctionInputView.applyTheme(theme)
@@ -1823,7 +1825,7 @@ class KeyboardViewController: UIInputViewController {
 
             // ★ 생성 직후 현재 테마 적용
             let theme = loadTheme()
-            let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+            let isDarkMode = resolvedKeyboardIsDark()
             sv.applyTheme(theme)
             sv.updateAppearance(isDark: isDarkMode)
         }
@@ -1892,7 +1894,7 @@ class KeyboardViewController: UIInputViewController {
 
             // ★ 생성 직후 현재 테마 적용
             let theme = loadTheme()
-            let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+            let isDarkMode = resolvedKeyboardIsDark()
             cv.applyTheme(theme)
             cv.updateAppearance(isDark: isDarkMode)
         }
@@ -2208,6 +2210,38 @@ class KeyboardViewController: UIInputViewController {
             return self.hasFullAccess
         }
         return false
+    }
+
+    // MARK: - Keyboard Appearance Mode
+
+    private func currentKeyboardAppearanceMode() -> AppConstants.KeyboardAppearanceMode {
+        guard let raw = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.keyboardAppearanceMode),
+              let mode = AppConstants.KeyboardAppearanceMode(rawValue: raw) else {
+            return .automatic
+        }
+        return mode
+    }
+
+    private func resolvedKeyboardIsDark() -> Bool {
+        switch currentKeyboardAppearanceMode() {
+        case .automatic:
+            return textDocumentProxy.keyboardAppearance == .dark
+        case .light:
+            return false
+        case .dark:
+            return true
+        }
+    }
+
+    private func applyKeyboardInterfaceStyleOverride() {
+        switch currentKeyboardAppearanceMode() {
+        case .automatic:
+            view.overrideUserInterfaceStyle = .unspecified
+        case .light:
+            view.overrideUserInterfaceStyle = .light
+        case .dark:
+            view.overrideUserInterfaceStyle = .dark
+        }
     }
 
     // MARK: - Language Picker
@@ -2856,7 +2890,8 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func updateKeyboardAppearance() {
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        applyKeyboardInterfaceStyleOverride()
+        let isDark = resolvedKeyboardIsDark()
         let theme = loadTheme()
 
         // 시스템 둥근 배경을 덮기 위해 inputView 배경색 설정
@@ -3453,7 +3488,7 @@ extension KeyboardViewController {
         if let theme = loadTheme() {
             view.applyTheme(theme)
         }
-        let isDarkMode = textDocumentProxy.keyboardAppearance == .dark
+        let isDarkMode = resolvedKeyboardIsDark()
         view.updateAppearance(isDark: isDarkMode)
 
         view.alpha = 0
@@ -3596,7 +3631,7 @@ extension KeyboardViewController {
         toolbarView.isHidden = true
         keyboardLayoutView.isHidden = true
 
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let isDark = resolvedKeyboardIsDark()
         let theme = loadTheme()
         calc.applyTheme(theme)
         calc.updateAppearance(isDark: isDark)
@@ -4208,7 +4243,7 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
         let tapDismiss = UITapGestureRecognizer(target: self, action: #selector(dateTimeMenuDismissed))
         overlay.addGestureRecognizer(tapDismiss)
 
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let isDark = resolvedKeyboardIsDark()
 
         let menu = UIStackView()
         menu.axis = .vertical
@@ -4334,7 +4369,7 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
         toolbarView.isHidden = true
         keyboardLayoutView.isHidden = true
 
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        let isDark = resolvedKeyboardIsDark()
         let theme = loadTheme()
         converter.applyTheme(theme)
         converter.updateAppearance(isDark: isDark)

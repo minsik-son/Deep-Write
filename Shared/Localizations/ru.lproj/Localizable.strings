@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "Настройки";
 "settings.section.appearance" = "Оформление";
-"settings.dark_mode" = "Тёмный режим";
+"settings.dark_mode" = "Тёмная тема приложения";
 "settings.section.keyboard" = "Настройки клавиатуры";
 "settings.keyboard_theme" = "Тема клавиатуры";
 "settings.language" = "Язык";
@@ -767,3 +767,13 @@
 "unit.category.temperature" = "Темп";
 "unit.category.volume" = "Объём";
 "unit.insert" = "Вставить";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "Внешний вид клавиатуры";
+"settings.keyboard_appearance.automatic" = "Авто";
+"settings.keyboard_appearance.light" = "Светлая";
+"settings.keyboard_appearance.dark" = "Тёмная";
+"settings.keyboard_appearance.footer" = "Авто повторяет оформление приложения или сайта, где показана клавиатура.";
+"theme.premium_rose_carbon" = "Розовый карбон";
+"theme.premium_crimson_ivory" = "Кримсон Айвори";
+"theme.premium_lilac_sky" = "Сиреневое небо";

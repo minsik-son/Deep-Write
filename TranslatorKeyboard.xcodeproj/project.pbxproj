@@ -32,6 +32,7 @@
 		3BB993C32F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
 		3BB993C42F7660DC002EA7C3 /* ToolbarConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */; };
 		3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */; };
+		3BKA00012F890001002EA7C3 /* KeyboardAppearanceSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BKA00002F890001002EA7C3 /* KeyboardAppearanceSettingsViewController.swift */; };
 		3BB993C82F7726B7002EA7C3 /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */; };
 		3BB993CB2F777DB0002EA7C3 /* ChatReplyCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993C92F777DB0002EA7C3 /* ChatReplyCache.swift */; };
 		3BB993CC2F777DB0002EA7C3 /* ChatReplyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB993CA2F777DB0002EA7C3 /* ChatReplyManager.swift */; };
@@ -222,6 +223,7 @@
 		3BB993C02F7618A3002EA7C3 /* AppColors+Tier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppColors+Tier.swift"; sourceTree = "<group>"; };
 		3BB993C22F7660DC002EA7C3 /* ToolbarConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarConfiguration.swift; sourceTree = "<group>"; };
 		3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarCustomizationViewController.swift; sourceTree = "<group>"; };
+		3BKA00002F890001002EA7C3 /* KeyboardAppearanceSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardAppearanceSettingsViewController.swift; sourceTree = "<group>"; };
 		3BB993C72F7726B7002EA7C3 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		3BB993C92F777DB0002EA7C3 /* ChatReplyCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyCache.swift; sourceTree = "<group>"; };
 		3BB993CA2F777DB0002EA7C3 /* ChatReplyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyManager.swift; sourceTree = "<group>"; };
@@ -364,6 +366,7 @@
 			children = (
 				3BB993D52F845188002EA7C3 /* PasteGuideSettingsAnimationView.swift */,
 				3BB993C52F766160002EA7C3 /* ToolbarCustomizationViewController.swift */,
+				3BKA00002F890001002EA7C3 /* KeyboardAppearanceSettingsViewController.swift */,
 				AA00BB11CC22DD33EE110008 /* AICorrectionInfoViewController.swift */,
 				AA00BB11CC22DD33EE110009 /* AITranslationInfoViewController.swift */,
 				AA00BB11CC22DD33EE110007 /* FullAccessExplainViewController.swift */,
@@ -918,6 +921,7 @@
 				KH01AA11BB22CC33DD440003 /* KeychainHelper.swift in Sources */,
 				90C244B176664DB7B8761707 /* AdminMode.swift in Sources */,
 				3BB993C62F766160002EA7C3 /* ToolbarCustomizationViewController.swift in Sources */,
+				3BKA00012F890001002EA7C3 /* KeyboardAppearanceSettingsViewController.swift in Sources */,
 				AA11BB22CC33DD44EE550099 /* SavedPhrasesManager.swift in Sources */,
 				137F3798A9C66C2526CB6DC0 /* QuickNote.swift in Sources */,
 				3D92E2F82B576104B68B86D2 /* QuickNoteManager.swift in Sources */,

@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "设置";
 "settings.section.appearance" = "外观";
-"settings.dark_mode" = "深色模式";
+"settings.dark_mode" = "主应用深色模式";
 "settings.section.keyboard" = "键盘设置";
 "settings.keyboard_theme" = "键盘主题";
 "settings.language" = "语言";
@@ -767,3 +767,13 @@
 "unit.category.temperature" = "温度";
 "unit.category.volume" = "容量";
 "unit.insert" = "插入";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "键盘外观";
+"settings.keyboard_appearance.automatic" = "自动";
+"settings.keyboard_appearance.light" = "浅色";
+"settings.keyboard_appearance.dark" = "深色";
+"settings.keyboard_appearance.footer" = "选择自动后，键盘会跟随其所在应用或网站的外观。";
+"theme.premium_rose_carbon" = "玫瑰碳黑";
+"theme.premium_crimson_ivory" = "绯红象牙";
+"theme.premium_lilac_sky" = "丁香晴空";

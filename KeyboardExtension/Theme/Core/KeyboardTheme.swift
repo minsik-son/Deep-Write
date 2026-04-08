@@ -530,6 +530,66 @@ extension KeyboardTheme {
         returnKeyAccentTextColor: .white
     )
 
+    static let premiumRoseCarbon = KeyboardTheme(
+        id: "premium_rose_carbon",
+        displayName: L("theme.premium_rose_carbon"),
+        keyboardBackground: UIColor(hex: "#15171C"),
+        keyBackground: UIColor(hex: "#23242A"),
+        specialKeyBackground: UIColor(hex: "#C95F86"),
+        keyTextColor: UIColor(hex: "#F7E8EE"),
+        toolbarBackground: .clear,
+        gradientColors: nil, gradientLocations: nil, gradientDirection: .topToBottom,
+        patternStyle: .none, patternOpacity: 0, patternTint: .white,
+        keyVisualStyle: .solid, specialKeyVisualStyle: .solid,
+        textShadowColor: .clear, textShadowOffset: .zero,
+        textHighlightColor: .clear, textHighlightOffset: .zero,
+        woodTileImageName: nil, hasWaveAnimation: false, hasRainAnimation: false, hasRippleAnimation: false, hasStardustAnimation: false, hasEdgeGlowAnimation: false,
+        hasSnowfallAnimation: false,
+        hasCherryBlossomAnimation: false,
+        returnKeyAccentColor: UIColor(hex: "#DE7698"),
+        returnKeyAccentTextColor: UIColor(hex: "#FFF6F8")
+    )
+
+    static let premiumCrimsonIvory = KeyboardTheme(
+        id: "premium_crimson_ivory",
+        displayName: L("theme.premium_crimson_ivory"),
+        keyboardBackground: UIColor(hex: "#C93A3F"),
+        keyBackground: UIColor(hex: "#F3ECDD"),
+        specialKeyBackground: UIColor(hex: "#D46A74"),
+        keyTextColor: UIColor(hex: "#6A2732"),
+        toolbarBackground: .clear,
+        gradientColors: nil, gradientLocations: nil, gradientDirection: .topToBottom,
+        patternStyle: .none, patternOpacity: 0, patternTint: .white,
+        keyVisualStyle: .solid, specialKeyVisualStyle: .solid,
+        textShadowColor: .clear, textShadowOffset: .zero,
+        textHighlightColor: .clear, textHighlightOffset: .zero,
+        woodTileImageName: nil, hasWaveAnimation: false, hasRainAnimation: false, hasRippleAnimation: false, hasStardustAnimation: false, hasEdgeGlowAnimation: false,
+        hasSnowfallAnimation: false,
+        hasCherryBlossomAnimation: false,
+        returnKeyAccentColor: UIColor(hex: "#A3323E"),
+        returnKeyAccentTextColor: UIColor(hex: "#FFF4EF")
+    )
+
+    static let premiumLilacSky = KeyboardTheme(
+        id: "premium_lilac_sky",
+        displayName: L("theme.premium_lilac_sky"),
+        keyboardBackground: UIColor(hex: "#EEDCF4"),
+        keyBackground: UIColor(hex: "#FBFBFF"),
+        specialKeyBackground: UIColor(hex: "#79BDEB"),
+        keyTextColor: UIColor(hex: "#5D6276"),
+        toolbarBackground: .clear,
+        gradientColors: nil, gradientLocations: nil, gradientDirection: .topToBottom,
+        patternStyle: .none, patternOpacity: 0, patternTint: .white,
+        keyVisualStyle: .solid, specialKeyVisualStyle: .solid,
+        textShadowColor: .clear, textShadowOffset: .zero,
+        textHighlightColor: .clear, textHighlightOffset: .zero,
+        woodTileImageName: nil, hasWaveAnimation: false, hasRainAnimation: false, hasRippleAnimation: false, hasStardustAnimation: false, hasEdgeGlowAnimation: false,
+        hasSnowfallAnimation: false,
+        hasCherryBlossomAnimation: false,
+        returnKeyAccentColor: UIColor(hex: "#59ABE3"),
+        returnKeyAccentTextColor: .white
+    )
+
     static let premiumSakuraBreeze = KeyboardTheme(
         id: "premium_sakura_breeze",
         displayName: L("theme.premium_sakura_breeze"),
@@ -1321,7 +1381,8 @@ extension KeyboardTheme {
         .premiumMidnightAurora, .premiumRoseGold, .premiumOceanAbyss,
         .premiumSunsetEmber, .premiumFrostCrystal,
         .premiumStarlitNight, .premiumVolcanicEmber, .premiumNorthernLights,
-        .premiumBrushedSteel, .premiumSakuraBreeze, .premiumDeepOcean,
+        .premiumBrushedSteel, .premiumRoseCarbon, .premiumCrimsonIvory,
+        .premiumLilacSky, .premiumSakuraBreeze, .premiumDeepOcean,
         .premiumDarkWalnut, .premiumNaturalOak,
         .premiumMatrixPulse, .premiumDigitalRain,
         .premiumMercuryRipple, .premiumStardustDrift,

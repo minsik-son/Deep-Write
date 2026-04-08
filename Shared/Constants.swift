@@ -33,8 +33,15 @@ enum AppConstants {
         static let compositionSessionHistory = "composition_session_history"
         static let keyboardFullAccessEnabled = "keyboard_full_access_enabled"
         static let appDarkMode = "app_dark_mode"
+        static let keyboardAppearanceMode = "keyboard_appearance_mode"
         static let quickNotes = "quick_notes"
         static let toolbarItems = "toolbar_items"
+    }
+
+    enum KeyboardAppearanceMode: String, CaseIterable {
+        case automatic
+        case light
+        case dark
     }
 
     enum API {

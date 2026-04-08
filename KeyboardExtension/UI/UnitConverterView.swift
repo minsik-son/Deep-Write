@@ -212,7 +212,7 @@ final class UnitConverterView: UIView {
         return sv
     }()
 
-    private var pickerTopConstraint: NSLayoutConstraint?
+    private var pickerBottomConstraint: NSLayoutConstraint?
 
     // Row references for picker positioning
     private let fromRow = UIView()
@@ -277,8 +277,18 @@ final class UnitConverterView: UIView {
         toRow.addSubview(toUnitChipButton)
         toRow.addSubview(toLabel)
 
-        // Picker container (above display)
-        displayContainer.addSubview(unitPickerContainer)
+        // Chip compact width priority
+        fromUnitChipButton.setContentHuggingPriority(.required, for: .horizontal)
+        fromUnitChipButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        toUnitChipButton.setContentHuggingPriority(.required, for: .horizontal)
+        toUnitChipButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        fromLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        fromLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        toLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        toLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // Picker container (overlay on self, above everything)
+        addSubview(unitPickerContainer)
         unitPickerContainer.addSubview(unitPickerStack)
 
         NSLayoutConstraint.activate([
@@ -326,6 +336,8 @@ final class UnitConverterView: UIView {
             fromUnitChipButton.leadingAnchor.constraint(equalTo: fromRow.leadingAnchor),
             fromUnitChipButton.centerYAnchor.constraint(equalTo: fromRow.centerYAnchor),
             fromUnitChipButton.heightAnchor.constraint(equalToConstant: 26),
+            fromUnitChipButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 46),
+            fromUnitChipButton.widthAnchor.constraint(lessThanOrEqualToConstant: 64),
 
             fromLabel.leadingAnchor.constraint(equalTo: fromUnitChipButton.trailingAnchor, constant: 8),
             fromLabel.trailingAnchor.constraint(equalTo: fromRow.trailingAnchor),
@@ -337,6 +349,8 @@ final class UnitConverterView: UIView {
             toUnitChipButton.leadingAnchor.constraint(equalTo: toRow.leadingAnchor),
             toUnitChipButton.centerYAnchor.constraint(equalTo: toRow.centerYAnchor),
             toUnitChipButton.heightAnchor.constraint(equalToConstant: 26),
+            toUnitChipButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 46),
+            toUnitChipButton.widthAnchor.constraint(lessThanOrEqualToConstant: 64),
 
             toLabel.leadingAnchor.constraint(equalTo: toUnitChipButton.trailingAnchor, constant: 8),
             toLabel.trailingAnchor.constraint(equalTo: toRow.trailingAnchor),
@@ -344,15 +358,15 @@ final class UnitConverterView: UIView {
             toLabel.bottomAnchor.constraint(equalTo: toRow.bottomAnchor),
             toLabel.heightAnchor.constraint(equalToConstant: 34),
 
-            // Picker container
+            // Picker container (overlay on self, positioned relative to display)
             unitPickerContainer.leadingAnchor.constraint(equalTo: displayContainer.leadingAnchor),
             unitPickerContainer.trailingAnchor.constraint(lessThanOrEqualTo: displayContainer.trailingAnchor),
-            unitPickerContainer.heightAnchor.constraint(equalToConstant: 36),
+            unitPickerContainer.heightAnchor.constraint(equalToConstant: 44),
 
-            unitPickerStack.topAnchor.constraint(equalTo: unitPickerContainer.topAnchor, constant: 4),
-            unitPickerStack.leadingAnchor.constraint(equalTo: unitPickerContainer.leadingAnchor, constant: 6),
-            unitPickerStack.trailingAnchor.constraint(equalTo: unitPickerContainer.trailingAnchor, constant: -6),
-            unitPickerStack.bottomAnchor.constraint(equalTo: unitPickerContainer.bottomAnchor, constant: -4),
+            unitPickerStack.topAnchor.constraint(equalTo: unitPickerContainer.topAnchor, constant: 6),
+            unitPickerStack.leadingAnchor.constraint(equalTo: unitPickerContainer.leadingAnchor, constant: 8),
+            unitPickerStack.trailingAnchor.constraint(equalTo: unitPickerContainer.trailingAnchor, constant: -8),
+            unitPickerStack.bottomAnchor.constraint(equalTo: unitPickerContainer.bottomAnchor, constant: -6),
 
             // Button grid
             buttonGrid.topAnchor.constraint(equalTo: displayContainer.bottomAnchor, constant: 4),
@@ -363,9 +377,9 @@ final class UnitConverterView: UIView {
             buttonGrid.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
         ])
 
-        // Default picker position (will be updated when shown)
-        pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: fromRow.bottomAnchor, constant: 2)
-        pickerTopConstraint?.isActive = true
+        // Default picker position — opens upward (will be updated when shown)
+        pickerBottomConstraint = unitPickerContainer.bottomAnchor.constraint(equalTo: fromRow.topAnchor, constant: -4)
+        pickerBottomConstraint?.isActive = true
 
         let leadingFill = buttonGrid.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4)
         leadingFill.priority = .defaultHigh
@@ -524,17 +538,19 @@ final class UnitConverterView: UIView {
         activePickerTarget = target
         rebuildPickerItems(for: target)
 
-        // Position picker near the target row
-        pickerTopConstraint?.isActive = false
+        // Position picker above the target row (opens upward)
+        pickerBottomConstraint?.isActive = false
         switch target {
         case .from:
-            pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: fromRow.bottomAnchor, constant: 2)
+            pickerBottomConstraint = unitPickerContainer.bottomAnchor.constraint(equalTo: fromRow.topAnchor, constant: -4)
         case .to:
-            pickerTopConstraint = unitPickerContainer.topAnchor.constraint(equalTo: toRow.bottomAnchor, constant: 2)
+            pickerBottomConstraint = unitPickerContainer.bottomAnchor.constraint(equalTo: toRow.topAnchor, constant: -4)
         }
-        pickerTopConstraint?.isActive = true
+        pickerBottomConstraint?.isActive = true
+        layoutIfNeeded()
 
         unitPickerContainer.isHidden = false
+        bringSubviewToFront(unitPickerContainer)
         unitPickerContainer.alpha = 0
         UIView.animate(withDuration: 0.15) {
             self.unitPickerContainer.alpha = 1

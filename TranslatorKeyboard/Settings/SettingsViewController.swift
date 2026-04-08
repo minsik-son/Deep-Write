@@ -67,6 +67,7 @@ class SettingsViewController: UITableViewController {
                 items: [
                     SettingsItem(title: L("settings.language"), iconName: "globe", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
                     SettingsItem(title: L("settings.layout"), iconName: "keyboard", iconBackgroundColor: AppColors.green, accessory: .chevron),
+                    SettingsItem(title: L("settings.keyboard_appearance"), iconName: "circle.lefthalf.filled", iconBackgroundColor: .systemIndigo, accessory: .chevron),
                     SettingsItem(title: L("settings.toolbar"), iconName: "slider.horizontal.3", iconBackgroundColor: .systemOrange, accessory: .chevron),
                     SettingsItem(title: L("settings.autocomplete"), iconName: "text.badge.checkmark", iconBackgroundColor: .systemGreen, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoComplete)),
                     SettingsItem(title: L("settings.auto_capitalize"), iconName: "textformat.size", iconBackgroundColor: AppColors.tierBlue, accessory: .toggle(key: AppConstants.UserDefaultsKeys.autoCapitalize)),
@@ -286,8 +287,9 @@ class SettingsViewController: UITableViewController {
             switch indexPath.row {
             case 0: vc = LanguageSettingsViewController()
             case 1: vc = LayoutSettingsViewController()
-            case 2: vc = ToolbarCustomizationViewController()
-            case 6: vc = QuickNoteListViewController()
+            case 2: vc = KeyboardAppearanceSettingsViewController()
+            case 3: vc = ToolbarCustomizationViewController()
+            case 7: vc = QuickNoteListViewController()
             default: break
             }
         }

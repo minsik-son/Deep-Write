@@ -1,7 +1,7 @@
 // === Settings ===
 "settings.title" = "Impostazioni";
 "settings.section.appearance" = "Aspetto";
-"settings.dark_mode" = "Modalità scura";
+"settings.dark_mode" = "Modalità scura dell'app";
 "settings.section.keyboard" = "Impostazioni tastiera";
 "settings.keyboard_theme" = "Tema tastiera";
 "settings.language" = "Lingua";
@@ -767,3 +767,13 @@
 "unit.category.temperature" = "Temp";
 "unit.category.volume" = "Volume";
 "unit.insert" = "Inserisci";
+
+// === Keyboard Appearance Settings ===
+"settings.keyboard_appearance" = "Aspetto della tastiera";
+"settings.keyboard_appearance.automatic" = "Automatico";
+"settings.keyboard_appearance.light" = "Chiaro";
+"settings.keyboard_appearance.dark" = "Scuro";
+"settings.keyboard_appearance.footer" = "Automatico segue l'aspetto dell'app o del sito web in cui viene mostrata la tastiera.";
+"theme.premium_rose_carbon" = "Rosa Carbone";
+"theme.premium_crimson_ivory" = "Cremisi Avorio";
+"theme.premium_lilac_sky" = "Cielo Lilla";
