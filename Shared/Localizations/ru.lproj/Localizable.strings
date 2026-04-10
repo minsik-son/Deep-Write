@@ -777,3 +777,6 @@
 "theme.premium_rose_carbon" = "Розовый карбон";
 "theme.premium_crimson_ivory" = "Кримсон Айвори";
 "theme.premium_lilac_sky" = "Сиреневое небо";
+
+"privacy.ad_privacy" = "КОНФИДЕНЦИАЛЬНОСТЬ РЕКЛАМЫ";
+"privacy.manage_ad_choices" = "Управление настройками конфиденциальности рекламы";

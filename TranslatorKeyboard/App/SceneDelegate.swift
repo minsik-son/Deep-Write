@@ -1,5 +1,6 @@
 import UIKit
 import OSLog
+import GoogleMobileAds
 
 // DEBUG TRACE: app lifecycle
 private let sceneLog = Logger(
@@ -50,6 +51,26 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         sceneLog.debug("event=sceneDidBecomeActive")
+
+        // Initialize consent and ads on first activation
+        guard AdConfiguration.isConfigured else {
+            #if DEBUG
+            print("[SceneDelegate] Ad configuration not ready — skipping ad init")
+            #endif
+            return
+        }
+        guard let windowScene = scene as? UIWindowScene,
+              let rootVC = windowScene.windows.first?.rootViewController else { return }
+
+        // 흐름: ATT → UMP Consent → Ad Load
+        ATTManager.shared.requestTrackingAuthorizationIfNeeded {
+            AdConsentManager.shared.updateConsent(from: rootVC) { canRequestAds in
+                if canRequestAds {
+                    MobileAds.shared.start()
+                    AdManager.shared.loadRewardedAd()
+                }
+            }
+        }
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

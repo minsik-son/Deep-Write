@@ -777,3 +777,6 @@
 "theme.premium_rose_carbon" = "Rose Carbon";
 "theme.premium_crimson_ivory" = "Karmesin Elfenbein";
 "theme.premium_lilac_sky" = "Fliederhimmel";
+
+"privacy.ad_privacy" = "WERBE-DATENSCHUTZ";
+"privacy.manage_ad_choices" = "Werbe-Datenschutzeinstellungen verwalten";

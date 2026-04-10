@@ -72,6 +72,24 @@ class PrivacyDashboardViewController: UIViewController {
             let row = makePrivacyRow(icon: item.0, text: item.1, isCollected: true)
             contentStack.addArrangedSubview(row)
         }
+
+        // Ad Privacy section
+        let adPrivacyTitle = makeSectionTitle(L("privacy.ad_privacy"))
+        contentStack.addArrangedSubview(adPrivacyTitle)
+        contentStack.setCustomSpacing(8, after: adPrivacyTitle)
+
+        let adPrivacyButton = UIButton(type: .system)
+        adPrivacyButton.setTitle(L("privacy.manage_ad_choices"), for: .normal)
+        adPrivacyButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
+        adPrivacyButton.setTitleColor(.white, for: .normal)
+        adPrivacyButton.backgroundColor = AppColors.tierAccent
+        adPrivacyButton.layer.cornerRadius = 12
+        adPrivacyButton.translatesAutoresizingMaskIntoConstraints = false
+        adPrivacyButton.addTarget(self, action: #selector(manageAdPrivacyTapped), for: .touchUpInside)
+        NSLayoutConstraint.activate([
+            adPrivacyButton.heightAnchor.constraint(equalToConstant: 48),
+        ])
+        contentStack.addArrangedSubview(adPrivacyButton)
     }
 
     private func makeSectionTitle(_ text: String) -> UILabel {
@@ -81,6 +99,14 @@ class PrivacyDashboardViewController: UIViewController {
         label.textColor = AppColors.textMuted
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
+    }
+
+    @objc private func manageAdPrivacyTapped() {
+        if AdConsentManager.shared.privacyOptionsRequired {
+            AdConsentManager.shared.presentPrivacyOptions(from: self)
+        } else if let url = URL(string: LegalLinks.privacyChoices) {
+            UIApplication.shared.open(url)
+        }
     }
 
     private func makePrivacyRow(icon: String, text: String, isCollected: Bool) -> UIView {

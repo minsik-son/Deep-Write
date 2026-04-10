@@ -778,3 +778,6 @@
 "theme.premium_rose_carbon" = "로즈 카본";
 "theme.premium_crimson_ivory" = "크림슨 아이보리";
 "theme.premium_lilac_sky" = "라일락 스카이";
+
+"privacy.ad_privacy" = "광고 개인정보";
+"privacy.manage_ad_choices" = "광고 개인정보 설정 관리";

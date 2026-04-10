@@ -777,3 +777,6 @@
 "theme.premium_rose_carbon" = "Rosa Carbone";
 "theme.premium_crimson_ivory" = "Cremisi Avorio";
 "theme.premium_lilac_sky" = "Cielo Lilla";
+
+"privacy.ad_privacy" = "PRIVACY PUBBLICITARIA";
+"privacy.manage_ad_choices" = "Gestisci le scelte sulla privacy degli annunci";

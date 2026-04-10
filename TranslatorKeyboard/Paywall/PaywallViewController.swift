@@ -120,7 +120,6 @@ class PaywallViewController: UIViewController {
         buildHeroSection()
         buildBenefitsList()
         buildPlanSelector()
-        buildPromoCodeLink()
         buildBottomSection()
         applyFallbackPrices()
         loadProducts()
@@ -461,16 +460,6 @@ class PaywallViewController: UIViewController {
         return card
     }
 
-    // MARK: - Promo Code Link
-
-    private func buildPromoCodeLink() {
-        let promoButton = UIButton(type: .system)
-        promoButton.setTitle(L("paywall.promo_code"), for: .normal)
-        promoButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-        promoButton.setTitleColor(AppColors.tierAccent, for: .normal)
-        contentStack.addArrangedSubview(promoButton)
-    }
-
     // MARK: - Bottom Section
 
     private func buildBottomSection() {
@@ -766,13 +755,13 @@ class PaywallViewController: UIViewController {
     }
 
     @objc private func termsTapped() {
-        if let url = URL(string: "https://translatorkeyboard.com/terms") {
+        if let url = URL(string: LegalLinks.terms) {
             UIApplication.shared.open(url)
         }
     }
 
     @objc private func privacyTapped() {
-        if let url = URL(string: "https://translatorkeyboard.com/privacy") {
+        if let url = URL(string: LegalLinks.privacy) {
             UIApplication.shared.open(url)
         }
     }

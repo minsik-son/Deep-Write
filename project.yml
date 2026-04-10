@@ -5,6 +5,26 @@ options:
     iOS: "17.0"
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
+  defaultConfig: Release
+  knownRegions:
+    - en
+    - ko
+    - ja
+    - zh-Hans
+    - es
+    - fr
+    - de
+    - it
+    - ru
+    - Base
+
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: "13.2.0"
+  UserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git
+    from: "3.1.0"
 
 settings:
   base:
@@ -21,6 +41,23 @@ schemes:
         KeyboardExtension: all
     run:
       config: Debug
+      storeKitConfiguration: TranslatorKeyboard/Paywall/Products.storekit
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  KeyboardExtension:
+    build:
+      targets:
+        KeyboardExtension: all
+        TranslatorKeyboard: all
+    run:
+      config: Debug
+      askForAppToLaunch: true
 
 targets:
   TranslatorKeyboard:
@@ -30,11 +67,14 @@ targets:
       - path: TranslatorKeyboard
         excludes:
           - "Resources/Info.plist"
+          - "AIWriterTemplates.swift"
+          - "AppColors+Tier.swift"
+          - "ComposeHistoryManager.swift"
+          - "ComposeHistoryViewController.swift"
       - path: Shared
-        excludes:
-          - "Localizations"
-    resources:
-      - path: Shared/Localizations
+      - path: KeyboardExtension/Logic/SavedPhrasesManager.swift
+      - path: KeyboardExtension/Theme/Core/KeyboardTheme.swift
+      - path: KeyboardExtension/Theme/Core/ThemePatternRenderer.swift
     info:
       path: TranslatorKeyboard/Resources/Info.plist
       properties:
@@ -48,19 +88,37 @@ targets:
           - UIInterfaceOrientationPortrait
         CFBundleDisplayName: Translator Keyboard
         UILaunchScreen: {}
+        GADApplicationIdentifier: $(ADMOB_APP_ID)
+        NSUserTrackingUsageDescription: This identifier will be used to deliver personalized ads to you.
+        NSSpeechRecognitionUsageDescription: Speech recognition is used to convert your voice into text while dictation is active.
+        NSMicrophoneUsageDescription: Microphone access is used to capture your voice for dictation.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.translatorkeyboard.app
+            CFBundleURLSchemes:
+              - translatorkeyboard
+        SKAdNetworkItems:
+          - SKAdNetworkIdentifier: cstr6suwn9.skadnetwork
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.translatorkeyboard.app
         INFOPLIST_FILE: TranslatorKeyboard/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: TranslatorKeyboard/TranslatorKeyboard.entitlements
         DEVELOPMENT_TEAM: 3Q2D38NW4X
+        ADMOB_APP_ID: ca-app-pub-9921649727270589~7890214484
     entitlements:
       path: TranslatorKeyboard/TranslatorKeyboard.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.translatorkeyboard.shared
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)group.com.translatorkeyboard.shared
     dependencies:
       - target: KeyboardExtension
+      - package: GoogleMobileAds
+      - package: UserMessagingPlatform
+        product: GoogleUserMessagingPlatform
 
   KeyboardExtension:
     type: app-extension
@@ -69,11 +127,10 @@ targets:
       - path: KeyboardExtension
         excludes:
           - "Resources/Info.plist"
+          - "Logic/Array+Safe.swift"
+          - "CalculatorView.swift"
       - path: Shared
-        excludes:
-          - "Localizations"
     resources:
-      - path: Shared/Localizations
       - path: KeyboardExtension/Resources/ngram_en.json
       - path: KeyboardExtension/Resources/ngram_ko.json
     info:
@@ -99,3 +156,5 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.translatorkeyboard.shared
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)group.com.translatorkeyboard.shared

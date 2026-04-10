@@ -113,6 +113,14 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         return label
     }()
 
+    private let adSpinner: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = .white
+        spinner.hidesWhenStopped = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        return spinner
+    }()
+
     private var dotViews: [UIView] = []
 
     // MARK: - Init
@@ -207,6 +215,12 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
             feedbackLabel.bottomAnchor.constraint(equalTo: ctaButton.topAnchor, constant: -16),
         ])
 
+        ctaButton.addSubview(adSpinner)
+        NSLayoutConstraint.activate([
+            adSpinner.centerXAnchor.constraint(equalTo: ctaButton.centerXAnchor),
+            adSpinner.centerYAnchor.constraint(equalTo: ctaButton.centerYAnchor),
+        ])
+
         ctaButton.addTarget(self, action: #selector(watchAdTapped), for: .touchUpInside)
         closeTextButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
     }
@@ -281,6 +295,10 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }
 
     @objc private func watchAdTapped() {
+        guard ctaButton.isEnabled else { return }
+        ctaButton.isEnabled = false
+        ctaButton.setTitle("", for: .normal)
+        adSpinner.startAnimating()
         AdManager.shared.showRewardedAd(from: self, mode: mode)
     }
 
@@ -306,6 +324,8 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     // MARK: - AdManagerDelegate
 
     func adManagerDidRewardUser(_ manager: AdManager) {
+        adSpinner.stopAnimating()
+        ctaButton.isEnabled = true
         // Animate the newly filled dot
         let watched = mode == .compose
             ? DailyUsageManager.shared.composeRewardedAdCount
@@ -325,11 +345,16 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }
 
     func adManagerDidFailToLoad(_ manager: AdManager) {
+        adSpinner.stopAnimating()
+        ctaButton.isEnabled = true
+        updateUI()
         showFeedback(L("reward.ad_failed"), isError: true)
     }
 
     func adManagerDidDismissAd(_ manager: AdManager) {
-        // Handled by didRewardUser
+        adSpinner.stopAnimating()
+        ctaButton.isEnabled = true
+        updateUI()
     }
 
     func adManagerReachedDailyLimit(_ manager: AdManager) {

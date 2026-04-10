@@ -327,15 +327,15 @@ class SettingsViewController: UITableViewController {
                     UIApplication.shared.open(url)
                 }
             case 3:
-                if let url = URL(string: "https://support.translatorkeyboard.com/faq") {
+                if let url = URL(string: LegalLinks.faq) {
                     UIApplication.shared.open(url)
                 }
             case 4:
-                if let url = URL(string: "https://support.translatorkeyboard.com/privacy") {
+                if let url = URL(string: LegalLinks.privacy) {
                     UIApplication.shared.open(url)
                 }
             case 5:
-                if let url = URL(string: "https://support.translatorkeyboard.com/terms") {
+                if let url = URL(string: LegalLinks.terms) {
                     UIApplication.shared.open(url)
                 }
             default: break

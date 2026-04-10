@@ -777,3 +777,6 @@
 "theme.premium_rose_carbon" = "玫瑰碳黑";
 "theme.premium_crimson_ivory" = "绯红象牙";
 "theme.premium_lilac_sky" = "丁香晴空";
+
+"privacy.ad_privacy" = "广告隐私";
+"privacy.manage_ad_choices" = "管理广告隐私选择";

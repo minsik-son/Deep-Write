@@ -778,3 +778,6 @@
 "theme.premium_rose_carbon" = "ローズカーボン";
 "theme.premium_crimson_ivory" = "クリムゾンアイボリー";
 "theme.premium_lilac_sky" = "ライラックスカイ";
+
+"privacy.ad_privacy" = "広告プライバシー";
+"privacy.manage_ad_choices" = "広告プライバシー設定を管理";
