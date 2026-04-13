@@ -139,8 +139,9 @@ final class DailyUsageManager {
     }
 
     var canWatchComposeRewardedAd: Bool {
-        return FeatureGate.shared.canShowRewardedAd
-            && composeRewardedAdCount < FeatureGate.shared.maxDailyComposeAds
+        guard FeatureGate.shared.canShowRewardedAd else { return false }
+        guard composeRewardedAdCount < FeatureGate.shared.maxDailyComposeAds else { return false }
+        return remainingComposes == 0
     }
 
     // MARK: - Rewarded Ads (Mode-specific)
@@ -152,8 +153,14 @@ final class DailyUsageManager {
     }
 
     func canWatchRewardedAd(for mode: RewardMode) -> Bool {
-        return FeatureGate.shared.canShowRewardedAd
-            && rewardedAdCount(for: mode) < FeatureGate.shared.maxDailyRewardedAds
+        guard FeatureGate.shared.canShowRewardedAd else { return false }
+        guard rewardedAdCount(for: mode) < FeatureGate.shared.maxDailyRewardedAds else { return false }
+        // 보너스가 남아 있으면 먼저 소진해야 함
+        switch mode {
+        case .correction: return remainingCorrections == 0
+        case .translation: return remainingTranslations == 0
+        case .compose: return false // compose는 별도 메서드 사용
+        }
     }
 
     func recordRewardedAd(for mode: RewardMode) {

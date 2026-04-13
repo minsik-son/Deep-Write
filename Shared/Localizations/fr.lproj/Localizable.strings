@@ -777,3 +777,7 @@
 "theme.premium_rose_carbon" = "Rose Carbone";
 "theme.premium_crimson_ivory" = "Cramoisi Ivoire";
 "theme.premium_lilac_sky" = "Ciel Lilas";
+
+// === Reward Charge Complete ===
+"reward.charge_complete" = "Recharge terminée";
+"reward.charge_complete_feedback" = "%d utilisations ont été rechargées.";

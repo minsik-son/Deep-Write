@@ -114,6 +114,17 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }()
 
     private var dotViews: [UIView] = []
+    private var isDismissing = false
+    private var isAdInProgress = false
+
+    /// 오늘의 광고 한도를 진짜 다 채웠는지 (daily cap 도달)
+    private var isDailyQuotaExhausted: Bool {
+        if mode == .compose {
+            return DailyUsageManager.shared.composeRewardedAdCount >= FeatureGate.shared.maxDailyComposeAds
+        } else {
+            return DailyUsageManager.shared.rewardedAdCount(for: mode) >= FeatureGate.shared.maxDailyRewardedAds
+        }
+    }
 
     // MARK: - Init
 
@@ -262,13 +273,19 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         // Progress
         progressLabel.text = String(format: L("reward.progress"), watched, maxAds)
 
-        // CTA
+        // CTA — 3가지 상태 분기
         if canWatch {
             ctaButton.setTitle(L("reward.cta_watch"), for: .normal)
             ctaButton.backgroundColor = AppColors.tierAccent
             ctaButton.isEnabled = true
-        } else {
+        } else if isDailyQuotaExhausted {
+            // 진짜 오늘 광고 한도 모두 소진
             ctaButton.setTitle(L("reward.cta_done"), for: .normal)
+            ctaButton.backgroundColor = AppColors.textMuted
+            ctaButton.isEnabled = false
+        } else {
+            // 충전 완료, 보너스를 먼저 사용해야 하는 상태
+            ctaButton.setTitle(L("reward.charge_complete"), for: .normal)
             ctaButton.backgroundColor = AppColors.textMuted
             ctaButton.isEnabled = false
         }
@@ -281,6 +298,9 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }
 
     @objc private func watchAdTapped() {
+        guard !isAdInProgress else { return }
+        isAdInProgress = true
+        ctaButton.isEnabled = false
         AdManager.shared.showRewardedAd(from: self, mode: mode)
     }
 
@@ -306,6 +326,8 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     // MARK: - AdManagerDelegate
 
     func adManagerDidRewardUser(_ manager: AdManager) {
+        isAdInProgress = false
+
         // Animate the newly filled dot
         let watched = mode == .compose
             ? DailyUsageManager.shared.composeRewardedAdCount
@@ -320,20 +342,37 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
             }
         }
 
-        updateUI()
-        showFeedback(String(format: L("reward.bonus_granted"), bonus))
+        showFeedback(String(format: L("reward.charge_complete_feedback"), bonus))
+
+        // 보상 지급 후 짧은 피드백 보여준 뒤 자동 dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.autoDismissAfterReward()
+        }
     }
 
     func adManagerDidFailToLoad(_ manager: AdManager) {
+        isAdInProgress = false
+        ctaButton.isEnabled = true
+        updateUI()
         showFeedback(L("reward.ad_failed"), isError: true)
     }
 
     func adManagerDidDismissAd(_ manager: AdManager) {
-        // Handled by didRewardUser
+        isAdInProgress = false
+        ctaButton.isEnabled = true
+        updateUI()
     }
 
     func adManagerReachedDailyLimit(_ manager: AdManager) {
+        isAdInProgress = false
+        ctaButton.isEnabled = true
         updateUI()
         showFeedback(L("reward.limit_reached"))
+    }
+
+    private func autoDismissAfterReward() {
+        guard !isDismissing else { return }
+        isDismissing = true
+        dismiss(animated: true)
     }
 }

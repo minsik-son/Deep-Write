@@ -1643,15 +1643,18 @@ extension HomeViewController: AdManagerDelegate {
     }
 
     func adManagerDidFailToLoad(_ manager: AdManager) {
+        manager.isTestMode = false
         debugAdTestButton.isEnabled = true
         debugAdTestButton.setTitle("🧪 Load Failed — Retry", for: .normal)
     }
 
     func adManagerDidDismissAd(_ manager: AdManager) {
+        manager.isTestMode = false
         debugAdTestButton.isEnabled = true
     }
 
     func adManagerReachedDailyLimit(_ manager: AdManager) {
+        manager.isTestMode = false
         debugAdTestButton.isEnabled = true
         debugAdTestButton.setTitle("🧪 Daily Limit", for: .normal)
     }

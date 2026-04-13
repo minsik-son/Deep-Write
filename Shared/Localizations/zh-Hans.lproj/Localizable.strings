@@ -777,3 +777,7 @@
 "theme.premium_rose_carbon" = "玫瑰碳黑";
 "theme.premium_crimson_ivory" = "绯红象牙";
 "theme.premium_lilac_sky" = "丁香晴空";
+
+// === Reward Charge Complete ===
+"reward.charge_complete" = "充值完成";
+"reward.charge_complete_feedback" = "已充值%d次。";

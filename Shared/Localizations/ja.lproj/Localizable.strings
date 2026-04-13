@@ -778,3 +778,7 @@
 "theme.premium_rose_carbon" = "ローズカーボン";
 "theme.premium_crimson_ivory" = "クリムゾンアイボリー";
 "theme.premium_lilac_sky" = "ライラックスカイ";
+
+// === Reward Charge Complete ===
+"reward.charge_complete" = "チャージ完了";
+"reward.charge_complete_feedback" = "%d回分チャージされました。";
