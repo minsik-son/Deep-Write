@@ -53,10 +53,10 @@ class CompositionSessionManager {
 
     // MARK: - Record API Call
 
-    func recordAPICall(sourceText: String, resultText: String?) {
+    func recordAPICall(sourceText: String, resultText: String?, mode: CompositionSession.SessionMode = .correct) {
         guard currentSession?.isActive == true else {
-            startSession(mode: .correct)
-            recordAPICall(sourceText: sourceText, resultText: resultText)
+            startSession(mode: mode)
+            recordAPICall(sourceText: sourceText, resultText: resultText, mode: mode)
             return
         }
 

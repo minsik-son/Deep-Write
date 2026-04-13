@@ -30,11 +30,8 @@ final class SubscriptionStatus {
     }
 
     var isPro: Bool {
-        #if DEBUG
-        return true
-        #else
+        if AdminMode.shared.isEnabled { return true }
         return currentTier == .pro || currentTier == .premium
-        #endif
     }
 
     func updateTier(_ tier: UserTier, expiryDate: Date? = nil) {

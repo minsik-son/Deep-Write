@@ -31,6 +31,21 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>GADApplicationIdentifier</key>
+	<string>$(ADMOB_APP_ID)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is used to capture your voice for dictation.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition is used to convert your voice into text while dictation is active.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -54,10 +69,6 @@
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Speech recognition is used to convert your voice to text for dictation.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is needed to capture your voice for dictation.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

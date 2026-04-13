@@ -159,7 +159,7 @@ class TranslationManager {
         lastTranslatedText = text
 
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)
-        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: translatedText)
+        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: translatedText, mode: .translate)
 
         #if DEBUG
         var memInfo = task_vm_info_data_t()

@@ -1,4 +1,7 @@
 import UIKit
+#if DEBUG
+import GoogleMobileAds
+#endif
 
 class HomeViewController: UIViewController {
 
@@ -76,6 +79,20 @@ class HomeViewController: UIViewController {
     private var cachedTranslationCount = 0
     private var cachedClipboardCount = 0
     private var cachedPhrasesCount = 0
+
+    #if DEBUG
+    private lazy var debugAdTestButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("🧪 Test Rewarded Ad", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        btn.setTitleColor(.white, for: .normal)
+        btn.backgroundColor = .systemRed
+        btn.layer.cornerRadius = 12
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.addTarget(self, action: #selector(debugTestAdTapped), for: .touchUpInside)
+        return btn
+    }()
+    #endif
 
     deinit {
         NotificationCenter.default.removeObserver(self)
@@ -180,6 +197,13 @@ class HomeViewController: UIViewController {
 
         let activityCard = buildActivityCard()
         contentStack.addArrangedSubview(activityCard)
+
+        #if DEBUG
+        contentStack.addArrangedSubview(debugAdTestButton)
+        NSLayoutConstraint.activate([
+            debugAdTestButton.heightAnchor.constraint(equalToConstant: 48),
+        ])
+        #endif
     }
 
     // MARK: - 1. Greeting Section
@@ -1308,6 +1332,44 @@ class HomeViewController: UIViewController {
         return container
     }
 
+    #if DEBUG
+    // MARK: - DEBUG Ad Test
+
+    @objc private func debugTestAdTapped() {
+        debugAdTestButton.isEnabled = false
+        debugAdTestButton.setTitle("🧪 Loading...", for: .normal)
+
+        // ATT → UMP → MobileAds.start → Load → Present
+        ATTManager.shared.requestTrackingAuthorizationIfNeeded { [weak self] in
+            guard let self = self else { return }
+            AdConsentManager.shared.updateConsent(from: self) { canRequestAds in
+                guard canRequestAds else {
+                    DispatchQueue.main.async {
+                        self.debugAdTestButton.isEnabled = true
+                        self.debugAdTestButton.setTitle("🧪 Consent Denied", for: .normal)
+                    }
+                    return
+                }
+
+                MobileAds.shared.start()
+                AdManager.shared.isTestMode = true
+                AdManager.shared.delegate = self
+                AdManager.shared.loadRewardedAd()
+
+                // Wait for ad to load, then present
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    if AdManager.shared.isAdReady {
+                        AdManager.shared.showRewardedAd(from: self, mode: .correction)
+                    } else {
+                        self.debugAdTestButton.isEnabled = true
+                        self.debugAdTestButton.setTitle("🧪 Load Failed — Retry", for: .normal)
+                    }
+                }
+            }
+        }
+    }
+    #endif
+
     // MARK: - Actions
 
     private func startUpgradeShimmer() {
@@ -1568,3 +1630,30 @@ class HomeViewController: UIViewController {
         }
     }
 }
+
+#if DEBUG
+extension HomeViewController: AdManagerDelegate {
+    func adManagerDidRewardUser(_ manager: AdManager) {
+        debugAdTestButton.isEnabled = true
+        debugAdTestButton.setTitle("🧪 Reward Received! ✅", for: .normal)
+        manager.isTestMode = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.debugAdTestButton.setTitle("🧪 Test Rewarded Ad", for: .normal)
+        }
+    }
+
+    func adManagerDidFailToLoad(_ manager: AdManager) {
+        debugAdTestButton.isEnabled = true
+        debugAdTestButton.setTitle("🧪 Load Failed — Retry", for: .normal)
+    }
+
+    func adManagerDidDismissAd(_ manager: AdManager) {
+        debugAdTestButton.isEnabled = true
+    }
+
+    func adManagerReachedDailyLimit(_ manager: AdManager) {
+        debugAdTestButton.isEnabled = true
+        debugAdTestButton.setTitle("🧪 Daily Limit", for: .normal)
+    }
+}
+#endif

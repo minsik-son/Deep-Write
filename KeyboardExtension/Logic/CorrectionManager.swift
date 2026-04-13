@@ -153,7 +153,7 @@ class CorrectionManager {
         lastCorrectedText = text
 
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)
-        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: correctedText)
+        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: correctedText, mode: .correct)
 
         #if DEBUG
         var memInfo = task_vm_info_data_t()
