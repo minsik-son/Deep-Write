@@ -43,6 +43,7 @@
 		3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7E0ADFB1B186D6E02D410 /* RewardedAdsViewController.swift */; };
 		41030321C1C7C94B2C15070B /* SavedPhrasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D57EE28DFAB35051C440A /* SavedPhrasesView.swift */; };
 		412CFCE3381240E1426AAEF2 /* TonePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26FB81CFF07FA16DCA344AE /* TonePickerView.swift */; };
+		418971C082C5E6CC07029AB0 /* AdditionalKeyboardBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42CCC9E3FC49BD11C45E0795 /* AdditionalKeyboardBootstrap.swift */; };
 		42CC2CBFC5C07D7CC586180A /* DictationTextApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E32285E7E7124C8E99479D1D /* DictationTextApplier.swift */; };
 		4564591E4E5D36411F695CE2 /* StardustView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399AA672135BB42B9E5EC787 /* StardustView.swift */; };
 		4721157B06E92472C3D32057 /* KeyboardAppearanceSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B224BA196CFC2814BB9DBF /* KeyboardAppearanceSettingsViewController.swift */; };
@@ -88,6 +89,7 @@
 		701F1B0B63878CAE70A94BE1 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE5340DD9626EF86A34FB07 /* SettingsViewController.swift */; };
 		720773087785DB78142EC7CE /* SavedPhrasesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 220AA4049D103D78D47E7984 /* SavedPhrasesManager.swift */; };
 		765132D34C8D5992FC862CE9 /* StatsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A4F6B12DC40DD3380A36E94 /* StatsManager.swift */; };
+		770B2C74C6D6316541D68223 /* AdditionalKeyboardBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42CCC9E3FC49BD11C45E0795 /* AdditionalKeyboardBootstrap.swift */; };
 		7901B822F571C04EB7AE1E8F /* SuccessCheckAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00A4653E8C2DFF216509EB2 /* SuccessCheckAnimationView.swift */; };
 		7B2894DED7B77DA4A19F1B13 /* AdminMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444FF3375AED5A6585B3E94 /* AdminMode.swift */; };
 		7CA8608420D2089309658501 /* FullAccessExplainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1024190A000DEB8E1C1C4313 /* FullAccessExplainViewController.swift */; };
@@ -244,6 +246,7 @@
 		3FE6C8A86C22CE87CAE26624 /* KeyboardTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardTheme.swift; sourceTree = "<group>"; };
 		40D97EBD549B357ABD8041DD /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeStoreViewController.swift; sourceTree = "<group>"; };
+		42CCC9E3FC49BD11C45E0795 /* AdditionalKeyboardBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdditionalKeyboardBootstrap.swift; sourceTree = "<group>"; };
 		43CE906F2B5C152A5ECAEAFA /* PrivacyDashboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDashboardViewController.swift; sourceTree = "<group>"; };
 		4444FF3375AED5A6585B3E94 /* AdminMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminMode.swift; sourceTree = "<group>"; };
 		44F4C8EBE0C434358E1CAB60 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
@@ -564,6 +567,7 @@
 		90AD3FEDABA364962673A6D5 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				42CCC9E3FC49BD11C45E0795 /* AdditionalKeyboardBootstrap.swift */,
 				4444FF3375AED5A6585B3E94 /* AdminMode.swift */,
 				ECE6ABE349CE322957A5C575 /* AppColors.swift */,
 				6FE78200C931753ED4B82721 /* AppGroupManager.swift */,
@@ -819,6 +823,7 @@
 			files = (
 				02C6E670C116AD3C1AFE570E /* AccentMap.swift in Sources */,
 				190A2B4265B222B2B3C9463D /* AccentPopupView.swift in Sources */,
+				418971C082C5E6CC07029AB0 /* AdditionalKeyboardBootstrap.swift in Sources */,
 				684A9BD644EA3A73F57C7FF6 /* AdminMode.swift in Sources */,
 				2F16815E35245EF1877EB77B /* AppColors.swift in Sources */,
 				1D98277DFBD46B145B1AEA14 /* AppGroupManager.swift in Sources */,
@@ -914,6 +919,7 @@
 				9201B04FDF92E9A9D42E88EE /* AdConfiguration.swift in Sources */,
 				58C1CF1BDA7AE2D491695434 /* AdConsentManager.swift in Sources */,
 				1F142C55559956B546EB2E1C /* AdManager.swift in Sources */,
+				770B2C74C6D6316541D68223 /* AdditionalKeyboardBootstrap.swift in Sources */,
 				7B2894DED7B77DA4A19F1B13 /* AdminMode.swift in Sources */,
 				A65C2BF8A237BB3A08C28DD8 /* AppColors+Tier.swift in Sources */,
 				D9A4C3015D61C9EE882D540C /* AppColors.swift in Sources */,

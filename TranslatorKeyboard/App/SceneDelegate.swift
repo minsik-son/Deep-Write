@@ -17,6 +17,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = tabBarController
         window?.makeKeyAndVisible()
 
+        AdditionalKeyboardBootstrap.runOnceIfNeeded()
+
         // 라이트/다크 모드 적용
         let isDark = UserDefaults(suiteName: AppConstants.appGroupIdentifier)?.bool(forKey: AppConstants.UserDefaultsKeys.appDarkMode) ?? false
         window?.overrideUserInterfaceStyle = isDark ? .dark : .light

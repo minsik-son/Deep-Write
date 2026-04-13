@@ -1,43 +1,5 @@
 import UIKit
 
-enum KeyboardLanguage: String, CaseIterable {
-    case english = "en"
-    case korean = "ko"
-    case spanish = "es"
-    case french = "fr"
-    case german = "de"
-    case italian = "it"
-    case russian = "ru"
-
-    var displayName: String {
-        switch self {
-        case .english: return "English"
-        case .korean: return "한국어"
-        case .spanish: return "Español"
-        case .french: return "Français"
-        case .german: return "Deutsch"
-        case .italian: return "Italiano"
-        case .russian: return "Русский"
-        }
-    }
-
-    var shortLabel: String {
-        switch self {
-        case .english: return "A"
-        case .korean: return "한"
-        case .spanish: return "ES"
-        case .french: return "FR"
-        case .german: return "DE"
-        case .italian: return "IT"
-        case .russian: return "RU"
-        }
-    }
-
-    var isLatinBased: Bool {
-        return self != .korean && self != .russian
-    }
-}
-
 enum KeyboardPage {
     case letters
     case symbols1
@@ -89,6 +51,7 @@ class KeyboardLayoutView: UIView {
     }
 
     private var currentLanguage: KeyboardLanguage = .english
+    private var currentVariant: LatinLayoutVariant? = nil
     private(set) var currentPage: KeyboardPage = .letters
     // MARK: - Shift State (3-state: off / shifted / capsLocked)
     private enum ShiftState {
@@ -313,6 +276,42 @@ class KeyboardLayoutView: UIView {
         ["\u{21E7}", "Я", "Ч", "С", "М", "И", "Т", "Ь", "Б", "Ю", "\u{232B}"]
     ]
 
+    // ── Latin variant layouts ──
+
+    private static let qwertyRows: [[String]] = [
+        ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+        ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+        ["\u{21E7}", "z", "x", "c", "v", "b", "n", "m", "\u{232B}"]
+    ]
+
+    private static let qwertzRows: [[String]] = [
+        ["q", "w", "e", "r", "t", "z", "u", "i", "o", "p"],
+        ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+        ["\u{21E7}", "y", "x", "c", "v", "b", "n", "m", "\u{232B}"]
+    ]
+
+    private static let azertyRows: [[String]] = [
+        ["a", "z", "e", "r", "t", "y", "u", "i", "o", "p"],
+        ["q", "s", "d", "f", "g", "h", "j", "k", "l"],
+        ["\u{21E7}", "w", "x", "c", "v", "b", "n", "m", "\u{232B}"]
+    ]
+
+    private static func latinRows(for variant: LatinLayoutVariant) -> [[String]] {
+        switch variant {
+        case .qwerty: return qwertyRows
+        case .qwertz: return qwertzRows
+        case .azerty: return azertyRows
+        }
+    }
+
+    private static func latinShiftRows(for variant: LatinLayoutVariant) -> [[String]] {
+        latinRows(for: variant).map { row in
+            row.map { key in
+                key.count == 1 && !specialKeys.contains(key) ? key.uppercased() : key
+            }
+        }
+    }
+
     // ── Symbol layouts ──
 
     private static let symbolRows1: [[String]] = [
@@ -429,8 +428,11 @@ class KeyboardLayoutView: UIView {
                 coreRows = isShifted ? Self.koreanShiftRows : Self.koreanRows
             case .russian:
                 coreRows = isShifted ? Self.russianShiftRows : Self.russianRows
-            default:
+            case .english:
                 coreRows = isShifted ? Self.englishShiftRows : Self.englishRows
+            default:
+                let variant = currentVariant ?? resolvedVariant(for: currentLanguage) ?? .qwerty
+                coreRows = isShifted ? Self.latinShiftRows(for: variant) : Self.latinRows(for: variant)
             }
             let topRows = showTopNumber ? [Self.numberRow] + coreRows : coreRows
             return topRows + [bottomRow]
@@ -3052,6 +3054,24 @@ class KeyboardLayoutView: UIView {
         return currentLanguage
     }
 
+    func resolvedVariant(for language: KeyboardLanguage) -> LatinLayoutVariant? {
+        guard LatinLayoutVariant.supportedVariants(for: language).isEmpty == false else { return nil }
+        if let stored = loadVariant(for: language) { return stored }
+        return LatinLayoutVariant.defaultVariant(for: language)
+    }
+
+    private func loadVariant(for language: KeyboardLanguage) -> LatinLayoutVariant? {
+        guard let json = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.keyboardLayoutVariantsByLanguage),
+              let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              let raw = dict[language.rawValue] else { return nil }
+        return LatinLayoutVariant(rawValue: raw)
+    }
+
+    func setVariant(_ variant: LatinLayoutVariant?) {
+        currentVariant = variant
+    }
+
     func setLanguage(_ language: KeyboardLanguage) {
         let oldLang = currentLanguage
         let oldPage = currentPage
@@ -3093,9 +3113,13 @@ class KeyboardLayoutView: UIView {
         case .russian:
             normalRows = Self.russianRows
             shiftedRows = Self.russianShiftRows
-        default:
+        case .english:
             normalRows = Self.englishRows
             shiftedRows = Self.englishShiftRows
+        default:
+            let variant = currentVariant ?? resolvedVariant(for: currentLanguage) ?? .qwerty
+            normalRows = Self.latinRows(for: variant)
+            shiftedRows = Self.latinShiftRows(for: variant)
         }
 
         // 딕셔너리 매핑 구축: 현재 버튼 라벨 → 목표 라벨
@@ -3255,8 +3279,11 @@ class KeyboardLayoutView: UIView {
             oldRows = wasShifted ? Self.koreanShiftRows : Self.koreanRows
         case .russian:
             oldRows = wasShifted ? Self.russianShiftRows : Self.russianRows
-        default:
+        case .english:
             oldRows = wasShifted ? Self.englishShiftRows : Self.englishRows
+        default:
+            let variant = currentVariant ?? resolvedVariant(for: oldLanguage) ?? .qwerty
+            oldRows = wasShifted ? Self.latinShiftRows(for: variant) : Self.latinRows(for: variant)
         }
 
         // 전환 후 언어의 배열 (목표 라벨)
@@ -3267,8 +3294,11 @@ class KeyboardLayoutView: UIView {
             newRows = Self.koreanRows
         case .russian:
             newRows = Self.russianRows
-        default:
+        case .english:
             newRows = Self.englishRows
+        default:
+            let variant = currentVariant ?? resolvedVariant(for: newLanguage) ?? .qwerty
+            newRows = Self.latinRows(for: variant)
         }
 
         // 행 구조 호환성 검증 — 만약 키 수가 다르면 안전하게 풀 rebuild

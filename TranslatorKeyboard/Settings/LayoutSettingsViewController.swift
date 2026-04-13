@@ -55,6 +55,30 @@ class LayoutSettingsViewController: UITableViewController {
     ]
 
     private var selectedLanguageCode: String?
+    private var expandedLanguageCode: String? = nil
+    private var layoutVariantsByLanguage: [String: String] = [:]
+
+    private struct RowItem {
+        enum Kind { case language, variant }
+        let kind: Kind
+        let code: String        // language code or variant name
+        let displayName: String
+        let languageCode: String // parent language (same as code for language rows)
+    }
+
+    private var flatRows: [RowItem] {
+        var items: [RowItem] = []
+        for option in languageOptions {
+            items.append(RowItem(kind: .language, code: option.code, displayName: option.displayName, languageCode: option.code))
+            if option.code == expandedLanguageCode, let lang = KeyboardLanguage(rawValue: option.code) {
+                let variants = LatinLayoutVariant.supportedVariants(for: lang)
+                for v in variants {
+                    items.append(RowItem(kind: .variant, code: v.rawValue, displayName: v.rawValue.uppercased(), languageCode: option.code))
+                }
+            }
+        }
+        return items
+    }
 
     // v2: Additional languages toggle
     private lazy var additionalLanguagesSwitch: UISwitch = {
@@ -82,6 +106,34 @@ class LayoutSettingsViewController: UITableViewController {
         } else {
             selectedLanguageCode = nil
         }
+        loadVariants()
+        if let sel = selectedLanguageCode, hasVariants(sel) {
+            expandedLanguageCode = sel
+        }
+    }
+
+    private func loadVariants() {
+        guard let json = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.keyboardLayoutVariantsByLanguage),
+              let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String] else { return }
+        layoutVariantsByLanguage = dict
+    }
+
+    private func saveVariants() {
+        guard let data = try? JSONSerialization.data(withJSONObject: layoutVariantsByLanguage),
+              let json = String(data: data, encoding: .utf8) else { return }
+        AppGroupManager.shared.set(json, forKey: AppConstants.UserDefaultsKeys.keyboardLayoutVariantsByLanguage)
+    }
+
+    private func currentVariant(for langCode: String) -> String {
+        if let saved = layoutVariantsByLanguage[langCode] { return saved }
+        guard let lang = KeyboardLanguage(rawValue: langCode) else { return "qwerty" }
+        return LatinLayoutVariant.defaultVariant(for: lang)?.rawValue ?? "qwerty"
+    }
+
+    private func hasVariants(_ code: String) -> Bool {
+        guard let lang = KeyboardLanguage(rawValue: code) else { return false }
+        return !LatinLayoutVariant.supportedVariants(for: lang).isEmpty
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -98,7 +150,7 @@ class LayoutSettingsViewController: UITableViewController {
         switch section {
         case 0: return 4  // Number Row + Key Tap Preview + Latin Special Characters + Period Key
         case 1: return 1  // Additional languages toggle
-        case 2: return additionalLanguagesSwitch.isOn ? languageOptions.count : 0
+        case 2: return additionalLanguagesSwitch.isOn ? flatRows.count : 0
         default: return 0
         }
     }
@@ -147,11 +199,22 @@ class LayoutSettingsViewController: UITableViewController {
             cell.accessoryView = additionalLanguagesSwitch
             cell.selectionStyle = .none
         case 2:
-            let option = languageOptions[indexPath.row]
-            config.text = option.displayName
-            cell.contentConfiguration = config
-            cell.accessoryType = (option.code == selectedLanguageCode) ? .checkmark : .none
-            cell.selectionStyle = .default
+            let item = flatRows[indexPath.row]
+            switch item.kind {
+            case .language:
+                config.text = item.displayName
+                cell.contentConfiguration = config
+                cell.accessoryType = (item.code == selectedLanguageCode) ? .checkmark : .none
+                cell.selectionStyle = .default
+            case .variant:
+                config.text = "    " + item.displayName
+                config.textProperties.font = .systemFont(ofSize: 15)
+                config.textProperties.color = AppColors.textSub
+                cell.contentConfiguration = config
+                let selected = currentVariant(for: item.languageCode) == item.code
+                cell.accessoryType = selected ? .checkmark : .none
+                cell.selectionStyle = .default
+            }
         default:
             cell.contentConfiguration = config
         }
@@ -164,12 +227,27 @@ class LayoutSettingsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         guard indexPath.section == 2 else { return }
+        let items = flatRows
+        guard indexPath.row < items.count else { return }
+        let item = items[indexPath.row]
 
-        let option = languageOptions[indexPath.row]
-        selectedLanguageCode = option.code
-        AppGroupManager.shared.set(option.code, forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
+        switch item.kind {
+        case .language:
+            selectedLanguageCode = item.code
+            AppGroupManager.shared.set(item.code, forKey: AppConstants.UserDefaultsKeys.primaryKeyboardLanguage)
 
-        tableView.reloadSections(IndexSet(integer: 2), with: .none)
+            if hasVariants(item.code) {
+                expandedLanguageCode = (expandedLanguageCode == item.code) ? nil : item.code
+            } else {
+                expandedLanguageCode = nil
+            }
+
+        case .variant:
+            layoutVariantsByLanguage[item.languageCode] = item.code
+            saveVariants()
+        }
+
+        tableView.reloadSections(IndexSet(integer: 2), with: .automatic)
     }
 
     // MARK: - Actions

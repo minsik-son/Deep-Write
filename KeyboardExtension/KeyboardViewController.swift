@@ -1405,6 +1405,12 @@ class KeyboardViewController: UIInputViewController {
         return 0
     }
 
+    /// 메모리 안전망 임계치 (phys_footprint MB 기준)
+    /// Release에서도 SafetyNet이 사용하므로 #if DEBUG 밖에 위치.
+    private static let memoryWarningThresholdMB: Double = 22.0     // WARNING: 소프트 캐시만 정리
+    private static let memoryGracefulExitMB: Double = 40.0         // GRACEFUL: 키보드 닫을 때 exit(0)
+    private static let memoryEmergencyExitMB: Double = 55.0        // EMERGENCY: 즉시 exit(0)
+
     #if DEBUG
     /// resident_size (비교용, 기존 측정값)
     private func currentResidentMB() -> Double {
@@ -1420,19 +1426,6 @@ class KeyboardViewController: UIInputViewController {
         }
         return 0
     }
-
-    /// 메모리 안전망 임계치 (phys_footprint MB 기준)
-    ///
-    /// 설계 근거:
-    /// - 22MB WARNING: 이모지 피크 후 소프트 캐시 정리. 애니메이션은 절대 안 건드림.
-    /// - 40MB GRACEFUL: 기본 테마 ~54사이클, 애니메이션 테마 ~29사이클 후 도달.
-    ///   키보드 닫는 시점(viewWillDisappear)에서만 exit(0) 호출.
-    ///   유저 입장에서 다음 키보드 열기 시 fresh 프로세스로 13MB baseline 시작.
-    /// - 55MB EMERGENCY: viewWillDisappear 없이 메모리가 폭증한 극단적 상황.
-    ///   viewDidAppear에서 즉시 exit(0). (실제 발생 확률 매우 낮음)
-    private static let memoryWarningThresholdMB: Double = 22.0     // WARNING: 소프트 캐시만 정리
-    private static let memoryGracefulExitMB: Double = 40.0         // GRACEFUL: 키보드 닫을 때 exit(0)
-    private static let memoryEmergencyExitMB: Double = 55.0        // EMERGENCY: 즉시 exit(0)
 
     /// 사이클 간 메모리 추적용 static 변수
     private static var lastDeinitMemory: Double = 0

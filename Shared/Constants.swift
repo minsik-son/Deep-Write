@@ -36,6 +36,8 @@ enum AppConstants {
         static let keyboardAppearanceMode = "keyboard_appearance_mode"
         static let quickNotes = "quick_notes"
         static let toolbarItems = "toolbar_items"
+        static let keyboardLayoutVariantsByLanguage = "keyboard_layout_variants_by_language"
+        static let additionalKeyboardDefaultsBootstrapped = "additional_keyboard_defaults_bootstrapped"
     }
 
     enum KeyboardAppearanceMode: String, CaseIterable {
@@ -58,5 +60,69 @@ enum AppConstants {
         static let sessionIdleTimeout: TimeInterval = 30
         static let quickNoteMaxCount = 50
         static let quickNoteMaxLength = 500
+    }
+}
+
+enum KeyboardLanguage: String, CaseIterable {
+    case english = "en"
+    case korean = "ko"
+    case spanish = "es"
+    case french = "fr"
+    case german = "de"
+    case italian = "it"
+    case russian = "ru"
+
+    var displayName: String {
+        switch self {
+        case .english: return "English"
+        case .korean: return "한국어"
+        case .spanish: return "Español"
+        case .french: return "Français"
+        case .german: return "Deutsch"
+        case .italian: return "Italiano"
+        case .russian: return "Русский"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .english: return "A"
+        case .korean: return "한"
+        case .spanish: return "ES"
+        case .french: return "FR"
+        case .german: return "DE"
+        case .italian: return "IT"
+        case .russian: return "RU"
+        }
+    }
+
+    var isLatinBased: Bool {
+        self != .korean && self != .russian
+    }
+}
+
+enum LatinLayoutVariant: String, CaseIterable {
+    case qwerty
+    case qwertz
+    case azerty
+
+    static func supportedVariants(for language: KeyboardLanguage) -> [LatinLayoutVariant] {
+        switch language {
+        case .spanish: return [.qwerty, .qwertz, .azerty]
+        case .french: return [.azerty, .qwerty, .qwertz]
+        case .german: return [.qwertz, .qwerty]
+        case .italian: return [.qwerty, .qwertz]
+        default: return []
+        }
+    }
+
+    static func defaultVariant(for language: KeyboardLanguage) -> LatinLayoutVariant? {
+        switch language {
+        case .spanish: return .qwerty
+        case .french: return .azerty
+        case .german: return .qwertz
+        case .italian: return .qwerty
+        default: return nil
+        }
     }
 }
