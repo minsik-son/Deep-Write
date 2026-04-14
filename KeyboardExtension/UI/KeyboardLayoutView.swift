@@ -1257,6 +1257,7 @@ class KeyboardLayoutView: UIView {
                 backspaceTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
                     self?.backspaceRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
                         self?.onKeyTap?(Self.backKey)
+                        self?.replayBackspaceHighlightIfNeeded()
                     }
                 }
                 continue
@@ -1677,6 +1678,14 @@ class KeyboardLayoutView: UIView {
     private func triggerHaptic() {
         guard cachedHapticEnabled else { return }
         hapticGenerator.impactOccurred()
+    }
+
+    private func replayBackspaceHighlightIfNeeded() {
+        guard let touch = backspaceTrackingTouch else { return }
+        let backspaceButton = highlightedButtons[touch]
+            ?? allKeyButtons.first(where: { $0.accessibilityLabel == Self.backKey })
+        guard let backspaceButton else { return }
+        applyHighlight(to: backspaceButton, for: touch)
     }
 
     // MARK: - Touch-based Key Highlight
