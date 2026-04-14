@@ -105,7 +105,6 @@
 		8B86C10A549172392CA428B3 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D681A74E9A93D63532A05A3 /* ClipboardItem.swift */; };
 		8BA039CD34B039DFEC28E82E /* SubscriptionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE58C410E1EB49722CC53E86 /* SubscriptionStatus.swift */; };
 		8D013B2453824EBED619AED1 /* PasteGuideViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7C3F1D25B60F5D3626F1D8 /* PasteGuideViewController.swift */; };
-		8E6C19F0F1B626A91B2FCEBE /* StatusPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1066F1F0CBACCC9E1A621227 /* StatusPopupView.swift */; };
 		911A0B7C5131DC11D05A42AD /* Array+Safe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EB5B1F80A6F4A582FC6BE4 /* Array+Safe.swift */; };
 		9201B04FDF92E9A9D42E88EE /* AdConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F75F8DF2CF76899ACEC154B /* AdConfiguration.swift */; };
 		93A28AD89882938CABFFC72D /* ThemeStoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A4980833C4BD8661FF38DB /* ThemeStoreViewController.swift */; };
@@ -208,7 +207,6 @@
 		0820E5AB84FA14646AEE72A2 /* TranslationLanguageBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationLanguageBar.swift; sourceTree = "<group>"; };
 		08925C075D4DACBE3E2F19CB /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		1024190A000DEB8E1C1C4313 /* FullAccessExplainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullAccessExplainViewController.swift; sourceTree = "<group>"; };
-		1066F1F0CBACCC9E1A621227 /* StatusPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPopupView.swift; sourceTree = "<group>"; };
 		11AE8D80E15CF01D67DFD7C3 /* TranslationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationCache.swift; sourceTree = "<group>"; };
 		133AE5A709C45DBDECC7EDDF /* DarwinNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarwinNotificationBridge.swift; sourceTree = "<group>"; };
 		148E6803B9B3CF6404E31522 /* LanguageSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSettingsViewController.swift; sourceTree = "<group>"; };
@@ -525,7 +523,6 @@
 				DB42CA6780213F924CEC9822 /* QuickNoteListView.swift */,
 				F891A86F6DB2435EC85B189E /* QuickNoteReadView.swift */,
 				CE7D57EE28DFAB35051C440A /* SavedPhrasesView.swift */,
-				1066F1F0CBACCC9E1A621227 /* StatusPopupView.swift */,
 				A26FB81CFF07FA16DCA344AE /* TonePickerView.swift */,
 				A6000F0BD0B2A3FE078D0A60 /* ToolbarView.swift */,
 				BD0D71E79546806F77FA2B2C /* TranslationInputView.swift */,
@@ -886,7 +883,6 @@
 				E114002D7F345F865DE06ACB /* SnowfallView.swift in Sources */,
 				4564591E4E5D36411F695CE2 /* StardustView.swift in Sources */,
 				52AA472805000FECB78F4C40 /* StatsManager.swift in Sources */,
-				8E6C19F0F1B626A91B2FCEBE /* StatusPopupView.swift in Sources */,
 				8BA039CD34B039DFEC28E82E /* SubscriptionStatus.swift in Sources */,
 				C6F75003C1E7288C7544FB49 /* SuggestionManager.swift in Sources */,
 				48785B31AB3E464020A5AB01 /* TextInputHandler.swift in Sources */,

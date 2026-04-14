@@ -1240,8 +1240,8 @@ class KeyboardLayoutView: UIView {
             // ── Backspace: fire once + start long-press repeat ──
             if key == Self.backKey {
                 backspaceTrackingTouch = touch
-                onKeyTap?(Self.backKey)
                 applyHighlight(to: button, for: touch)
+                onKeyTap?(Self.backKey)
                 if isEdgeGlowAnimationActive { edgeGlowKeyPressed(button) }
                 if let rv = mercuryRippleView, rv.isActive {
                     let rippleLoc = button.superview?.convert(button.center, to: rv) ?? loc
@@ -1685,7 +1685,15 @@ class KeyboardLayoutView: UIView {
         let backspaceButton = highlightedButtons[touch]
             ?? allKeyButtons.first(where: { $0.accessibilityLabel == Self.backKey })
         guard let backspaceButton else { return }
-        applyHighlight(to: backspaceButton, for: touch)
+        // 일반 키의 press→release 사이클을 흉내내기 위해
+        // 50ms 동안 원래 색으로 되돌렸다가 다시 하이라이트를 적용한다.
+        // 60Hz: 3프레임 / 120Hz: 6프레임 → 확실히 가시적. 타이머 주기(80ms) < 50ms 보장.
+        removeHighlight(from: backspaceButton)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self = self,
+                  self.backspaceTrackingTouch === touch else { return }
+            self.applyHighlight(to: backspaceButton, for: touch)
+        }
     }
 
     // MARK: - Touch-based Key Highlight

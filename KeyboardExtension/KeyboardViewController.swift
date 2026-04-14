@@ -1092,47 +1092,38 @@ class KeyboardViewController: UIInputViewController {
         // Toolbar — default mode only
         toolbarView.onTranslateToggle = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.toggleTranslationMode()
         }
         toolbarView.onEmojiKeyboardToggle = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.toggleEmojiKeyboard()
         }
         toolbarView.onCorrectionToggle = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.toggleCorrectionMode()
         }
         toolbarView.onSavedPhrasesTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.showSavedPhrases()
         }
         toolbarView.onClipboardTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.toggleClipboardHistory()
         }
         toolbarView.onQuickNoteTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.toggleQuickNoteMode()
         }
         toolbarView.onCalculatorTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.showCalculator()
         }
         toolbarView.onChatReplyGeneratorTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.showChatReplyGenerator()
         }
         toolbarView.onDictationTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.startDictation()
         }
         // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
@@ -1146,64 +1137,52 @@ class KeyboardViewController: UIInputViewController {
         // Productivity editing tools — host text only
         toolbarView.onCursorLeftTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarCursorLeft()
         }
         toolbarView.onCursorRightTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarCursorRight()
         }
         toolbarView.onDeleteWordTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarDeleteWord()
         }
         toolbarView.onUndoTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarUndo()
         }
         toolbarView.onRedoTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarRedo()
         }
         toolbarView.onSelectAllTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarSelectAll()
         }
         toolbarView.onCopyTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarCopy()
         }
         toolbarView.onPasteTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarPaste()
         }
         toolbarView.onCutTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarCut()
         }
         toolbarView.onCaseTransformTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleToolbarCaseTransform()
         }
 
         // New features
         toolbarView.onDateTimeInsertTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.handleDateTimeInsert()
         }
         toolbarView.onDateTimeInsertLongPress = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.showDateTimeMenu()
         }
         toolbarView.onDismissKeyboardTap = { [weak self] in
@@ -1211,7 +1190,6 @@ class KeyboardViewController: UIInputViewController {
         }
         toolbarView.onUnitConverterTap = { [weak self] in
             self?.hideContextMenu()
-            self?.hideStatusPopup()
             self?.showUnitConverter()
         }
 
@@ -2950,79 +2928,11 @@ class KeyboardViewController: UIInputViewController {
         chatReplyView?.updateAppearance(isDark: isDark)
     }
 
-    // MARK: - Status Popup (Proposal 02)
-
-    private var statusPopupView: StatusPopupView?
-
-    private func showStatusPopup() {
-        hideContextMenu()
-        guard statusPopupView == nil else {
-            hideStatusPopup()
-            return
-        }
-        guard let inputView = self.inputView else { return }
-
-        let popup = StatusPopupView()
-        popup.translatesAutoresizingMaskIntoConstraints = false
-        inputView.addSubview(popup)
-        NSLayoutConstraint.activate([
-            popup.topAnchor.constraint(equalTo: toolbarView.bottomAnchor),
-            popup.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
-            popup.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
-            popup.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
-        ])
-
-        // Populate data
-        let corrUsed = DailyUsageManager.shared.correctionCount
-        let corrRemain = DailyUsageManager.shared.remainingCorrections
-        let corrTotal = corrUsed + corrRemain
-        let transUsed = DailyUsageManager.shared.translationCount
-        let transRemain = DailyUsageManager.shared.remainingTranslations
-        let transTotal = transUsed + transRemain
-        let tier = SubscriptionStatus.shared.currentTier
-        let planName: String
-        switch tier {
-        case .free: planName = "Free"
-        case .pro: planName = "Pro"
-        case .premium: planName = "Premium"
-        }
-        popup.update(corrUsed: corrUsed, corrTotal: corrTotal,
-                     transUsed: transUsed, transTotal: transTotal,
-                     planName: planName, isPro: tier != .free)
-
-        popup.onUpgradeTap = { [weak self] in
-            self?.hideStatusPopup()
-            self?.openContainingApp(path: "paywall")
-        }
-        popup.onDismiss = { [weak self] in
-            self?.hideStatusPopup()
-        }
-
-        popup.alpha = 0
-        UIView.animate(withDuration: 0.2) {
-            popup.alpha = 1
-        }
-
-        statusPopupView = popup
-        inputView.bringSubviewToFront(toastLabel)
-    }
-
-    private func hideStatusPopup() {
-        guard let popup = statusPopupView else { return }
-        UIView.animate(withDuration: 0.15, animations: {
-            popup.alpha = 0
-        }) { _ in
-            popup.removeFromSuperview()
-        }
-        statusPopupView = nil
-    }
-
     // MARK: - Context Menu (Proposal 02)
 
     private var contextMenuView: ContextMenuView?
 
     private func showContextMenu() {
-        hideStatusPopup()
         guard contextMenuView == nil else {
             hideContextMenu()
             return
