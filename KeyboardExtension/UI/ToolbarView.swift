@@ -184,7 +184,16 @@ class ToolbarView: UIView {
 
     func rebuildToolbarIfNeeded() {
         let newConfig = ToolbarConfiguration.load()
-        guard newConfig != currentToolbarConfig else { return }
+        #if DEBUG
+        let _trStart = CACurrentMediaTime()
+        let changed = (newConfig != currentToolbarConfig)
+        #endif
+        guard newConfig != currentToolbarConfig else {
+            #if DEBUG
+            NSLog("[ToolbarRebuild] changed=false current=%d new=%d duration=%.2fms hasSettings=%d", currentToolbarConfig.count, newConfig.count, (CACurrentMediaTime() - _trStart) * 1000, newConfig.contains(.settings) ? 1 : 0)
+            #endif
+            return
+        }
 
         for view in toolbarStack.arrangedSubviews {
             if view === settingsLinkContainer {
@@ -202,6 +211,9 @@ class ToolbarView: UIView {
             applyTheme(theme)
         }
         updateAppearance(isDark: isDark)
+        #if DEBUG
+        NSLog("[ToolbarRebuild] changed=true current=%d new=%d duration=%.2fms hasSettings=%d", currentToolbarConfig.count, newConfig.count, (CACurrentMediaTime() - _trStart) * 1000, newConfig.contains(.settings) ? 1 : 0)
+        #endif
     }
 
     private func applyToolbarItems(_ items: [ToolbarItemType]) {

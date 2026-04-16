@@ -60,17 +60,32 @@ final class HistoryManager {
 
     /// 기존 ClipboardHistoryManager 데이터를 HistoryManager로 마이그레이션 (1회성)
     func migrateClipboardHistoryIfNeeded() {
+        #if DEBUG
+        let _hmStart = CFAbsoluteTimeGetCurrent()
+        #endif
         let migrationKey = "clipboard_migration_done"
-        guard defaults?.bool(forKey: migrationKey) != true else { return }
+        guard defaults?.bool(forKey: migrationKey) != true else {
+            #if DEBUG
+            NSLog("[HistoryMigration] skipped alreadyDone=true duration=%.2fms", (CFAbsoluteTimeGetCurrent() - _hmStart) * 1000)
+            #endif
+            return
+        }
 
         guard let data = defaults?.data(forKey: AppConstants.UserDefaultsKeys.clipboardHistory),
               let oldItems = try? JSONDecoder().decode([ClipboardItem].self, from: data) else {
             defaults?.set(true, forKey: migrationKey)
+            #if DEBUG
+            NSLog("[HistoryMigration] skipped empty-data duration=%.2fms", (CFAbsoluteTimeGetCurrent() - _hmStart) * 1000)
+            #endif
             return
         }
 
         let existingTexts = Set(loadItems(ofType: .clipboard).map { $0.originalText })
         var currentItems = loadItems()
+        #if DEBUG
+        let _oldCount = oldItems.count
+        let _existingCount = existingTexts.count
+        #endif
 
         for oldItem in oldItems where !existingTexts.contains(oldItem.text) {
             let historyItem = HistoryItem(
@@ -88,6 +103,9 @@ final class HistoryManager {
         saveItems(currentItems)
 
         defaults?.set(true, forKey: migrationKey)
+        #if DEBUG
+        NSLog("[HistoryMigration] migrated old=%d existing=%d total=%.2fms", _oldCount, _existingCount, (CFAbsoluteTimeGetCurrent() - _hmStart) * 1000)
+        #endif
     }
 
     /// 특정 타입의 전체 아이템 수 (주간 제한 없이)

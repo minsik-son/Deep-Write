@@ -17,10 +17,10 @@ class KeyboardLayoutView: UIView {
 
     // Return key appearance — set by controller
     var returnKeyDisplayName: String = L("keyboard.return.go") {
-        didSet { if oldValue != returnKeyDisplayName { buildKeyboard() } }
+        didSet { if oldValue != returnKeyDisplayName { requestBuildKeyboard(reason: "returnKeyDisplayName.didSet") } }
     }
     var returnKeyIsBlue: Bool = true {
-        didSet { if oldValue != returnKeyIsBlue { buildKeyboard() } }
+        didSet { if oldValue != returnKeyIsBlue { requestBuildKeyboard(reason: "returnKeyIsBlue.didSet") } }
     }
 
     // Mode-aware return key override (Proposal 03)
@@ -28,22 +28,22 @@ class KeyboardLayoutView: UIView {
     private var returnKeyHasText: Bool = true
 
     var showNumberRow: Bool = true {
-        didSet { if oldValue != showNumberRow { buildKeyboard() } }
+        didSet { if oldValue != showNumberRow { requestBuildKeyboard(reason: "showNumberRow.didSet") } }
     }
 
     var showPeriodKey: Bool = true {
-        didSet { if oldValue != showPeriodKey { buildKeyboard() } }
+        didSet { if oldValue != showPeriodKey { requestBuildKeyboard(reason: "showPeriodKey.didSet") } }
     }
 
     var onHeightChangeNeeded: (() -> Void)?
 
     var pairedLanguage: KeyboardLanguage = .english {
-        didSet { if oldValue != pairedLanguage { buildKeyboard() } }
+        didSet { if oldValue != pairedLanguage { requestBuildKeyboard(reason: "pairedLanguage.didSet") } }
     }
 
     /// v2: 추가 언어 토글 + paired language 둘 다 충족해야 globe 표시
     var additionalLanguagesEnabled: Bool = false {
-        didSet { if oldValue != additionalLanguagesEnabled { buildKeyboard() } }
+        didSet { if oldValue != additionalLanguagesEnabled { requestBuildKeyboard(reason: "additionalLanguagesEnabled.didSet") } }
     }
 
     var hasAdditionalLanguage: Bool {
@@ -376,7 +376,7 @@ class KeyboardLayoutView: UIView {
             keyboardContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
             keyboardContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        buildKeyboard()
+        requestBuildKeyboard(reason: "setupContainer.initial")
     }
 
     // MARK: - Current Layout
@@ -459,6 +459,18 @@ class KeyboardLayoutView: UIView {
 
     // MARK: - Build Keyboard
 
+    #if DEBUG
+    private static var buildSequence: Int = 0
+    private var pendingBuildReason: String = "unknown"
+    #endif
+
+    private func requestBuildKeyboard(reason: String) {
+        #if DEBUG
+        pendingBuildReason = reason
+        #endif
+        buildKeyboard()
+    }
+
     private func scheduleBuildKeyboard(delay: TimeInterval = 0.03) {
         pendingBuildWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
@@ -471,6 +483,13 @@ class KeyboardLayoutView: UIView {
 
     private func buildKeyboard() {
         guard !isTrackpadMode else { return }  // 트랙패드 중 재빌드 방지
+        #if DEBUG
+        Self.buildSequence += 1
+        let _bkSeq = Self.buildSequence
+        let _bkStart = CACurrentMediaTime()
+        NSLog("[BuildKeyboard] #%d reason=%@ start page=%@ lang=%@", _bkSeq, pendingBuildReason, String(describing: currentPage), String(describing: currentLanguage))
+        pendingBuildReason = "unknown"
+        #endif
 
         // Rain 애니메이션 일시정지 — 뷰 계층 재구성 동안 draw() 방지
         let wasRainAnimating = matrixRainView?.isActive ?? false
@@ -635,6 +654,10 @@ class KeyboardLayoutView: UIView {
             cv.startAnimation()
         }
 
+        #if DEBUG
+        let _bkEnd = CACurrentMediaTime()
+        NSLog("[BuildKeyboard] #%d end duration=%.2fms buttons=%d showNumberRow=%d showPeriodKey=%d additionalLangs=%d paired=%@", _bkSeq, (_bkEnd - _bkStart) * 1000, allKeyButtons.count, showNumberRow ? 1 : 0, showPeriodKey ? 1 : 0, additionalLanguagesEnabled ? 1 : 0, String(describing: pairedLanguage))
+        #endif
         onHeightChangeNeeded?()
     }
 
@@ -2083,6 +2106,9 @@ class KeyboardLayoutView: UIView {
     }
 
     func updateAppearance(isDark: Bool) {
+        #if DEBUG
+        let _uaStart = CACurrentMediaTime()
+        #endif
         self.isDark = isDark
 
         // Phase 7: 메모리 경고 후 영구 차단 방지
@@ -2324,7 +2350,12 @@ class KeyboardLayoutView: UIView {
             cherryBlossomView?.isHidden = true
         }
 
-        buildKeyboard()
+        requestBuildKeyboard(reason: "updateAppearance.finalize")
+        #if DEBUG
+        let _uaEnd = CACurrentMediaTime()
+        let _themeId = customTheme?.id ?? "default"
+        NSLog("[ColdStart][KeyboardLayoutView.updateAppearance] total = %.2fms theme=%@ pattern=%d rain=%d ripple=%d stardust=%d snowfall=%d cherry=%d", (_uaEnd - _uaStart) * 1000, _themeId, customTheme?.hasPattern == true ? 1 : 0, customTheme?.needsRainAnimation == true ? 1 : 0, customTheme?.needsRippleAnimation == true ? 1 : 0, customTheme?.needsStardustAnimation == true ? 1 : 0, customTheme?.needsSnowfallAnimation == true ? 1 : 0, customTheme?.needsCherryBlossomAnimation == true ? 1 : 0)
+        #endif
     }
 
     override func layoutSubviews() {

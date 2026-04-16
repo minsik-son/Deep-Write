@@ -21,8 +21,16 @@ final class ThemePatternRenderer {
 
         // ── 직렬 큐로 원자적 캐시 접근 ──
         return cacheQueue.sync {
-            if let cached = cache.object(forKey: nsKey) { return cached }
+            if let cached = cache.object(forKey: nsKey) {
+                #if DEBUG
+                NSLog("[ThemePattern] hit style=%@ size=%.0fx%.0f", String(describing: style), size.width, size.height)
+                #endif
+                return cached
+            }
 
+            #if DEBUG
+            let _tpStart = CACurrentMediaTime()
+            #endif
             let renderer = UIGraphicsImageRenderer(size: size)
             let image = renderer.image { ctx in
                 let rect = CGRect(origin: .zero, size: size)
@@ -60,6 +68,9 @@ final class ThemePatternRenderer {
             }
 
             cache.setObject(image, forKey: nsKey)
+            #if DEBUG
+            NSLog("[ThemePattern] miss style=%@ size=%.0fx%.0f render=%.2fms", String(describing: style), size.width, size.height, (CACurrentMediaTime() - _tpStart) * 1000)
+            #endif
             return image
         }
     }

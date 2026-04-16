@@ -248,19 +248,63 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
         #endif
 
+        #if DEBUG
+        let _cs0 = CACurrentMediaTime()
+        #endif
         HistoryManager.shared.migrateClipboardHistoryIfNeeded()
+        #if DEBUG
+        let _cs1 = CACurrentMediaTime()
+        #endif
         setupUI()
+        #if DEBUG
+        let _cs2 = CACurrentMediaTime()
+        #endif
         setupDelegates()
+        #if DEBUG
+        let _cs3 = CACurrentMediaTime()
+        #endif
         setupCallbacks()
+        #if DEBUG
+        let _cs4 = CACurrentMediaTime()
+        #endif
         setupSettingsLink()
+        #if DEBUG
+        let _cs5 = CACurrentMediaTime()
+        #endif
         loadCachedSettings()
+        #if DEBUG
+        let _cs6 = CACurrentMediaTime()
+        #endif
         switchMode(to: .defaultMode)
+        #if DEBUG
+        let _cs7 = CACurrentMediaTime()
+        #endif
         restoreState()
+        #if DEBUG
+        let _cs8 = CACurrentMediaTime()
+        #endif
 
         // Phase 2: load touch learning data
         keyboardLayoutView.loadTouchLearningData()
+        #if DEBUG
+        let _cs9 = CACurrentMediaTime()
+        #endif
         // Phase 3: connect PredictionEngine
         keyboardLayoutView.predictionEngine = suggestionManager.predictionEngineRef
+        #if DEBUG
+        let _cs10 = CACurrentMediaTime()
+        NSLog("[ColdStart][viewDidLoad] migrateClipboardHistoryIfNeeded = %.2fms", (_cs1 - _cs0) * 1000)
+        NSLog("[ColdStart][viewDidLoad] setupUI = %.2fms", (_cs2 - _cs1) * 1000)
+        NSLog("[ColdStart][viewDidLoad] setupDelegates = %.2fms", (_cs3 - _cs2) * 1000)
+        NSLog("[ColdStart][viewDidLoad] setupCallbacks = %.2fms", (_cs4 - _cs3) * 1000)
+        NSLog("[ColdStart][viewDidLoad] setupSettingsLink = %.2fms", (_cs5 - _cs4) * 1000)
+        NSLog("[ColdStart][viewDidLoad] loadCachedSettings = %.2fms", (_cs6 - _cs5) * 1000)
+        NSLog("[ColdStart][viewDidLoad] switchMode = %.2fms", (_cs7 - _cs6) * 1000)
+        NSLog("[ColdStart][viewDidLoad] restoreState = %.2fms", (_cs8 - _cs7) * 1000)
+        NSLog("[ColdStart][viewDidLoad] loadTouchLearningData = %.2fms", (_cs9 - _cs8) * 1000)
+        NSLog("[ColdStart][viewDidLoad] predictionEngine = %.2fms", (_cs10 - _cs9) * 1000)
+        NSLog("[ColdStart][viewDidLoad] total = %.2fms, Memory: %.2f MB", (_cs10 - _cs0) * 1000, self.currentMemoryMB())
+        #endif
 
         // 저전력 모드 변경 감지
         NotificationCenter.default.addObserver(
@@ -363,31 +407,87 @@ class KeyboardViewController: UIInputViewController {
         // ════════════════════════════════════════════
 
         // ── 즉시 필요한 것만 동기 실행 ──
+        #if DEBUG
+        let _wa0 = CACurrentMediaTime()
+        #endif
         textProxyManager.updateProxy(textDocumentProxy)
+        #if DEBUG
+        let _wa1 = CACurrentMediaTime()
+        #endif
         setupHeightConstraint()
+        #if DEBUG
+        let _wa2 = CACurrentMediaTime()
+        #endif
         loadCachedSettings()
+        #if DEBUG
+        let _wa3 = CACurrentMediaTime()
+        #endif
         toolbarView.rebuildToolbarIfNeeded()
+        #if DEBUG
+        let _wa4 = CACurrentMediaTime()
+        #endif
 
         // 툴바 재구성 이후 settings link attach 보장
         ensureSettingsLinkAttachedIfNeeded()
+        #if DEBUG
+        let _wa5 = CACurrentMediaTime()
+        #endif
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
         // viewDidLoad/switchMode(.defaultMode)에서는 호출되지 않으므로
         // 여기서 호출하여 customTheme 설정 + 애니메이션 뷰 생성 + buildKeyboard 보장
         updateKeyboardAppearance()
+        #if DEBUG
+        let _wa6 = CACurrentMediaTime()
+        NSLog("[ColdStart][viewWillAppear][sync] updateProxy = %.2fms", (_wa1 - _wa0) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] setupHeightConstraint = %.2fms", (_wa2 - _wa1) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] loadCachedSettings = %.2fms", (_wa3 - _wa2) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] rebuildToolbarIfNeeded = %.2fms", (_wa4 - _wa3) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] ensureSettingsLinkAttached = %.2fms", (_wa5 - _wa4) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] updateKeyboardAppearance = %.2fms", (_wa6 - _wa5) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] total = %.2fms, settingsHC isNil=%d, containerSubviews=%d", (_wa6 - _wa0) * 1000, self.settingsLinkHostingController == nil ? 1 : 0, self.toolbarView.settingsLinkContainer.subviews.count)
+        #endif
 
         // ── 나머지는 다음 런루프에서 실행 (키보드 UI 먼저 표시) ──
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            #if DEBUG
+            let _aa0 = CACurrentMediaTime()
+            #endif
             LocalizationManager.shared.reload()
             self.reloadLocalizedStrings()
+            #if DEBUG
+            let _aa1 = CACurrentMediaTime()
+            #endif
             self.loadNumberRowSetting()
+            #if DEBUG
+            let _aa2 = CACurrentMediaTime()
+            #endif
             self.loadPeriodKeySetting()
+            #if DEBUG
+            let _aa3 = CACurrentMediaTime()
+            #endif
             self.loadKeyPreviewSetting()
             self.loadLatinAlternativesSetting()
+            #if DEBUG
+            let _aa4 = CACurrentMediaTime()
+            #endif
             self.loadKeyboardLanguageSetting()
+            #if DEBUG
+            let _aa5 = CACurrentMediaTime()
+            #endif
             self.updateReturnKeyAppearance()
             self.checkAutoCapitalize()
+            #if DEBUG
+            let _aa6 = CACurrentMediaTime()
+            NSLog("[ColdStart][viewWillAppear][async] localization = %.2fms", (_aa1 - _aa0) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] loadNumberRowSetting = %.2fms", (_aa2 - _aa1) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] loadPeriodKeySetting = %.2fms", (_aa3 - _aa2) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] keyPreview+latinAlt = %.2fms", (_aa4 - _aa3) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] loadKeyboardLanguageSetting = %.2fms", (_aa5 - _aa4) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] returnKey+autoCap = %.2fms", (_aa6 - _aa5) * 1000)
+            NSLog("[ColdStart][viewWillAppear][async] total = %.2fms, Memory: %.2f MB", (_aa6 - _aa0) * 1000, self.currentMemoryMB())
+            #endif
         }
 
         hasUserTypedSinceAppeared = false
@@ -2892,6 +2992,9 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func updateKeyboardAppearance() {
+        #if DEBUG
+        let _uka0 = CACurrentMediaTime()
+        #endif
         applyKeyboardInterfaceStyleOverride()
         let isDark = resolvedKeyboardIsDark()
         let theme = loadTheme()
@@ -2957,6 +3060,10 @@ class KeyboardViewController: UIInputViewController {
         unitConverterView?.updateAppearance(isDark: isDark)
         chatReplyView?.applyTheme(theme)
         chatReplyView?.updateAppearance(isDark: isDark)
+        #if DEBUG
+        let _uka1 = CACurrentMediaTime()
+        NSLog("[ColdStart][updateKeyboardAppearance] total = %.2fms theme=%@ isDark=%d", (_uka1 - _uka0) * 1000, theme?.id ?? "default", isDark ? 1 : 0)
+        #endif
     }
 
     // MARK: - Context Menu (Proposal 02)
