@@ -464,7 +464,59 @@ class KeyboardLayoutView: UIView {
     private var pendingBuildReason: String = "unknown"
     #endif
 
-    private func requestBuildKeyboard(reason: String) {
+    // ── Size-ready deferred build ──
+    private var pendingBuildUntilSized = false
+    private var deferredBuildReason: String = "unknown"
+
+    private var shouldDeferBuildUntilSized: Bool {
+        bounds.width <= 0 || bounds.height <= 0
+    }
+
+    // ── Startup batch rebuild ──
+    private var startupBatchDepth: Int = 0
+    private var startupBatchNeedsBuild = false
+    private var startupBatchLastReason: String = "unknown"
+
+    func beginStartupBatch() {
+        startupBatchDepth += 1
+        #if DEBUG
+        NSLog("[BuildKeyboard] beginStartupBatch depth=%d", startupBatchDepth)
+        #endif
+    }
+
+    func endStartupBatch(reason: String) {
+        startupBatchDepth = max(0, startupBatchDepth - 1)
+        if startupBatchDepth == 0 && startupBatchNeedsBuild {
+            startupBatchNeedsBuild = false
+            let commitReason = "batch.\(reason)←\(startupBatchLastReason)"
+            requestBuildKeyboard(reason: commitReason)
+        }
+        #if DEBUG
+        NSLog("[BuildKeyboard] endStartupBatch depth=%d needsBuild=%d reason=%@", startupBatchDepth, startupBatchNeedsBuild ? 1 : 0, reason)
+        #endif
+    }
+
+    private var isInStartupBatch: Bool { startupBatchDepth > 0 }
+
+    func requestBuildKeyboard(reason: String) {
+        // Startup batch: dirty flag만 세팅하고 즉시 build 안 함
+        if isInStartupBatch {
+            startupBatchNeedsBuild = true
+            startupBatchLastReason = reason
+            #if DEBUG
+            NSLog("[BuildKeyboard] batched reason=%@", reason)
+            #endif
+            return
+        }
+        // Size-ready deferred: width/height 0이면 보류
+        if shouldDeferBuildUntilSized {
+            pendingBuildUntilSized = true
+            deferredBuildReason = reason
+            #if DEBUG
+            NSLog("[BuildKeyboard] deferred reason=%@ width=%.2f height=%.2f", reason, bounds.width, bounds.height)
+            #endif
+            return
+        }
         #if DEBUG
         pendingBuildReason = reason
         #endif
@@ -2105,7 +2157,7 @@ class KeyboardLayoutView: UIView {
         customTheme = theme
     }
 
-    func updateAppearance(isDark: Bool) {
+    func updateAppearance(isDark: Bool, rebuildKeyboard: Bool = true) {
         #if DEBUG
         let _uaStart = CACurrentMediaTime()
         #endif
@@ -2350,16 +2402,29 @@ class KeyboardLayoutView: UIView {
             cherryBlossomView?.isHidden = true
         }
 
-        requestBuildKeyboard(reason: "updateAppearance.finalize")
+        if rebuildKeyboard {
+            requestBuildKeyboard(reason: "updateAppearance.finalize")
+        }
         #if DEBUG
         let _uaEnd = CACurrentMediaTime()
         let _themeId = customTheme?.id ?? "default"
-        NSLog("[ColdStart][KeyboardLayoutView.updateAppearance] total = %.2fms theme=%@ pattern=%d rain=%d ripple=%d stardust=%d snowfall=%d cherry=%d", (_uaEnd - _uaStart) * 1000, _themeId, customTheme?.hasPattern == true ? 1 : 0, customTheme?.needsRainAnimation == true ? 1 : 0, customTheme?.needsRippleAnimation == true ? 1 : 0, customTheme?.needsStardustAnimation == true ? 1 : 0, customTheme?.needsSnowfallAnimation == true ? 1 : 0, customTheme?.needsCherryBlossomAnimation == true ? 1 : 0)
+        NSLog("[ColdStart][KeyboardLayoutView.updateAppearance] total = %.2fms theme=%@ rebuild=%d pattern=%d rain=%d ripple=%d stardust=%d snowfall=%d cherry=%d", (_uaEnd - _uaStart) * 1000, _themeId, rebuildKeyboard ? 1 : 0, customTheme?.hasPattern == true ? 1 : 0, customTheme?.needsRainAnimation == true ? 1 : 0, customTheme?.needsRippleAnimation == true ? 1 : 0, customTheme?.needsStardustAnimation == true ? 1 : 0, customTheme?.needsSnowfallAnimation == true ? 1 : 0, customTheme?.needsCherryBlossomAnimation == true ? 1 : 0)
         #endif
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+
+        // ── Deferred build consumption: size 준비 후 보류된 build 1회 소비 ──
+        if pendingBuildUntilSized, !shouldDeferBuildUntilSized {
+            pendingBuildUntilSized = false
+            let reason = "consumeDeferred.\(deferredBuildReason)"
+            #if DEBUG
+            NSLog("[BuildKeyboard] consumeDeferred reason=%@ width=%.2f height=%.2f", deferredBuildReason, bounds.width, bounds.height)
+            #endif
+            requestBuildKeyboard(reason: reason)
+        }
+
         gradientLayer?.frame = bounds
 
         // Wood block key texture + gradient frame update
@@ -3129,7 +3194,7 @@ class KeyboardLayoutView: UIView {
         currentPage = .letters
         // 초기 로딩, 심볼 페이지, 또는 버튼 미생성 시 풀 build
         if allKeyButtons.isEmpty || oldPage != .letters {
-            buildKeyboard()
+            requestBuildKeyboard(reason: "setLanguage.initialOrPageMismatch")
         } else {
             updateKeyLabelsForLanguage(from: oldLang, to: language, wasShifted: wasShifted)
         }

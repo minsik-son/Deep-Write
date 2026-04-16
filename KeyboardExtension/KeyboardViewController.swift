@@ -406,7 +406,7 @@ class KeyboardViewController: UIInputViewController {
         // viewWillDisappear에서 정리한 리소스를 필요 시 재생성
         // ════════════════════════════════════════════
 
-        // ── 즉시 필요한 것만 동기 실행 ──
+        // ── 즉시 필요한 것만 동기 실행 (startup batch로 build churn 억제) ──
         #if DEBUG
         let _wa0 = CACurrentMediaTime()
         #endif
@@ -418,6 +418,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let _wa2 = CACurrentMediaTime()
         #endif
+        keyboardLayoutView.beginStartupBatch()
         loadCachedSettings()
         #if DEBUG
         let _wa3 = CACurrentMediaTime()
@@ -434,9 +435,9 @@ class KeyboardViewController: UIInputViewController {
         #endif
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
-        // viewDidLoad/switchMode(.defaultMode)에서는 호출되지 않으므로
-        // 여기서 호출하여 customTheme 설정 + 애니메이션 뷰 생성 + buildKeyboard 보장
-        updateKeyboardAppearance()
+        // rebuildKeyboard: false — batch commit에서 1회만 rebuild
+        updateKeyboardAppearance(rebuildKeyboard: false)
+        keyboardLayoutView.endStartupBatch(reason: "startup.sync.commit")
         #if DEBUG
         let _wa6 = CACurrentMediaTime()
         NSLog("[ColdStart][viewWillAppear][sync] updateProxy = %.2fms", (_wa1 - _wa0) * 1000)
@@ -454,6 +455,7 @@ class KeyboardViewController: UIInputViewController {
             #if DEBUG
             let _aa0 = CACurrentMediaTime()
             #endif
+            self.keyboardLayoutView.beginStartupBatch()
             LocalizationManager.shared.reload()
             self.reloadLocalizedStrings()
             #if DEBUG
@@ -478,6 +480,7 @@ class KeyboardViewController: UIInputViewController {
             #endif
             self.updateReturnKeyAppearance()
             self.checkAutoCapitalize()
+            self.keyboardLayoutView.endStartupBatch(reason: "startup.async.commit")
             #if DEBUG
             let _aa6 = CACurrentMediaTime()
             NSLog("[ColdStart][viewWillAppear][async] localization = %.2fms", (_aa1 - _aa0) * 1000)
@@ -2991,7 +2994,7 @@ class KeyboardViewController: UIInputViewController {
         return theme
     }
 
-    private func updateKeyboardAppearance() {
+    private func updateKeyboardAppearance(rebuildKeyboard: Bool = true) {
         #if DEBUG
         let _uka0 = CACurrentMediaTime()
         #endif
@@ -3009,7 +3012,7 @@ class KeyboardViewController: UIInputViewController {
         }
 
         keyboardLayoutView.applyTheme(theme)
-        keyboardLayoutView.updateAppearance(isDark: isDark)
+        keyboardLayoutView.updateAppearance(isDark: isDark, rebuildKeyboard: rebuildKeyboard)
         toolbarView.applyTheme(theme)
         toolbarView.updateAppearance(isDark: isDark)
         emojiKeyboardView?.updateAppearance(isDark: isDark)
