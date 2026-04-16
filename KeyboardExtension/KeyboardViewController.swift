@@ -362,16 +362,14 @@ class KeyboardViewController: UIInputViewController {
         // viewWillDisappear에서 정리한 리소스를 필요 시 재생성
         // ════════════════════════════════════════════
 
-        // UIHostingController 복원 (nil이면 setupSettingsLink가 재생성)
-        if settingsLinkHostingController == nil {
-            setupSettingsLink()
-        }
-
         // ── 즉시 필요한 것만 동기 실행 ──
         textProxyManager.updateProxy(textDocumentProxy)
         setupHeightConstraint()
         loadCachedSettings()
         toolbarView.rebuildToolbarIfNeeded()
+
+        // 툴바 재구성 이후 settings link attach 보장
+        ensureSettingsLinkAttachedIfNeeded()
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
         // viewDidLoad/switchMode(.defaultMode)에서는 호출되지 않으므로
@@ -1250,6 +1248,29 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - SwiftUI Settings Link
 
+    /// attach 상태를 확인하여 필요 시 setupSettingsLink()를 재호출한다.
+    /// nil 체크만으로는 static 참조가 살아 있어 복원이 누락되는 버그를 방지.
+    private func ensureSettingsLinkAttachedIfNeeded() {
+        guard ToolbarConfiguration.load().contains(.settings) else { return }
+
+        guard let hc = Self.sharedSettingsHC else {
+            setupSettingsLink()
+            return
+        }
+
+        let isAttachedToCurrentVC = (hc.parent === self)
+        let isInsideContainer = (hc.view.superview === toolbarView.settingsLinkContainer)
+        let hasContainerSubview = !toolbarView.settingsLinkContainer.subviews.isEmpty
+
+        #if DEBUG
+        kbLogger.info("🔗 ensureSettingsLinkAttachedIfNeeded — parentMatch=\(isAttachedToCurrentVC) superviewMatch=\(isInsideContainer) containerSubviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
+        #endif
+
+        if !isAttachedToCurrentVC || !isInsideContainer || !hasContainerSubview {
+            setupSettingsLink()
+        }
+    }
+
     private func setupSettingsLink() {
         #if DEBUG
         kbLogger.info("🔗 setupSettingsLink START — sharedHC isNil=\(Self.sharedSettingsHC == nil), localRef isNil=\(self.settingsLinkHostingController == nil)")
@@ -1269,7 +1290,17 @@ class KeyboardViewController: UIInputViewController {
 
         guard let hc = Self.sharedSettingsHC else { return }
 
-        // ── 이전 VC에서 detach (re-parent 준비) ──
+        // ── 이미 정상 attach 상태면 중복 작업 방지 ──
+        if hc.parent === self,
+           hc.view.superview === toolbarView.settingsLinkContainer,
+           !toolbarView.settingsLinkContainer.subviews.isEmpty {
+            self.settingsLinkHostingController = hc
+            return
+        }
+
+        // ── 이전 VC/상태에서 detach (re-parent 준비) ──
+        NSLayoutConstraint.deactivate(settingsHCConstraints)
+        settingsHCConstraints = []
         if hc.parent != nil {
             hc.willMove(toParent: nil)
             hc.view.removeFromSuperview()
