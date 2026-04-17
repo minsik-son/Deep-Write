@@ -92,6 +92,11 @@ class KeyboardLayoutView: UIView {
     private let touchLearningAlpha: Float = 0.05
     private let touchLearningMinSamples: UInt16 = 30
 
+    // MARK: - Active Instance Gating
+
+    /// KeyboardViewController가 active instance일 때만 true로 설정
+    var isOwnedByActiveController: Bool = false
+
     // MARK: - Phase 3: Context-Based Character Probability
 
     weak var predictionEngine: PredictionEngine?
@@ -704,6 +709,16 @@ class KeyboardLayoutView: UIView {
                   !isMemoryConstrained, let cv = cherryBlossomView, !cv.isActive,
                   !ProcessInfo.processInfo.isLowPowerModeEnabled {
             cv.startAnimation()
+        }
+
+        // ── Fix A: 성공적인 full build 후 stale deferred 무효화 ──
+        // 이미 최신 상태로 build가 완료되었으므로, width 0 시점에 적재된 과거 deferred는 의미 없음.
+        if pendingBuildUntilSized {
+            #if DEBUG
+            NSLog("[BuildKeyboard] clearDeferredAfterBuild reason=%@ cause=successfulBuild", deferredBuildReason)
+            #endif
+            pendingBuildUntilSized = false
+            deferredBuildReason = "unknown"
         }
 
         #if DEBUG
@@ -2415,14 +2430,30 @@ class KeyboardLayoutView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
 
-        // ── Deferred build consumption: size 준비 후 보류된 build 1회 소비 ──
+        // ── Deferred build consumption: size 준비 후, active instance에서만, stale 아닌 경우만 소비 ──
         if pendingBuildUntilSized, !shouldDeferBuildUntilSized {
-            pendingBuildUntilSized = false
-            let reason = "consumeDeferred.\(deferredBuildReason)"
-            #if DEBUG
-            NSLog("[BuildKeyboard] consumeDeferred reason=%@ width=%.2f height=%.2f", deferredBuildReason, bounds.width, bounds.height)
-            #endif
-            requestBuildKeyboard(reason: reason)
+            if !isOwnedByActiveController {
+                #if DEBUG
+                NSLog("[InstanceGate] consumeDeferred skipped inactive reason=%@", deferredBuildReason)
+                #endif
+            } else if !allKeyButtons.isEmpty {
+                // Fix B+C: 이미 full build가 완료된 상태(buttons > 0)라면
+                // width 0 시점에 적재된 deferred는 stale — 폐기
+                // 특히 setLanguage.initialOrPageMismatch는 startup 초기에만 유효하며
+                // 이후 async batch commit 등으로 최신 build가 끝났다면 중복 rebuild 방지
+                #if DEBUG
+                NSLog("[BuildKeyboard] consumeDeferred skipped stale reason=%@ buttons=%d", deferredBuildReason, allKeyButtons.count)
+                #endif
+                pendingBuildUntilSized = false
+                deferredBuildReason = "unknown"
+            } else {
+                pendingBuildUntilSized = false
+                let reason = "consumeDeferred.\(deferredBuildReason)"
+                #if DEBUG
+                NSLog("[BuildKeyboard] consumeDeferred reason=%@ active=true width=%.2f height=%.2f", deferredBuildReason, bounds.width, bounds.height)
+                #endif
+                requestBuildKeyboard(reason: reason)
+            }
         }
 
         gradientLayer?.frame = bounds

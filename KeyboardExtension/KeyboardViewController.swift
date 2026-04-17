@@ -25,6 +25,16 @@ class KeyboardViewController: UIInputViewController {
     private let kbLogger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "SettingsLink")
     private static let staticLogger = Logger(subsystem: "com.translatorkeyboard.keyboard", category: "SettingsLink")
 
+    // MARK: - Active Instance Gating
+
+    /// 현재 화면에 표시 중인 유일한 active instance (weak — 누수 방지)
+    private static weak var activeVisibleController: KeyboardViewController?
+
+    /// self가 현재 active instance인지 확인
+    private var isActiveInstance: Bool {
+        Self.activeVisibleController === self
+    }
+
     // MARK: - UI Components
 
     private lazy var toolbarView = ToolbarView()
@@ -201,6 +211,11 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.warning("💀 children.count at deinit = \(self.children.count)")
         kbLogger.warning("💀 Memory at DEINIT: \(deinitMemory, format: .fixed(precision: 2)) MB (phys_footprint)")
         #endif
+
+        // Active instance 정리
+        if Self.activeVisibleController === self {
+            Self.activeVisibleController = nil
+        }
 
         // NotificationCenter 정리 (스레드 무관 — iOS 9+ 안전)
         NotificationCenter.default.removeObserver(self)
@@ -506,6 +521,14 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+
+        // ── Active instance 등록 ──
+        Self.activeVisibleController = self
+        keyboardLayoutView.isOwnedByActiveController = true
+        #if DEBUG
+        NSLog("[InstanceGate] didAppear active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
+        #endif
+
         checkMemorySafetyNet()  // Phase 5: 메모리 안전망
 
         // Dictation session recovery: 메인앱에서 돌아왔을 때 active session 복구
@@ -513,13 +536,17 @@ class KeyboardViewController: UIInputViewController {
             tryRecoverDictationSession()
         }
 
-        // ── Suggestion subsystem prewarm (first-frame 이후, 비차단) ──
-        // viewDidLoad에서 eager init을 제거했으므로 여기서 연결.
-        // predictionEngine이 nil이면 기본 입력은 정상, suggestion만 비어 있음.
+        // ── Suggestion subsystem prewarm (first-frame 이후, active instance만) ──
+        guard isActiveInstance else {
+            #if DEBUG
+            NSLog("[InstanceGate] prewarm skipped inactive self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            #endif
+            return
+        }
         if keyboardLayoutView.predictionEngine == nil {
             #if DEBUG
             let _spStart = CACurrentMediaTime()
-            NSLog("[SuggestionInit] prewarm START — first-frame-after")
+            NSLog("[SuggestionInit] prewarm START active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
             #endif
             let engine = suggestionManager.predictionEngineRef
             keyboardLayoutView.predictionEngine = engine
@@ -531,6 +558,15 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+
+        // ── Active instance 해제 ──
+        if Self.activeVisibleController === self {
+            Self.activeVisibleController = nil
+            keyboardLayoutView.isOwnedByActiveController = false
+            #if DEBUG
+            NSLog("[InstanceGate] willDisappear activeCleared=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            #endif
+        }
 
         #if DEBUG
         kbLogger.info("📌 viewWillDisappear START — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
