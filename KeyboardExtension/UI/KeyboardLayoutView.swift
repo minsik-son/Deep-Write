@@ -524,8 +524,16 @@ class KeyboardLayoutView: UIView {
         startupBatchDepth = max(0, startupBatchDepth - 1)
         if startupBatchDepth == 0 && startupBatchNeedsBuild {
             startupBatchNeedsBuild = false
-            let commitReason = "batch.\(reason)←\(startupBatchLastReason)"
-            requestBuildKeyboard(reason: commitReason)
+            // Semantic no-op 판정: 이미 버튼이 존재하고 구조 변화 없으면 rebuild skip
+            if !allKeyButtons.isEmpty {
+                #if DEBUG
+                let _skipDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+                NSLog("[BuildKeyboard] endStartupBatch skip semanticNoOp reason=%@ buttons=%d deltaSinceFirstCode=%.2fms", reason, allKeyButtons.count, _skipDelta)
+                #endif
+            } else {
+                let commitReason = "batch.\(reason)←\(startupBatchLastReason)"
+                requestBuildKeyboard(reason: commitReason)
+            }
         }
         #if DEBUG
         NSLog("[BuildKeyboard] endStartupBatch depth=%d needsBuild=%d reason=%@", startupBatchDepth, startupBatchNeedsBuild ? 1 : 0, reason)

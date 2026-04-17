@@ -334,6 +334,7 @@ class KeyboardViewController: UIInputViewController {
         let _cs1 = CACurrentMediaTime()
         #endif
         setupUI()
+        setupHeightConstraint()  // 조기 설치 — host-side layout pass 최소화
         #if DEBUG
         let _cs2 = CACurrentMediaTime()
         #endif
@@ -350,6 +351,11 @@ class KeyboardViewController: UIInputViewController {
         let _cs5 = CACurrentMediaTime()
         #endif
         loadCachedSettings()
+        // Final-state 필수 값을 첫 build 이전에 확정 — late async rebuild 제거 목적
+        // 이 설정들은 가벼운 UserDefaults read이므로 viewDidLoad 비용 증가 미미
+        loadNumberRowSetting()
+        loadPeriodKeySetting()
+        loadKeyboardLanguageSetting()
         #if DEBUG
         let _cs6 = CACurrentMediaTime()
         #endif
@@ -941,7 +947,7 @@ class KeyboardViewController: UIInputViewController {
         // iOS system manages the keyboard extension's inputView width via autoresizing masks
         let totalDefault = Heights.topPadding + Heights.toolbar + keyAreaHeight()
         heightConstraint = inputView.heightAnchor.constraint(equalToConstant: totalDefault)
-        heightConstraint?.priority = .defaultHigh
+        heightConstraint?.priority = UILayoutPriority(999)  // .required - 1: host encapsulated layout과 충돌 방지하면서 우선 반영
         heightConstraint?.isActive = true
     }
 
