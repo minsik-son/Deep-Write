@@ -19,6 +19,15 @@ enum QuickNoteSubState {
 
 class KeyboardViewController: UIInputViewController {
 
+    #if DEBUG
+    /// 프로세스 내 가장 이른 코드 실행 시점 (static initializer)
+    static let firstCodeEntryTime: CFAbsoluteTime = {
+        let t = CFAbsoluteTimeGetCurrent()
+        NSLog("[ActivationTrace] firstCodeEntry = %.4f", t)
+        return t
+    }()
+    #endif
+
     private var currentMode: KeyboardMode = .defaultMode
 
     // MARK: - Debug Logger
@@ -33,6 +42,33 @@ class KeyboardViewController: UIInputViewController {
     /// self가 현재 active instance인지 확인
     private var isActiveInstance: Bool {
         Self.activeVisibleController === self
+    }
+
+    /// Safe early activation: window + size ready 시점에서 active 승격
+    /// viewDidAppear보다 먼저 active를 잡아 초기 consumeDeferred가 실행되게 한다
+    private func promoteToActiveIfFirstVisibleCandidate(source: String) {
+        // 이미 active가 있으면 skip (다른 인스턴스가 선점한 경우)
+        guard Self.activeVisibleController == nil else {
+            #if DEBUG
+            NSLog("[InstanceGate] earlyActivate skipped source=%@ reason=alreadyHasActive self=%@", source, String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            #endif
+            return
+        }
+        // 최소 visible 조건: window + non-zero bounds
+        guard view.window != nil, keyboardLayoutView.bounds.width > 0 else {
+            #if DEBUG
+            NSLog("[InstanceGate] earlyActivate skipped source=%@ reason=notReady self=%@", source, String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            #endif
+            return
+        }
+
+        // ── 승격: explicit handoff ──
+        #if DEBUG
+        let _eaDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[InstanceGate] earlyActivate source=%@ self=%@ deltaSinceFirstCode=%.2fms", source, String(describing: Unmanaged.passUnretained(self).toOpaque()), _eaDelta)
+        #endif
+        Self.activeVisibleController = self
+        keyboardLayoutView.isOwnedByActiveController = true
     }
 
     // MARK: - UI Components
@@ -197,11 +233,21 @@ class KeyboardViewController: UIInputViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         CoreTextCacheManager.activate()  // Phase 4: viewDidLoad보다 이전에 활성화
+        #if DEBUG
+        _ = Self.firstCodeEntryTime // static initializer 강제 트리거
+        let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] init(nibName) self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta)
+        #endif
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         CoreTextCacheManager.activate()
+        #if DEBUG
+        _ = Self.firstCodeEntryTime
+        let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] init(coder) self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta)
+        #endif
     }
 
     deinit {
@@ -248,11 +294,28 @@ class KeyboardViewController: UIInputViewController {
         #endif
     }
 
+    override func loadView() {
+        #if DEBUG
+        let _lvStart = CFAbsoluteTimeGetCurrent()
+        let _lvDelta = (_lvStart - Self.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] loadView START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), _lvDelta)
+        #endif
+        super.loadView()
+        #if DEBUG
+        let _lvEnd = CFAbsoluteTimeGetCurrent()
+        NSLog("[ActivationTrace] loadView END delta=%.2fms deltaSinceFirstCode=%.2fms", (_lvEnd - _lvStart) * 1000, (_lvEnd - Self.firstCodeEntryTime) * 1000)
+        #endif
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         NSLog("══════════════════════════════════════")
         NSLog("═══  Keyboard Loaded  ═══")
         NSLog("══════════════════════════════════════")
+        #if DEBUG
+        let _vdlDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] viewDidLoad START self=%@ deltaSinceFirstCode=%.2fms cycle=%d", String(describing: Unmanaged.passUnretained(self).toOpaque()), _vdlDelta, Self.lifecycleCount + 1)
+        #endif
         // CoreTextCacheManager.activate()는 init()으로 이동됨 (Phase 4)
         #if DEBUG
         CoreTextCacheManager.resetInterceptCounters()
@@ -319,6 +382,7 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ColdStart][viewDidLoad] restoreState = %.2fms", (_cs8 - _cs7) * 1000)
         NSLog("[ColdStart][viewDidLoad] loadTouchLearningData = %.2fms", (_cs9 - _cs8) * 1000)
         NSLog("[ColdStart][viewDidLoad] total = %.2fms (suggestion deferred), Memory: %.2f MB", (_cs10 - _cs0) * 1000, self.currentMemoryMB())
+        NSLog("[ActivationTrace] viewDidLoad END self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         #endif
 
         // 저전력 모드 변경 감지
@@ -410,6 +474,7 @@ class KeyboardViewController: UIInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         #if DEBUG
+        NSLog("[ActivationTrace] viewWillAppear START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 settingsLinkHostingController isNil=\(self.settingsLinkHostingController == nil), container.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
         #endif
@@ -451,7 +516,7 @@ class KeyboardViewController: UIInputViewController {
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
         // rebuildKeyboard: false — batch commit에서 1회만 rebuild
-        updateKeyboardAppearance(rebuildKeyboard: false)
+        updateKeyboardAppearance(rebuildKeyboard: false, caller: "viewWillAppear.sync")
         keyboardLayoutView.endStartupBatch(reason: "startup.sync.commit")
         #if DEBUG
         let _wa6 = CACurrentMediaTime()
@@ -522,11 +587,26 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        // ── Active instance 등록 ──
+        // ── Active instance 최종 확정 (idempotent — early activation 이후에도 안전) ──
+        if let oldActive = Self.activeVisibleController, oldActive !== self {
+            oldActive.keyboardLayoutView.isOwnedByActiveController = false
+            #if DEBUG
+            NSLog("[InstanceGate] handoff old=%@ new=%@ source=viewDidAppear", String(describing: Unmanaged.passUnretained(oldActive).toOpaque()), String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            #endif
+        }
         Self.activeVisibleController = self
         keyboardLayoutView.isOwnedByActiveController = true
         #if DEBUG
+        NSLog("[ActivationTrace] viewDidAppear self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         NSLog("[InstanceGate] didAppear active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
+
+        // First frame presented candidate — CATransaction completion으로 첫 frame commit 추정
+        CATransaction.begin()
+        CATransaction.setCompletionBlock {
+            let _ffp = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+            NSLog("[ActivationTrace] firstFramePresentedCandidate deltaSinceFirstCode=%.2fms", _ffp)
+        }
+        CATransaction.commit()
         #endif
 
         checkMemorySafetyNet()  // Phase 5: 메모리 안전망
@@ -812,7 +892,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        updateKeyboardAppearance()
+        updateKeyboardAppearance(caller: "textDidChange")
         updateReturnKeyAppearance()
 
         // 교정/번역 모드: 호스트 앱 텍스트 필드가 비워지면 입력창 초기화
@@ -1353,6 +1433,9 @@ class KeyboardViewController: UIInputViewController {
         }
 
         // Keyboard layout — always present
+        keyboardLayoutView.onFirstVisibleCandidate = { [weak self] in
+            self?.promoteToActiveIfFirstVisibleCandidate(source: "KLV.firstVisibleCandidate")
+        }
         keyboardLayoutView.onKeyTap = { [weak self] key in
             self?.handleKeyTap(key)
         }
@@ -1668,6 +1751,10 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Mode Switching
 
     func switchMode(to mode: KeyboardMode) {
+        #if DEBUG
+        let _smDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[BuildKeyboardTrace] switchMode START to=%@ deltaSinceFirstCode=%.2fms", String(describing: mode), _smDelta)
+        #endif
         let previousMode = currentMode
 
         // 계산기가 열려있으면 먼저 닫기 (모드 전환 충돌 방지)
@@ -1775,7 +1862,7 @@ class KeyboardViewController: UIInputViewController {
             translationInputView.clear()
             toolbarView.hideSuggestions()
             keyboardTopToTranslationConstraint?.isActive = true
-            updateKeyboardAppearance()
+            updateKeyboardAppearance(caller: "switchMode.translationMode")
 
         case .correctionMode:
             toolbarView.isHidden = true
@@ -1795,7 +1882,7 @@ class KeyboardViewController: UIInputViewController {
             textProxyManager.reset()
             toolbarView.hideSuggestions()
             keyboardTopToCorrectionConstraint?.isActive = true
-            updateKeyboardAppearance()
+            updateKeyboardAppearance(caller: "switchMode.correctionMode")
 
         case .phraseInputMode:
             toolbarView.isHidden = true
@@ -1851,6 +1938,10 @@ class KeyboardViewController: UIInputViewController {
 
         updateHeight(for: mode)
         updateReturnKeyForCurrentMode()
+        #if DEBUG
+        let _smEndDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[BuildKeyboardTrace] switchMode END to=%@ deltaSinceFirstCode=%.2fms", String(describing: mode), _smEndDelta)
+        #endif
     }
 
     private func toggleTranslationMode() {
@@ -3052,9 +3143,11 @@ class KeyboardViewController: UIInputViewController {
         return theme
     }
 
-    private func updateKeyboardAppearance(rebuildKeyboard: Bool = true) {
+    private func updateKeyboardAppearance(rebuildKeyboard: Bool = true, caller: String = "unknown") {
         #if DEBUG
         let _uka0 = CACurrentMediaTime()
+        let _ukaDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+        NSLog("[BuildKeyboardTrace] updateKeyboardAppearance caller=%@ rebuild=%d deltaSinceFirstCode=%.2fms", caller, rebuildKeyboard ? 1 : 0, _ukaDelta)
         #endif
         applyKeyboardInterfaceStyleOverride()
         let isDark = resolvedKeyboardIsDark()

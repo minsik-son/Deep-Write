@@ -97,6 +97,37 @@ class KeyboardLayoutView: UIView {
     /// KeyboardViewController가 active instance일 때만 true로 설정
     var isOwnedByActiveController: Bool = false
 
+    /// Window attach + size ready 시 controller에게 early activation 기회를 주는 콜백
+    var onFirstVisibleCandidate: (() -> Void)?
+
+    private var hasNotifiedFirstVisibleCandidate = false
+
+    #if DEBUG
+    // ── Activation trace state ──
+    private var hasLoggedFirstLayout = false
+    private var hasLoggedFirstNonZeroBounds = false
+    private var hasLoggedFirstButtonsReady = false
+    static var firstUsableLogged = false
+    #endif
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        #if DEBUG
+        let attached = (window != nil) ? 1 : 0
+        let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] KLV.didMoveToWindow attached=%d deltaSinceFirstCode=%.2fms", attached, _d)
+        #endif
+    }
+
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        #if DEBUG
+        let attached = (superview != nil) ? 1 : 0
+        let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+        NSLog("[ActivationTrace] KLV.didMoveToSuperview attached=%d deltaSinceFirstCode=%.2fms", attached, _d)
+        #endif
+    }
+
     // MARK: - Phase 3: Context-Based Character Probability
 
     weak var predictionEngine: PredictionEngine?
@@ -504,12 +535,15 @@ class KeyboardLayoutView: UIView {
     private var isInStartupBatch: Bool { startupBatchDepth > 0 }
 
     func requestBuildKeyboard(reason: String) {
+        #if DEBUG
+        let _reqDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+        #endif
         // Startup batch: dirty flag만 세팅하고 즉시 build 안 함
         if isInStartupBatch {
             startupBatchNeedsBuild = true
             startupBatchLastReason = reason
             #if DEBUG
-            NSLog("[BuildKeyboard] batched reason=%@", reason)
+            NSLog("[BuildKeyboardTrace] request reason=%@ path=startupBatch deltaSinceFirstCode=%.2fms batchDepth=%d buttons=%d", reason, _reqDelta, startupBatchDepth, allKeyButtons.count)
             #endif
             return
         }
@@ -518,11 +552,12 @@ class KeyboardLayoutView: UIView {
             pendingBuildUntilSized = true
             deferredBuildReason = reason
             #if DEBUG
-            NSLog("[BuildKeyboard] deferred reason=%@ width=%.2f height=%.2f", reason, bounds.width, bounds.height)
+            NSLog("[BuildKeyboardTrace] request reason=%@ path=deferUntilSized deltaSinceFirstCode=%.2fms width=%.2f height=%.2f", reason, _reqDelta, bounds.width, bounds.height)
             #endif
             return
         }
         #if DEBUG
+        NSLog("[BuildKeyboardTrace] request reason=%@ path=immediate deltaSinceFirstCode=%.2fms bounds=%.0fx%.0f buttons=%d", reason, _reqDelta, bounds.width, bounds.height, allKeyButtons.count)
         pendingBuildReason = reason
         #endif
         buildKeyboard()
@@ -544,7 +579,8 @@ class KeyboardLayoutView: UIView {
         Self.buildSequence += 1
         let _bkSeq = Self.buildSequence
         let _bkStart = CACurrentMediaTime()
-        NSLog("[BuildKeyboard] #%d reason=%@ start page=%@ lang=%@", _bkSeq, pendingBuildReason, String(describing: currentPage), String(describing: currentLanguage))
+        let _bkDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+        NSLog("[BuildKeyboard] #%d reason=%@ start page=%@ lang=%@ deltaSinceFirstCode=%.2fms", _bkSeq, pendingBuildReason, String(describing: currentPage), String(describing: currentLanguage), _bkDelta)
         pendingBuildReason = "unknown"
         #endif
 
@@ -723,7 +759,25 @@ class KeyboardLayoutView: UIView {
 
         #if DEBUG
         let _bkEnd = CACurrentMediaTime()
-        NSLog("[BuildKeyboard] #%d end duration=%.2fms buttons=%d showNumberRow=%d showPeriodKey=%d additionalLangs=%d paired=%@", _bkSeq, (_bkEnd - _bkStart) * 1000, allKeyButtons.count, showNumberRow ? 1 : 0, showPeriodKey ? 1 : 0, additionalLanguagesEnabled ? 1 : 0, String(describing: pairedLanguage))
+        let _bkEndDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+        NSLog("[BuildKeyboard] #%d end duration=%.2fms deltaSinceFirstCode=%.2fms buttons=%d showNumberRow=%d showPeriodKey=%d additionalLangs=%d paired=%@", _bkSeq, (_bkEnd - _bkStart) * 1000, _bkEndDelta, allKeyButtons.count, showNumberRow ? 1 : 0, showPeriodKey ? 1 : 0, additionalLanguagesEnabled ? 1 : 0, String(describing: pairedLanguage))
+        // firstButtonsReady — 프로세스 내 최초 buttons > 0 기록
+        if !hasLoggedFirstButtonsReady, !allKeyButtons.isEmpty {
+            hasLoggedFirstButtonsReady = true
+            let _fbr = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+            NSLog("[ActivationTrace] firstButtonsReady buildSeq=%d deltaSinceFirstCode=%.2fms buttons=%d containerSubviews=%d", _bkSeq, _fbr, allKeyButtons.count, keyboardContainer.subviews.count)
+        }
+        // First usable keyboard marker — 프로세스당 1회만
+        // isOwnedByActiveController를 요구하지 않음: viewDidAppear 전에 build가 끝날 수 있음
+        if !Self.firstUsableLogged,
+           !allKeyButtons.isEmpty,
+           bounds.width > 0,
+           keyboardContainer.subviews.count > 0,
+           !isInStartupBatch {
+            Self.firstUsableLogged = true
+            let _fuk = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+            NSLog("[ActivationTrace] firstUsableKeyboard buildSeq=%d deltaSinceFirstCode=%.2fms buttons=%d size=%.0fx%.0f containerSubviews=%d", _bkSeq, _fuk, allKeyButtons.count, bounds.width, bounds.height, keyboardContainer.subviews.count)
+        }
         #endif
         onHeightChangeNeeded?()
     }
@@ -2430,19 +2484,42 @@ class KeyboardLayoutView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
 
+        #if DEBUG
+        if !hasLoggedFirstLayout {
+            hasLoggedFirstLayout = true
+            let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+            NSLog("[ActivationTrace] firstLayoutSubviews deltaSinceFirstCode=%.2fms size=%.0fx%.0f buttons=%d", _d, bounds.width, bounds.height, allKeyButtons.count)
+        }
+        if !hasLoggedFirstNonZeroBounds, bounds.width > 0, bounds.height > 0 {
+            hasLoggedFirstNonZeroBounds = true
+            let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+            NSLog("[ActivationTrace] firstNonZeroBounds deltaSinceFirstCode=%.2fms size=%.0fx%.0f buttons=%d", _d, bounds.width, bounds.height, allKeyButtons.count)
+        }
+        #endif
+
+        // ── First visible candidate: window + non-zero bounds 확인 시 controller에게 early activation 기회 ──
+        if !hasNotifiedFirstVisibleCandidate,
+           window != nil,
+           bounds.width > 0,
+           bounds.height > 0 {
+            hasNotifiedFirstVisibleCandidate = true
+            onFirstVisibleCandidate?()
+        }
+
         // ── Deferred build consumption: size 준비 후, active instance에서만, stale 아닌 경우만 소비 ──
         if pendingBuildUntilSized, !shouldDeferBuildUntilSized {
+            #if DEBUG
+            let _cdDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+            #endif
             if !isOwnedByActiveController {
                 #if DEBUG
-                NSLog("[InstanceGate] consumeDeferred skipped inactive reason=%@", deferredBuildReason)
+                NSLog("[BuildKeyboardTrace] consumeDeferred path=skipInactive reason=%@ deltaSinceFirstCode=%.2fms", deferredBuildReason, _cdDelta)
                 #endif
             } else if !allKeyButtons.isEmpty {
                 // Fix B+C: 이미 full build가 완료된 상태(buttons > 0)라면
                 // width 0 시점에 적재된 deferred는 stale — 폐기
-                // 특히 setLanguage.initialOrPageMismatch는 startup 초기에만 유효하며
-                // 이후 async batch commit 등으로 최신 build가 끝났다면 중복 rebuild 방지
                 #if DEBUG
-                NSLog("[BuildKeyboard] consumeDeferred skipped stale reason=%@ buttons=%d", deferredBuildReason, allKeyButtons.count)
+                NSLog("[BuildKeyboardTrace] consumeDeferred path=skipStale reason=%@ deltaSinceFirstCode=%.2fms buttons=%d", deferredBuildReason, _cdDelta, allKeyButtons.count)
                 #endif
                 pendingBuildUntilSized = false
                 deferredBuildReason = "unknown"
@@ -2450,7 +2527,7 @@ class KeyboardLayoutView: UIView {
                 pendingBuildUntilSized = false
                 let reason = "consumeDeferred.\(deferredBuildReason)"
                 #if DEBUG
-                NSLog("[BuildKeyboard] consumeDeferred reason=%@ active=true width=%.2f height=%.2f", deferredBuildReason, bounds.width, bounds.height)
+                NSLog("[BuildKeyboardTrace] consumeDeferred path=execute reason=%@ deltaSinceFirstCode=%.2fms width=%.2f height=%.2f", deferredBuildReason, _cdDelta, bounds.width, bounds.height)
                 #endif
                 requestBuildKeyboard(reason: reason)
             }

@@ -142,6 +142,7 @@
 		CBB891EE6B9C733F93B91934 /* DailyUsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2A622D20B52EE0DCC0DC9AB /* DailyUsageData.swift */; };
 		CE77B7E5592A2F8E4B218580 /* HistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D75782C8A72C172A085B211 /* HistoryManager.swift */; };
 		CEBA3DA2535B6F0ADC426471 /* CoreTextCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C039C001B7AFE628CF7CC54B /* CoreTextCacheManager.swift */; };
+		CEDB0001AAAA000100000001 /* ActivationTraceLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDB0001AAAA000100000002 /* ActivationTraceLogger.swift */; };
 		CF68826EEB768BD5D33E38AA /* DisplayLinkProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC44F07A200EC8DFD25C1995 /* DisplayLinkProxy.swift */; };
 		D042A39B8BE3077950F9F5A1 /* QuickNoteEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902E4BA4B1CF7C71CAD972E4 /* QuickNoteEditView.swift */; };
 		D0C66973177BCE2511C50821 /* ComposeHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA87B6ED14B23A63279637AF /* ComposeHistoryManager.swift */; };
@@ -311,6 +312,7 @@
 		BF1D1F3F9CA9F69A67054C25 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		C00A4653E8C2DFF216509EB2 /* SuccessCheckAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessCheckAnimationView.swift; sourceTree = "<group>"; };
 		C039C001B7AFE628CF7CC54B /* CoreTextCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreTextCacheManager.swift; sourceTree = "<group>"; };
+		CEDB0001AAAA000100000002 /* ActivationTraceLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationTraceLogger.swift; sourceTree = "<group>"; };
 		C2CDFC8B502F230107E052E7 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		C44F5678D726D81DAAADFFDF /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		C5630C7ED31C5E0419029FD7 /* TextInputHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputHandler.swift; sourceTree = "<group>"; };
