@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 
 final class PredictionEngine {
     private var trigrams: [String: [(String, Int)]] = [:]
@@ -22,11 +23,44 @@ final class PredictionEngine {
 
         loadQueue.async { [weak self] in
             guard let self = self else { return }
+            #if DEBUG
+            let _plStart = CACurrentMediaTime()
+            #endif
 
             let fileName = "ngram_\(language)"
-            guard let url = Bundle(for: type(of: self)).url(forResource: fileName, withExtension: "json"),
-                  let data = try? Data(contentsOf: url),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            guard let url = Bundle(for: type(of: self)).url(forResource: fileName, withExtension: "json") else {
+                DispatchQueue.main.async {
+                    self.trigrams = [:]
+                    self.bigrams = [:]
+                    self.unigrams = []
+                    self.loadedLanguage = nil
+                    self.isLoading = false
+                    #if DEBUG
+                    NSLog("[PredictionLoad] fileNotFound lang=%@ duration=%.2fms", language, (CACurrentMediaTime() - _plStart) * 1000)
+                    #endif
+                    completion?()
+                }
+                return
+            }
+            #if DEBUG
+            let _plFileStart = CACurrentMediaTime()
+            #endif
+            guard let data = try? Data(contentsOf: url) else {
+                DispatchQueue.main.async {
+                    self.trigrams = [:]
+                    self.bigrams = [:]
+                    self.unigrams = []
+                    self.loadedLanguage = nil
+                    self.isLoading = false
+                    completion?()
+                }
+                return
+            }
+            #if DEBUG
+            let _plParseStart = CACurrentMediaTime()
+            NSLog("[PredictionLoad] fileRead = %.2fms size=%d", (_plParseStart - _plFileStart) * 1000, data.count)
+            #endif
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 DispatchQueue.main.async {
                     self.trigrams = [:]
                     self.bigrams = [:]
@@ -73,6 +107,11 @@ final class PredictionEngine {
                     return (word, freq)
                 }
             }
+
+            #if DEBUG
+            let _plAssignStart = CACurrentMediaTime()
+            NSLog("[PredictionLoad] parse = %.2fms trigrams=%d bigrams=%d unigrams=%d", (_plAssignStart - _plParseStart) * 1000, newTrigrams.count, newBigrams.count, newUnigrams.count)
+            #endif
 
             // 메인 스레드에서 데이터 교체
             DispatchQueue.main.async {

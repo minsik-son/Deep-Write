@@ -1,7 +1,16 @@
 import UIKit
 
 final class AutocorrectEngine {
-    private let textChecker = UITextChecker()
+    private lazy var textChecker: UITextChecker = {
+        #if DEBUG
+        let _t = CACurrentMediaTime()
+        #endif
+        let tc = UITextChecker()
+        #if DEBUG
+        NSLog("[SuggestionInit] textChecker.create = %.2fms", (CACurrentMediaTime() - _t) * 1000)
+        #endif
+        return tc
+    }()
 
     func textCheckerLanguage(for language: KeyboardLanguage) -> String {
         switch language {

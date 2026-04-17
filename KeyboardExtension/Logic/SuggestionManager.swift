@@ -1,8 +1,30 @@
 import Foundation
+#if DEBUG
+import QuartzCore
+#endif
 
 final class SuggestionManager {
-    private let autocorrectEngine = AutocorrectEngine()
-    private let predictionEngine = PredictionEngine()
+    private lazy var autocorrectEngine: AutocorrectEngine = {
+        #if DEBUG
+        let _t = CACurrentMediaTime()
+        #endif
+        let engine = AutocorrectEngine()
+        #if DEBUG
+        NSLog("[SuggestionInit] autocorrect.init = %.2fms", (CACurrentMediaTime() - _t) * 1000)
+        #endif
+        return engine
+    }()
+
+    private lazy var predictionEngine: PredictionEngine = {
+        #if DEBUG
+        let _t = CACurrentMediaTime()
+        #endif
+        let engine = PredictionEngine()
+        #if DEBUG
+        NSLog("[SuggestionInit] prediction.init = %.2fms", (CACurrentMediaTime() - _t) * 1000)
+        #endif
+        return engine
+    }()
 
     /// Phase 3: KeyboardLayoutView에서 PredictionEngine 접근용 getter
     var predictionEngineRef: PredictionEngine { return predictionEngine }

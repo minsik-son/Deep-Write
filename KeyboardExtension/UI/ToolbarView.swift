@@ -133,10 +133,10 @@ class ToolbarView: UIView {
         dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
-            toolbarStack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            toolbarStack.topAnchor.constraint(equalTo: topAnchor, constant: 3),
             toolbarStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             toolbarStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            toolbarStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            toolbarStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -3),
 
             statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             statusLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -167,8 +167,28 @@ class ToolbarView: UIView {
             suggestionChipStack.heightAnchor.constraint(equalTo: suggestionScrollView.heightAnchor),
         ])
 
-        // Build all toolbar buttons
-        buildToolbarButtons()
+        // Toolbar buttons — defer until size is ready to avoid width-0 constraint conflicts
+        if bounds.width > 0 {
+            buildToolbarButtons()
+        } else {
+            pendingToolbarBuild = true
+            #if DEBUG
+            NSLog("[ToolbarRebuild] deferred width=%.2f height=%.2f", bounds.width, bounds.height)
+            #endif
+        }
+    }
+
+    private var pendingToolbarBuild = false
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if pendingToolbarBuild, bounds.width > 0 {
+            pendingToolbarBuild = false
+            #if DEBUG
+            NSLog("[ToolbarRebuild] consumeDeferred width=%.2f height=%.2f", bounds.width, bounds.height)
+            #endif
+            buildToolbarButtons()
+        }
     }
 
     // MARK: - Build Toolbar Buttons

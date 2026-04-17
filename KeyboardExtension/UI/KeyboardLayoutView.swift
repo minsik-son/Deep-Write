@@ -3725,6 +3725,6 @@ class KeyboardLayoutView: UIView {
     func clearReturnKeyOverride() {
         returnKeyModeOverride = nil
         returnKeyHasText = true
-        buildKeyboard()
+        requestBuildKeyboard(reason: "clearReturnKeyOverride")
     }
 }

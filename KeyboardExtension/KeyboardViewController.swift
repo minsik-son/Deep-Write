@@ -289,8 +289,9 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let _cs9 = CACurrentMediaTime()
         #endif
-        // Phase 3: connect PredictionEngine
-        keyboardLayoutView.predictionEngine = suggestionManager.predictionEngineRef
+        // Phase 3: suggestion subsystem — deferred to first frame to avoid blocking keyboard usability
+        // keyboardLayoutView.predictionEngine will be nil until prewarm completes;
+        // KeyboardLayoutView handles nil predictionEngine gracefully (returns empty probabilities).
         #if DEBUG
         let _cs10 = CACurrentMediaTime()
         NSLog("[ColdStart][viewDidLoad] migrateClipboardHistoryIfNeeded = %.2fms", (_cs1 - _cs0) * 1000)
@@ -302,8 +303,7 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ColdStart][viewDidLoad] switchMode = %.2fms", (_cs7 - _cs6) * 1000)
         NSLog("[ColdStart][viewDidLoad] restoreState = %.2fms", (_cs8 - _cs7) * 1000)
         NSLog("[ColdStart][viewDidLoad] loadTouchLearningData = %.2fms", (_cs9 - _cs8) * 1000)
-        NSLog("[ColdStart][viewDidLoad] predictionEngine = %.2fms", (_cs10 - _cs9) * 1000)
-        NSLog("[ColdStart][viewDidLoad] total = %.2fms, Memory: %.2f MB", (_cs10 - _cs0) * 1000, self.currentMemoryMB())
+        NSLog("[ColdStart][viewDidLoad] total = %.2fms (suggestion deferred), Memory: %.2f MB", (_cs10 - _cs0) * 1000, self.currentMemoryMB())
         #endif
 
         // 저전력 모드 변경 감지
@@ -511,6 +511,21 @@ class KeyboardViewController: UIInputViewController {
         // Dictation session recovery: 메인앱에서 돌아왔을 때 active session 복구
         if !isShowingDictation {
             tryRecoverDictationSession()
+        }
+
+        // ── Suggestion subsystem prewarm (first-frame 이후, 비차단) ──
+        // viewDidLoad에서 eager init을 제거했으므로 여기서 연결.
+        // predictionEngine이 nil이면 기본 입력은 정상, suggestion만 비어 있음.
+        if keyboardLayoutView.predictionEngine == nil {
+            #if DEBUG
+            let _spStart = CACurrentMediaTime()
+            NSLog("[SuggestionInit] prewarm START — first-frame-after")
+            #endif
+            let engine = suggestionManager.predictionEngineRef
+            keyboardLayoutView.predictionEngine = engine
+            #if DEBUG
+            NSLog("[SuggestionInit] prewarm END = %.2fms", (CACurrentMediaTime() - _spStart) * 1000)
+            #endif
         }
     }
 
@@ -971,12 +986,19 @@ class KeyboardViewController: UIInputViewController {
         keyboardTopToToolbarConstraint?.isActive = true
 
         // Toast — floating on top of everything
+        // centerX/leading/trailing priority를 낮춰 width-0 startup 시 constraint conflict 방지
         inputView.addSubview(toastLabel)
+        let toastCenterX = toastLabel.centerXAnchor.constraint(equalTo: inputView.centerXAnchor)
+        toastCenterX.priority = .defaultHigh
+        let toastLeading = toastLabel.leadingAnchor.constraint(greaterThanOrEqualTo: inputView.leadingAnchor, constant: 24)
+        toastLeading.priority = .defaultHigh
+        let toastTrailing = toastLabel.trailingAnchor.constraint(lessThanOrEqualTo: inputView.trailingAnchor, constant: -24)
+        toastTrailing.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            toastLabel.centerXAnchor.constraint(equalTo: inputView.centerXAnchor),
+            toastCenterX,
             toastLabel.topAnchor.constraint(equalTo: inputView.topAnchor, constant: 6),
-            toastLabel.leadingAnchor.constraint(greaterThanOrEqualTo: inputView.leadingAnchor, constant: 24),
-            toastLabel.trailingAnchor.constraint(lessThanOrEqualTo: inputView.trailingAnchor, constant: -24),
+            toastLeading,
+            toastTrailing,
             toastLabel.heightAnchor.constraint(equalToConstant: 32),
         ])
     }
