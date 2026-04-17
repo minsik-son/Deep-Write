@@ -892,7 +892,9 @@ class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        updateKeyboardAppearance(caller: "textDidChange")
+        // textDidChange는 텍스트 컨텍스트만 변경 — 키보드 구조(버튼/행)는 불변
+        // 외형(다크모드/테마)만 갱신하고 full rebuild는 생략
+        updateKeyboardAppearance(rebuildKeyboard: false, caller: "textDidChange")
         updateReturnKeyAppearance()
 
         // 교정/번역 모드: 호스트 앱 텍스트 필드가 비워지면 입력창 초기화

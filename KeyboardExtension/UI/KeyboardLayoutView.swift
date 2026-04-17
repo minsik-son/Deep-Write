@@ -2472,7 +2472,16 @@ class KeyboardLayoutView: UIView {
         }
 
         if rebuildKeyboard {
-            requestBuildKeyboard(reason: "updateAppearance.finalize")
+            // 이미 버튼이 존재하고 구조 변화 없으면 full rebuild 불필요
+            // 외형(색/그라데이션/패턴)만 변경된 경우 buildKeyboard로 buttons를 재생성할 이유 없음
+            if !allKeyButtons.isEmpty {
+                #if DEBUG
+                let _skipDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
+                NSLog("[BuildKeyboardTrace] skip reason=updateAppearance.finalize cause=noStructuralChange deltaSinceFirstCode=%.2fms buttons=%d", _skipDelta, allKeyButtons.count)
+                #endif
+            } else {
+                requestBuildKeyboard(reason: "updateAppearance.finalize")
+            }
         }
         #if DEBUG
         let _uaEnd = CACurrentMediaTime()
