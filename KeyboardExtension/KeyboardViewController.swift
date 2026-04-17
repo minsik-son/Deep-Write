@@ -1270,6 +1270,13 @@ class KeyboardViewController: UIInputViewController {
         translationInputView.onHeightChanged = { [weak self] newHeight in
             self?.updateInputHeight(newHeight, isTranslation: true)
         }
+        // 툴바 내부 커서 — 탭해서 커서 위치 이동 (QuickNote 패턴 복제)
+        translationInputView.isCaretTapEnabled = true
+        translationInputView.onCaretTap = { [weak self] index in
+            guard let self = self else { return }
+            self.modeTextInputHandler.moveCursor(to: index)
+            self.translationInputView.setCursorIndex(self.modeTextInputHandler.cursorIndex)
+        }
         translationLanguageBar.onSourceTap = { [weak self] in
             self?.showLanguagePicker(initialTab: .source)
         }
@@ -1293,6 +1300,13 @@ class KeyboardViewController: UIInputViewController {
         }
         correctionInputView.onHeightChanged = { [weak self] newHeight in
             self?.updateInputHeight(newHeight, isTranslation: false)
+        }
+        // 툴바 내부 커서 — 탭해서 커서 위치 이동 (QuickNote 패턴 복제)
+        correctionInputView.isCaretTapEnabled = true
+        correctionInputView.onCaretTap = { [weak self] index in
+            guard let self = self else { return }
+            self.modeTextInputHandler.moveCursor(to: index)
+            self.correctionInputView.setCursorIndex(self.modeTextInputHandler.cursorIndex)
         }
         correctionLanguageBar.onLanguageTap = { [weak self] in
             self?.showCorrectionLanguagePicker()
@@ -2768,6 +2782,12 @@ class KeyboardViewController: UIInputViewController {
             return
         }
 
+        // 툴바 내부 입력창이 활성 타겟일 때는 내부 버퍼 커서 이동
+        if currentMode == .translationMode || currentMode == .correctionMode {
+            moveModeCursor(horizontal: horizontal, vertical: vertical)
+            return
+        }
+
         if horizontal != 0 {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: horizontal)
         }
@@ -2821,6 +2841,57 @@ class KeyboardViewController: UIInputViewController {
                 newIndex += targetCol
                 handler.moveCursor(to: newIndex)
                 quickNoteEditView?.setCursorIndex(handler.cursorIndex)
+            }
+        }
+    }
+
+    /// Translation / Correction 내부 cursor 이동 — 스페이스바 트랙패드 대응.
+    /// moveQuickNoteCursor 와 동일 알고리즘, modeTextInputHandler + 현재 모드의 뷰 사용.
+    private func moveModeCursor(horizontal: Int, vertical: Int) {
+        let view: TranslationInputView
+        switch currentMode {
+        case .translationMode: view = translationInputView
+        case .correctionMode:  view = correctionInputView
+        default: return
+        }
+
+        let handler = modeTextInputHandler
+
+        if horizontal != 0 {
+            handler.moveCursor(to: handler.cursorIndex + horizontal)
+            view.setCursorIndex(handler.cursorIndex)
+        }
+
+        if vertical != 0 {
+            let text = handler.fullText
+            let lines = text.components(separatedBy: "\n")
+            var charCount = 0
+            var currentLine = 0
+            var currentCol = 0
+            for (i, line) in lines.enumerated() {
+                let lineLen = line.count + (i < lines.count - 1 ? 1 : 0)
+                if charCount + lineLen > handler.cursorIndex {
+                    currentLine = i
+                    currentCol = handler.cursorIndex - charCount
+                    break
+                }
+                charCount += lineLen
+                if i == lines.count - 1 {
+                    currentLine = i
+                    currentCol = handler.cursorIndex - charCount + lineLen
+                }
+            }
+
+            let targetLine = max(0, min(currentLine + vertical, lines.count - 1))
+            if targetLine != currentLine {
+                let targetCol = min(currentCol, lines[targetLine].count)
+                var newIndex = 0
+                for i in 0..<targetLine {
+                    newIndex += lines[i].count + 1
+                }
+                newIndex += targetCol
+                handler.moveCursor(to: newIndex)
+                view.setCursorIndex(handler.cursorIndex)
             }
         }
     }
@@ -3300,11 +3371,13 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         switch currentMode {
         case .correctionMode:
             correctionInputView.setDisplayText(displayText)
+            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
             correctionManager.requestCorrection(text: displayText)
         case .phraseInputMode:
             phraseInputView.setDisplayText(displayText)
         case .translationMode:
             translationInputView.setDisplayText(displayText)
+            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
             translationManager.requestTranslation(text: displayText)
         case .quickNoteMode:
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
@@ -3328,11 +3401,13 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         switch currentMode {
         case .correctionMode:
             correctionInputView.setDisplayText(displayText)
+            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
             correctionManager.requestCorrection(text: displayText)
         case .phraseInputMode:
             phraseInputView.setDisplayText(displayText)
         case .translationMode:
             translationInputView.setDisplayText(displayText)
+            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
             translationManager.requestTranslation(text: displayText)
         case .quickNoteMode:
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
