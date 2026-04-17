@@ -3371,21 +3371,20 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         switch currentMode {
         case .correctionMode:
             correctionInputView.setDisplayText(displayText)
-            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
+            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex + modeTextInputHandler.composingText.count)
             correctionManager.requestCorrection(text: displayText)
         case .phraseInputMode:
             phraseInputView.setDisplayText(displayText)
         case .translationMode:
             translationInputView.setDisplayText(displayText)
-            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
+            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex + modeTextInputHandler.composingText.count)
             translationManager.requestTranslation(text: displayText)
         case .quickNoteMode:
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
-                // v2: cursor sync
-                if let ci = quickNoteTextInputHandler?.cursorIndex {
-                    quickNoteEditView?.setCursorIndex(ci)
+                if let qh = quickNoteTextInputHandler {
+                    quickNoteEditView?.setCursorIndex(qh.cursorIndex + qh.composingText.count)
                 }
             }
         case .chatReplyMode:
@@ -3401,21 +3400,20 @@ extension KeyboardViewController: TextInputHandlerDelegate {
         switch currentMode {
         case .correctionMode:
             correctionInputView.setDisplayText(displayText)
-            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
+            correctionInputView.setCursorIndex(modeTextInputHandler.cursorIndex + modeTextInputHandler.composingText.count)
             correctionManager.requestCorrection(text: displayText)
         case .phraseInputMode:
             phraseInputView.setDisplayText(displayText)
         case .translationMode:
             translationInputView.setDisplayText(displayText)
-            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex)
+            translationInputView.setCursorIndex(modeTextInputHandler.cursorIndex + modeTextInputHandler.composingText.count)
             translationManager.requestTranslation(text: displayText)
         case .quickNoteMode:
             if handler === quickNoteTextInputHandler, case .editing = quickNoteSubState {
                 quickNoteEditView?.setDisplayText(displayText)
                 quickNoteEditView?.updateCharCount(displayText.count)
-                // v2: cursor sync
-                if let ci = quickNoteTextInputHandler?.cursorIndex {
-                    quickNoteEditView?.setCursorIndex(ci)
+                if let qh = quickNoteTextInputHandler {
+                    quickNoteEditView?.setCursorIndex(qh.cursorIndex + qh.composingText.count)
                 }
             }
         case .chatReplyMode:
