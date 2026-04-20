@@ -233,6 +233,7 @@ class KeyboardViewController: UIInputViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         CoreTextCacheManager.activate()  // Phase 4: viewDidLoad보다 이전에 활성화
+        BlackboxAnomalyLogger.shared.record("init(nibName) self=\(Unmanaged.passUnretained(self).toOpaque())")
         #if DEBUG
         _ = Self.firstCodeEntryTime // static initializer 강제 트리거
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
@@ -243,6 +244,7 @@ class KeyboardViewController: UIInputViewController {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         CoreTextCacheManager.activate()
+        BlackboxAnomalyLogger.shared.record("init(coder) self=\(Unmanaged.passUnretained(self).toOpaque())")
         #if DEBUG
         _ = Self.firstCodeEntryTime
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
@@ -309,6 +311,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        BlackboxAnomalyLogger.shared.record("viewDidLoad START self=\(Unmanaged.passUnretained(self).toOpaque())")
         NSLog("══════════════════════════════════════")
         NSLog("═══  Keyboard Loaded  ═══")
         NSLog("══════════════════════════════════════")
@@ -479,6 +482,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        BlackboxAnomalyLogger.shared.record("viewWillAppear self=\(Unmanaged.passUnretained(self).toOpaque())")
         #if DEBUG
         NSLog("[ActivationTrace] viewWillAppear START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
@@ -602,6 +606,25 @@ class KeyboardViewController: UIInputViewController {
         }
         Self.activeVisibleController = self
         keyboardLayoutView.isOwnedByActiveController = true
+
+        // ── Winner self-heal: blank keyboard shell 방지 ──
+        // 다른 VC가 build를 완료했지만 이 VC가 winner로 표시된 경우,
+        // 키가 비어 있으면 즉시 1회 rebuild로 self-heal
+        if keyboardLayoutView.allKeyButtons.isEmpty || keyboardLayoutView.keyboardContainer.subviews.isEmpty {
+            #if DEBUG
+            NSLog("[OwnershipTakeover] self-heal needed self=%@ buttons=%d containerSubs=%d bounds=%@ pendingDeferred=%d",
+                  String(describing: Unmanaged.passUnretained(self).toOpaque()),
+                  keyboardLayoutView.allKeyButtons.count,
+                  keyboardLayoutView.keyboardContainer.subviews.count,
+                  String(describing: keyboardLayoutView.bounds),
+                  keyboardLayoutView.pendingBuildUntilSizedForDiagnostics ? 1 : 0)
+            #endif
+            BlackboxAnomalyLogger.shared.record("ownershipTakeover.selfHeal buttons=\(keyboardLayoutView.allKeyButtons.count) containerSubs=\(keyboardLayoutView.keyboardContainer.subviews.count)")
+            keyboardLayoutView.setNeedsLayout()
+            keyboardLayoutView.requestBuildKeyboard(reason: "viewDidAppear.ownershipTakeover")
+        }
+
+        BlackboxAnomalyLogger.shared.record("viewDidAppear active=true self=\(Unmanaged.passUnretained(self).toOpaque()) buttons=\(keyboardLayoutView.allKeyButtons.count)")
         #if DEBUG
         NSLog("[ActivationTrace] viewDidAppear self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         NSLog("[InstanceGate] didAppear active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
@@ -614,6 +637,32 @@ class KeyboardViewController: UIInputViewController {
         }
         CATransaction.commit()
         #endif
+
+        // ── Blank keyboard anomaly 체크 (첫 frame 직후) ──
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            BlackboxAnomalyLogger.shared.record("anomalyCheck buttons=\(self.keyboardLayoutView.allKeyButtons.count) containerSubs=\(self.keyboardLayoutView.keyboardContainer.subviews.count) toolbarHidden=\(self.toolbarView.isHidden) klvHidden=\(self.keyboardLayoutView.isHidden) mode=\(self.currentMode)")
+            BlackboxAnomalyLogger.shared.checkAndFlushIfAnomaly(
+                allKeyButtonsCount: self.keyboardLayoutView.allKeyButtons.count,
+                containerSubviewsCount: self.keyboardLayoutView.keyboardContainer.subviews.count,
+                toolbarHidden: self.toolbarView.isHidden,
+                keyboardLayoutHidden: self.keyboardLayoutView.isHidden,
+                snapshot: [
+                    "self": String(describing: Unmanaged.passUnretained(self).toOpaque()),
+                    "mode": String(describing: self.currentMode),
+                    "page": String(describing: self.keyboardLayoutView.currentPage),
+                    "language": String(describing: self.keyboardLayoutView.getCurrentLanguage()),
+                    "pairedLanguage": String(describing: self.keyboardLayoutView.pairedLanguage),
+                    "additionalLangs": String(self.keyboardLayoutView.additionalLanguagesEnabled),
+                    "allKeyButtons": String(self.keyboardLayoutView.allKeyButtons.count),
+                    "containerSubviews": String(self.keyboardLayoutView.keyboardContainer.subviews.count),
+                    "bounds": String(describing: self.keyboardLayoutView.bounds),
+                    "toolbarHidden": String(self.toolbarView.isHidden),
+                    "klvHidden": String(self.keyboardLayoutView.isHidden),
+                    "isActiveInstance": String(self.isActiveInstance),
+                ]
+            )
+        }
 
         checkMemorySafetyNet()  // Phase 5: 메모리 안전망
 

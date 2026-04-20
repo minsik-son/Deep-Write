@@ -112,8 +112,9 @@ class KeyboardLayoutView: UIView {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        #if DEBUG
         let attached = (window != nil) ? 1 : 0
+        BlackboxAnomalyLogger.shared.record("KLV.didMoveToWindow attached=\(attached) buttons=\(allKeyButtons.count)")
+        #if DEBUG
         let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] KLV.didMoveToWindow attached=%d deltaSinceFirstCode=%.2fms", attached, _d)
         #endif
@@ -374,13 +375,13 @@ class KeyboardLayoutView: UIView {
 
     // MARK: - Container
 
-    private let keyboardContainer: UIView = {
+    private(set) var keyboardContainer: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
 
-    private var allKeyButtons: [UIButton] = []
+    private(set) var allKeyButtons: [UIButton] = []
     private var isRebuilding = false
 
     // MARK: - Init
@@ -502,6 +503,8 @@ class KeyboardLayoutView: UIView {
 
     // ── Size-ready deferred build ──
     private var pendingBuildUntilSized = false
+    /// 진단 전용 read-only accessor — 제어 흐름에 사용 금지
+    var pendingBuildUntilSizedForDiagnostics: Bool { pendingBuildUntilSized }
     private var deferredBuildReason: String = "unknown"
 
     private var shouldDeferBuildUntilSized: Bool {
@@ -583,6 +586,7 @@ class KeyboardLayoutView: UIView {
 
     private func buildKeyboard() {
         guard !isTrackpadMode else { return }  // 트랙패드 중 재빌드 방지
+        BlackboxAnomalyLogger.shared.record("buildKeyboard START bounds=\(bounds.width)x\(bounds.height)")
         #if DEBUG
         Self.buildSequence += 1
         let _bkSeq = Self.buildSequence
@@ -787,6 +791,7 @@ class KeyboardLayoutView: UIView {
             NSLog("[ActivationTrace] firstUsableKeyboard buildSeq=%d deltaSinceFirstCode=%.2fms buttons=%d size=%.0fx%.0f containerSubviews=%d", _bkSeq, _fuk, allKeyButtons.count, bounds.width, bounds.height, keyboardContainer.subviews.count)
         }
         #endif
+        BlackboxAnomalyLogger.shared.record("buildKeyboard END buttons=\(allKeyButtons.count) containerSubs=\(keyboardContainer.subviews.count)")
         onHeightChangeNeeded?()
     }
 
