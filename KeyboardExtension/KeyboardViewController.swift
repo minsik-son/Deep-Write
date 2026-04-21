@@ -610,7 +610,20 @@ class KeyboardViewController: UIInputViewController {
         // ── Winner self-heal: blank keyboard shell 방지 ──
         // 다른 VC가 build를 완료했지만 이 VC가 winner로 표시된 경우,
         // 키가 비어 있으면 즉시 1회 rebuild로 self-heal
-        if keyboardLayoutView.allKeyButtons.isEmpty || keyboardLayoutView.keyboardContainer.subviews.isEmpty {
+        var needsSelfHeal = keyboardLayoutView.allKeyButtons.isEmpty || keyboardLayoutView.keyboardContainer.subviews.isEmpty
+        #if DEBUG
+        // ── Fault injection: DEBUG 전용 강제 self-heal 트리거 ──
+        let debugForceKey = "debug_force_blank_keyboard_takeover_once"
+        let debugDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        if debugDefaults?.bool(forKey: debugForceKey) == true {
+            NSLog("[OwnershipTakeoverTest] armed=true")
+            NSLog("[OwnershipTakeoverTest] trigger self-heal injection")
+            needsSelfHeal = true
+            debugDefaults?.set(false, forKey: debugForceKey)
+            NSLog("[OwnershipTakeoverTest] autoReset=true")
+        }
+        #endif
+        if needsSelfHeal {
             #if DEBUG
             NSLog("[OwnershipTakeover] self-heal needed self=%@ buttons=%d containerSubs=%d bounds=%@ pendingDeferred=%d",
                   String(describing: Unmanaged.passUnretained(self).toOpaque()),
