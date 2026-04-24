@@ -206,13 +206,18 @@ class KeyboardLayoutView: UIView {
     private var backspaceRepeatTimer: Timer?
 
     // Space bar trackpad cursor mode
-    private var isTrackpadMode = false
+    private(set) var isTrackpadMode = false
+    /// 외부에서 트랙패드 상태를 읽기 위한 accessor
+    var isTrackpadModeActive: Bool { isTrackpadMode }
     private var trackpadLastX: CGFloat = 0
     private var trackpadLastY: CGFloat = 0
     private var trackpadAccumulator: CGFloat = 0
     private var trackpadAccumulatorY: CGFloat = 0
-    private let trackpadSensitivity: CGFloat = 8   // points per character move
+    private let trackpadSensitivity: CGFloat = 8   // points per character move (base)
     private let trackpadSensitivityY: CGFloat = 20  // points per line move (higher = slower)
+    private let maxHorizontalStepPerFrame: Int = 3  // 프레임당 최대 수평 이동 문자 수
+    private var lastTrackpadHapticTime: CFTimeInterval = 0
+    private let trackpadHapticMinInterval: CFTimeInterval = 0.04  // 40ms throttle
     private let hapticGenerator = UIImpactFeedbackGenerator(style: .light)
 
     // Axis locking for trackpad
@@ -498,6 +503,7 @@ class KeyboardLayoutView: UIView {
 
     #if DEBUG
     private static var buildSequence: Int = 0
+    private static var updateAppearanceLogCount: Int = 0
     private var pendingBuildReason: String = "unknown"
     #endif
 
@@ -2153,23 +2159,25 @@ class KeyboardLayoutView: UIView {
         displayLink = CADisplayLink(target: self, selector: #selector(trackpadDisplayLinkFired))
         displayLink?.add(to: .main, forMode: .common)
 
-        // Hide all key labels/icons — keep blank key shapes only
+        applyTrackpadBlankVisuals()
+        onTrackpadModeChanged?(true)
+    }
+
+    /// 트랙패드 모드 동안 모든 key label/icon을 숨김 상태로 유지.
+    /// 반복 호출해도 안전. appearance update 후 재적용에도 사용.
+    private func applyTrackpadBlankVisuals() {
         for button in allKeyButtons {
             button.setTitle(nil, for: .normal)
             button.setImage(nil, for: .normal)
-            // Hide globe key's langLabel subview
             for sub in button.subviews where sub is UILabel {
                 sub.isHidden = true
             }
-            // Uniform blank key color
             if let theme = customTheme {
                 button.backgroundColor = theme.specialKeyBackground
             } else {
                 button.backgroundColor = isDark ? UIColor(white: 0.30, alpha: 1) : UIColor(white: 0.88, alpha: 1)
             }
         }
-
-        onTrackpadModeChanged?(true)
     }
 
     private func exitTrackpadMode() {
@@ -2188,38 +2196,40 @@ class KeyboardLayoutView: UIView {
     }
 
     @objc private func trackpadDisplayLinkFired() {
-        var moved = false
+        // ── 프레임당 1회 배치 적용: 수평/수직 합산 후 단일 onCursorMove 호출 ──
 
-        // X-axis
-        while trackpadAccumulator > trackpadSensitivity {
-            trackpadAccumulator -= trackpadSensitivity
-            onCursorMove?(1, 0)
-            moved = true
-        }
-        while trackpadAccumulator < -trackpadSensitivity {
-            trackpadAccumulator += trackpadSensitivity
-            onCursorMove?(-1, 0)
-            moved = true
+        // X-axis: 누적된 accumulator에서 이번 프레임의 step 계산
+        var stepX = 0
+        if abs(trackpadAccumulator) >= trackpadSensitivity {
+            // 누적량을 sensitivity로 나눠 step 산출, maxStep으로 clamp
+            let rawSteps = Int(trackpadAccumulator / trackpadSensitivity)
+            stepX = max(-maxHorizontalStepPerFrame, min(rawSteps, maxHorizontalStepPerFrame))
+            // 소비한 만큼만 차감 (나머지는 다음 프레임으로 carry)
+            trackpadAccumulator -= CGFloat(stepX) * trackpadSensitivity
         }
 
-        // Y-axis — max 1 line per threshold crossing, reset accumulator to prevent multi-line jumps
+        // Y-axis: 프레임당 최대 ±1 line
+        var stepY = 0
         if trackpadAccumulatorY > trackpadSensitivityY {
-            trackpadAccumulatorY = 0
-            onCursorMove?(0, 1)
-            moved = true
+            stepY = 1
+            trackpadAccumulatorY -= trackpadSensitivityY
         } else if trackpadAccumulatorY < -trackpadSensitivityY {
-            trackpadAccumulatorY = 0
-            onCursorMove?(0, -1)
-            moved = true
+            stepY = -1
+            trackpadAccumulatorY += trackpadSensitivityY
         }
 
-        if moved {
+        // 프레임당 단 1회 dispatch
+        if stepX != 0 || stepY != 0 {
+            onCursorMove?(stepX, stepY)
             triggerTrackpadHaptic()
         }
     }
 
     private func triggerTrackpadHaptic() {
         guard cachedHapticEnabled else { return }
+        let now = CACurrentMediaTime()
+        guard now - lastTrackpadHapticTime >= trackpadHapticMinInterval else { return }
+        lastTrackpadHapticTime = now
         selectionHaptic.selectionChanged()
     }
 
@@ -2496,10 +2506,18 @@ class KeyboardLayoutView: UIView {
                 requestBuildKeyboard(reason: "updateAppearance.finalize")
             }
         }
+        // 트랙패드 모드 중 appearance 갱신이 일어나도 blank visual 유지
+        if isTrackpadMode {
+            applyTrackpadBlankVisuals()
+        }
         #if DEBUG
-        let _uaEnd = CACurrentMediaTime()
-        let _themeId = customTheme?.id ?? "default"
-        NSLog("[ColdStart][KeyboardLayoutView.updateAppearance] total = %.2fms theme=%@ rebuild=%d pattern=%d rain=%d ripple=%d stardust=%d snowfall=%d cherry=%d", (_uaEnd - _uaStart) * 1000, _themeId, rebuildKeyboard ? 1 : 0, customTheme?.hasPattern == true ? 1 : 0, customTheme?.needsRainAnimation == true ? 1 : 0, customTheme?.needsRippleAnimation == true ? 1 : 0, customTheme?.needsStardustAnimation == true ? 1 : 0, customTheme?.needsSnowfallAnimation == true ? 1 : 0, customTheme?.needsCherryBlossomAnimation == true ? 1 : 0)
+        // startup 이후 반복 호출에서는 로그 생략 — 콘솔 rate-limit 방지
+        Self.updateAppearanceLogCount += 1
+        if Self.updateAppearanceLogCount <= 5 {
+            let _uaEnd = CACurrentMediaTime()
+            let _themeId = customTheme?.id ?? "default"
+            NSLog("[ColdStart][KeyboardLayoutView.updateAppearance] total = %.2fms theme=%@ rebuild=%d pattern=%d rain=%d ripple=%d stardust=%d snowfall=%d cherry=%d", (_uaEnd - _uaStart) * 1000, _themeId, rebuildKeyboard ? 1 : 0, customTheme?.hasPattern == true ? 1 : 0, customTheme?.needsRainAnimation == true ? 1 : 0, customTheme?.needsRippleAnimation == true ? 1 : 0, customTheme?.needsStardustAnimation == true ? 1 : 0, customTheme?.needsSnowfallAnimation == true ? 1 : 0, customTheme?.needsCherryBlossomAnimation == true ? 1 : 0)
+        }
         #endif
     }
 

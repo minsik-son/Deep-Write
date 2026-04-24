@@ -312,10 +312,10 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         BlackboxAnomalyLogger.shared.record("viewDidLoad START self=\(Unmanaged.passUnretained(self).toOpaque())")
+        #if DEBUG
         NSLog("══════════════════════════════════════")
         NSLog("═══  Keyboard Loaded  ═══")
         NSLog("══════════════════════════════════════")
-        #if DEBUG
         let _vdlDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] viewDidLoad START self=%@ deltaSinceFirstCode=%.2fms cycle=%d", String(describing: Unmanaged.passUnretained(self).toOpaque()), _vdlDelta, Self.lifecycleCount + 1)
         #endif
@@ -960,6 +960,9 @@ class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+        // 트랙패드 모드 중에는 appearance update 억제 — blank visual이 깨지지 않게
+        // 트랙패드 종료 시 buildKeyboard()에서 전체 복원됨
+        guard !keyboardLayoutView.isTrackpadModeActive else { return }
         // textDidChange는 텍스트 컨텍스트만 변경 — 키보드 구조(버튼/행)는 불변
         // 외형(다크모드/테마)만 갱신하고 full rebuild는 생략
         updateKeyboardAppearance(rebuildKeyboard: false, caller: "textDidChange")
@@ -3287,8 +3290,11 @@ class KeyboardViewController: UIInputViewController {
     private func updateKeyboardAppearance(rebuildKeyboard: Bool = true, caller: String = "unknown") {
         #if DEBUG
         let _uka0 = CACurrentMediaTime()
-        let _ukaDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
-        NSLog("[BuildKeyboardTrace] updateKeyboardAppearance caller=%@ rebuild=%d deltaSinceFirstCode=%.2fms", caller, rebuildKeyboard ? 1 : 0, _ukaDelta)
+        // textDidChange는 고빈도 — 콘솔 rate-limit 방지를 위해 trace 생략
+        if caller != "textDidChange" {
+            let _ukaDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+            NSLog("[BuildKeyboardTrace] updateKeyboardAppearance caller=%@ rebuild=%d deltaSinceFirstCode=%.2fms", caller, rebuildKeyboard ? 1 : 0, _ukaDelta)
+        }
         #endif
         applyKeyboardInterfaceStyleOverride()
         let isDark = resolvedKeyboardIsDark()
@@ -3356,8 +3362,10 @@ class KeyboardViewController: UIInputViewController {
         chatReplyView?.applyTheme(theme)
         chatReplyView?.updateAppearance(isDark: isDark)
         #if DEBUG
-        let _uka1 = CACurrentMediaTime()
-        NSLog("[ColdStart][updateKeyboardAppearance] total = %.2fms theme=%@ isDark=%d", (_uka1 - _uka0) * 1000, theme?.id ?? "default", isDark ? 1 : 0)
+        if caller != "textDidChange" {
+            let _uka1 = CACurrentMediaTime()
+            NSLog("[ColdStart][updateKeyboardAppearance] total = %.2fms theme=%@ isDark=%d", (_uka1 - _uka0) * 1000, theme?.id ?? "default", isDark ? 1 : 0)
+        }
         #endif
     }
 
