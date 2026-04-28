@@ -197,6 +197,11 @@ class HomeViewController: UIViewController {
 
         let activityCard = buildActivityCard()
         contentStack.addArrangedSubview(activityCard)
+        contentStack.setCustomSpacing(24, after: activityCard)
+
+        // 5. Touch Calibration CTA
+        let calibrationCard = buildCalibrationCard()
+        contentStack.addArrangedSubview(calibrationCard)
 
         #if DEBUG
         contentStack.addArrangedSubview(debugAdTestButton)
@@ -1163,6 +1168,80 @@ class HomeViewController: UIViewController {
     }
 
     // MARK: - 4. Weekly Activity Card
+
+    // MARK: - Calibration Card
+
+    private func buildCalibrationCard() -> UIView {
+        let card = UIView()
+        card.backgroundColor = AppColors.card
+        card.layer.cornerRadius = AppRadius.md
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.06
+        card.layer.shadowOffset = CGSize(width: 0, height: 2)
+        card.layer.shadowRadius = 8
+
+        let iconView = UIImageView()
+        iconView.image = UIImage(systemName: "hand.tap")
+        iconView.tintColor = .systemOrange
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        let titleLabel = UILabel()
+        titleLabel.text = "Improve Typing Accuracy"
+        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = AppColors.text
+
+        let descLabel = UILabel()
+        descLabel.text = "Quick touch calibration to personalize key detection for your typing style."
+        descLabel.font = .systemFont(ofSize: 13)
+        descLabel.textColor = AppColors.textMuted
+        descLabel.numberOfLines = 2
+
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, descLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 2
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let chevron = UIImageView()
+        chevron.image = UIImage(systemName: "chevron.right")
+        chevron.tintColor = AppColors.textMuted
+        chevron.contentMode = .scaleAspectFit
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+
+        card.addSubview(iconView)
+        card.addSubview(textStack)
+        card.addSubview(chevron)
+
+        NSLayoutConstraint.activate([
+            iconView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            iconView.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 28),
+            iconView.heightAnchor.constraint(equalToConstant: 28),
+
+            textStack.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
+            textStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            textStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            textStack.trailingAnchor.constraint(equalTo: chevron.leadingAnchor, constant: -8),
+
+            chevron.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 12),
+        ])
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(calibrationCardTapped))
+        card.addGestureRecognizer(tap)
+        card.isUserInteractionEnabled = true
+
+        return card
+    }
+
+    @objc private func calibrationCardTapped() {
+        let vc = CalibrationViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        present(nav, animated: true)
+    }
+
+    // MARK: - Activity Card
 
     private func buildActivityCard() -> UIView {
         let card = UIView()

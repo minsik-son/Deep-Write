@@ -92,6 +92,60 @@ class KeyboardLayoutView: UIView {
     private let touchLearningAlpha: Float = 0.05
     private let touchLearningMinSamples: UInt16 = 30
 
+    // MARK: - Calibration Seed
+
+    /// Calibration 대상에서 제외할 키 — specialKeys + space + period
+    private static let calibrationExcludedKeys: Set<String> = {
+        var excluded = specialKeys
+        excluded.insert(" ")
+        excluded.insert(".")
+        return excluded
+    }()
+
+    /// 현재 key가 calibration 적용 가능한 character key인지 판정
+    private func isCalibratableCharacterKey(_ key: String) -> Bool {
+        guard currentPage == .letters else { return false }
+        guard !Self.calibrationExcludedKeys.contains(key) else { return false }
+        guard key.count == 1, let char = key.first, char.isLetter else { return false }
+        return true
+    }
+
+    /// Letters page에서 character key 버튼들의 row/col 기반 physicalSlotID 캐시 갱신
+    private func rebuildButtonSlotIDCache() {
+        buttonSlotIDCache.removeAll()
+        guard currentPage == .letters else { return }
+
+        // Row별 character key를 x좌표 순으로 정렬하여 col index 부여
+        var rowBuckets: [Int: [(button: UIButton, x: CGFloat)]] = [:]
+        for button in allKeyButtons {
+            guard let key = button.accessibilityLabel, isCalibratableCharacterKey(key) else { continue }
+            guard let sv = button.superview else { continue }
+            let frame = sv.convert(button.frame, to: self)
+            let rowIdx = rowIndexForKeyCenter(frame.midY)
+            guard rowIdx >= 0, rowIdx < 3 else { continue }
+            rowBuckets[rowIdx, default: []].append((button, frame.midX))
+        }
+
+        for (row, bucket) in rowBuckets {
+            let sorted = bucket.sorted { $0.x < $1.x }
+            for (col, item) in sorted.enumerated() {
+                let slotID = TouchCalibrationSlotID.make(row: row, col: col)
+                buttonSlotIDCache[ObjectIdentifier(item.button)] = slotID
+            }
+        }
+    }
+
+    /// Calibration seed model에서 로드한 global shift (감쇠 적용 전 raw 값)
+    private var seededGlobalShift: (x: Float, y: Float, confidence: Float) = (0, 0, 0)
+    /// Per-slot seed cache (physicalSlotID -> shift, residual from row mean)
+    private var seededPerSlotShifts: [String: (x: Float, y: Float, confidence: Float)] = [:]
+    /// Button -> physicalSlotID 매핑 캐시 (buildKeyboard 후 갱신)
+    private var buttonSlotIDCache: [ObjectIdentifier: String] = [:]
+    /// Row별 calibration prior 주입 여부 추적
+    private var rowHasCalibrationPrior: [Bool] = [false, false, false]
+    /// Seed reload dedupe (same process lifecycle)
+    private var lastLoadedCalibrationSeedCreatedAt: Date?
+
     // MARK: - Active Instance Gating
 
     /// KeyboardViewController가 active instance일 때만 true로 설정
@@ -678,6 +732,9 @@ class KeyboardLayoutView: UIView {
 
         keyboardContainer.layoutIfNeeded()
         isRebuilding = false
+
+        // Calibration slot ID 캐시 갱신 — letters page character keys에 row/col 매핑
+        rebuildButtonSlotIDCache()
 
         // Wave animation: 빌드 완료 후 웨이브 재시작/정지
         if let theme = customTheme, theme.needsWaveAnimation {
@@ -1810,8 +1867,37 @@ class KeyboardLayoutView: UIView {
                 varRatio = 0.82
             }
 
-            let dx = correctedX - center.x
-            let dy = (correctedY - center.y) * varRatio
+            var finalX = correctedX
+            var finalY = correctedY
+
+            // Calibration seed 적용 — character key에만, proximity path에서만
+            // 방향: delta = actual - intended → corrected = actual - delta (즉 -= 방향)
+            if let key = button.accessibilityLabel, isCalibratableCharacterKey(key) {
+                let onlineSamples = stats.sampleCount
+                let seedWeight = max(0.0, 1.0 - Float(onlineSamples) / 60.0)
+
+                // Global seed — row data/row seed가 모두 없는 fallback에서만 적용
+                let hasRowData = stats.sampleCount >= touchLearningMinSamples
+                let hasRowPrior = rowIdx >= 0 && rowIdx < 3 && rowHasCalibrationPrior[rowIdx]
+                if seedWeight > 0, seededGlobalShift.confidence > 0, !hasRowData, !hasRowPrior {
+                    let applied = seedWeight * seededGlobalShift.confidence
+                    finalX -= CGFloat(seededGlobalShift.x * applied)
+                    finalY -= CGFloat(seededGlobalShift.y * applied)
+                }
+
+                // Per-slot seed (residual) — physicalSlotID 기준 lookup
+                if seedWeight > 0,
+                   let slotID = buttonSlotIDCache[ObjectIdentifier(button)],
+                   let slotSeed = seededPerSlotShifts[slotID],
+                   slotSeed.confidence > 0 {
+                    let applied = seedWeight * slotSeed.confidence
+                    finalX -= CGFloat(slotSeed.x * applied)
+                    finalY -= CGFloat(slotSeed.y * applied)
+                }
+            }
+
+            let dx = finalX - center.x
+            let dy = (finalY - center.y) * varRatio
             var distSq = dx * dx + dy * dy
 
             // Phase 3: context probability weighting (Latin alphabets + prefix ≥ 1 only)
@@ -3717,7 +3803,7 @@ class KeyboardLayoutView: UIView {
 
     // MARK: - Phase 2: Touch Learning Helpers
 
-    private func rowIndexForKeyCenter(_ centerY: CGFloat) -> Int {
+    func rowIndexForKeyCenter(_ centerY: CGFloat) -> Int {
         let hasTopNumberRow = shouldShowTopNumberRow(for: currentPage)
 
         let letterRowStart: CGFloat
@@ -3781,11 +3867,92 @@ class KeyboardLayoutView: UIView {
     }
 
     func loadTouchLearningData() {
-        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier),
-              let data = defaults.data(forKey: "touch_offset_learning_v2"),
-              let stats = try? JSONDecoder().decode([RowOffsetStats].self, from: data),
-              stats.count == 3 else { return }
-        rowOffsetStats = stats
+        // 1. 기존 online learning data 로드
+        var hasExistingData = false
+        if let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier),
+           let data = defaults.data(forKey: "touch_offset_learning_v2"),
+           let stats = try? JSONDecoder().decode([RowOffsetStats].self, from: data),
+           stats.count == 3 {
+            rowOffsetStats = stats
+            hasExistingData = true
+        }
+
+        // 2. Calibration seed model 로드
+        loadCalibrationSeed(hasExistingOnlineData: hasExistingData)
+    }
+
+    /// Calibration seed model 로드 + v2 guard + row/global/slot seed 주입
+    private func loadCalibrationSeed(hasExistingOnlineData: Bool) {
+        // Reset state
+        seededGlobalShift = (0, 0, 0)
+        seededPerSlotShifts.removeAll()
+        rowHasCalibrationPrior = [false, false, false]
+
+        guard let seedModel = CalibrationSeedModel.load() else { return }
+
+        // v2/v3 guard — legacy v1 seed 차단 (online row data는 보존)
+        // v2 = forced calibration, v3 = natural typing calibration
+        guard seedModel.metadata.modelVersion >= 2,
+              seedModel.metadata.layoutID == "english_letters",
+              seedModel.metadata.orientationClass == "portrait" else {
+            return
+        }
+
+        // Dedupe: 동일 seed 재적용 방지
+        if lastLoadedCalibrationSeedCreatedAt == seedModel.metadata.createdAt {
+            // 이미 로드된 동일 seed — global/slot cache만 재설정
+            if let global = seedModel.globalSeed {
+                seededGlobalShift = (global.shiftX, global.shiftY, global.confidence)
+            }
+            for slot in seedModel.slotSeeds {
+                seededPerSlotShifts[slot.physicalSlotID] = (slot.shiftX, slot.shiftY, slot.confidence)
+            }
+            return
+        }
+        lastLoadedCalibrationSeedCreatedAt = seedModel.metadata.createdAt
+
+        // Global seed 캐시
+        if let global = seedModel.globalSeed {
+            seededGlobalShift = (global.shiftX, global.shiftY, global.confidence)
+        }
+
+        // Per-slot seed 캐시 (residual from row mean)
+        for slot in seedModel.slotSeeds {
+            seededPerSlotShifts[slot.physicalSlotID] = (slot.shiftX, slot.shiftY, slot.confidence)
+        }
+
+        // Row seed 초기값 주입 — 우선순위 규칙 적용
+        for rowSeed in seedModel.rowSeeds {
+            let idx = rowSeed.rowID
+            guard idx >= 0, idx < 3 else { continue }
+
+            let existing = rowOffsetStats[idx]
+            let seedPrior = rowSeed.recommendedPriorSampleCount
+
+            // 기존 data가 충분하면 (>= 60) 덮어쓰지 않음
+            if hasExistingOnlineData && existing.sampleCount >= 60 {
+                continue
+            }
+            // 기존 data가 seed prior보다 약하면 seed 주입
+            if !hasExistingOnlineData || existing.sampleCount < seedPrior {
+                var newStats = RowOffsetStats()
+                newStats.meanOffsetX = rowSeed.meanOffsetX
+                newStats.meanOffsetY = rowSeed.meanOffsetY
+                newStats.sampleCount = seedPrior
+                rowOffsetStats[idx] = newStats
+                rowHasCalibrationPrior[idx] = true
+            }
+        }
+    }
+
+    /// viewWillAppear 등에서 호출 — 새 calibration seed가 있으면 reload
+    func reloadCalibrationSeedIfNeeded() {
+        guard let seedModel = CalibrationSeedModel.load() else { return }
+        // 동일 seed면 skip
+        if lastLoadedCalibrationSeedCreatedAt == seedModel.metadata.createdAt { return }
+        // 새 seed 감지 — 기존 online data 유지하면서 seed portion만 reload
+        let hasExisting = rowOffsetStats.contains { $0.sampleCount > 0 }
+        loadCalibrationSeed(hasExistingOnlineData: hasExisting)
     }
 
     // MARK: - Mode-Aware Return Key (Proposal 03)

@@ -520,6 +520,8 @@ class KeyboardViewController: UIInputViewController {
 
         // 툴바 재구성 이후 settings link attach 보장
         ensureSettingsLinkAttachedIfNeeded()
+        // 새 calibration seed가 있으면 reload (기존 online data 보존)
+        keyboardLayoutView.reloadCalibrationSeedIfNeeded()
         #if DEBUG
         let _wa5 = CACurrentMediaTime()
         #endif
@@ -678,6 +680,9 @@ class KeyboardViewController: UIInputViewController {
         }
 
         checkMemorySafetyNet()  // Phase 5: 메모리 안전망
+
+        // ── Keyboard geometry snapshot 저장 (calibration mirror용) ──
+        saveKeyboardGeometrySnapshotIfNeeded()
 
         // Dictation session recovery: 메인앱에서 돌아왔을 때 active session 복구
         if !isShowingDictation {
@@ -1699,6 +1704,56 @@ class KeyboardViewController: UIInputViewController {
     /// Phase 6: CRITICAL 단계를 제거하고 Graceful Restart로 대체.
     /// 애니메이션 캐시, CALayer backing store 등을 건드리지 않는다.
     /// 고메모리 상태에서 cleanup은 delta=0으로 무효하므로, exit(0)으로 프로세스 리스타트가 유일한 해법.
+    // MARK: - Geometry Snapshot
+
+    private static var hasSnapshotThisProcess = false
+
+    private func saveKeyboardGeometrySnapshotIfNeeded() {
+        guard !Self.hasSnapshotThisProcess else { return }
+        guard keyboardLayoutView.bounds.width > 0,
+              !keyboardLayoutView.allKeyButtons.isEmpty,
+              let window = view.window else { return }
+        Self.hasSnapshotThisProcess = true
+
+        var keyFrames: [KeyboardGeometrySnapshot.KeyFrame] = []
+        for button in keyboardLayoutView.allKeyButtons {
+            guard let key = button.accessibilityLabel, key.count == 1 else { continue }
+            guard let sv = button.superview else { continue }
+            let frameInKLV = sv.convert(button.frame, to: keyboardLayoutView)
+            let centerInScreen = keyboardLayoutView.convert(
+                CGPoint(x: frameInKLV.midX, y: frameInKLV.midY), to: nil
+            )
+            let rowIdx = keyboardLayoutView.rowIndexForKeyCenter(frameInKLV.midY)
+            keyFrames.append(.init(
+                key: key,
+                row: rowIdx,
+                col: 0,  // col은 x 정렬 기반으로 calibration mirror에서 재매핑
+                centerXInScreen: centerInScreen.x,
+                centerYInScreen: centerInScreen.y,
+                width: frameInKLV.width,
+                height: frameInKLV.height,
+                physicalSlotID: nil
+            ))
+        }
+
+        let klvFrameInScreen = keyboardLayoutView.convert(keyboardLayoutView.bounds, to: nil)
+        let inputFrameInScreen = view.convert(view.bounds, to: nil)
+        let screenBounds = UIScreen.main.bounds
+
+        let snapshot = KeyboardGeometrySnapshot(
+            createdAt: Date(),
+            screenWidth: screenBounds.width,
+            screenHeight: screenBounds.height,
+            inputViewOriginYInScreen: inputFrameInScreen.origin.y,
+            inputViewHeight: inputFrameInScreen.height,
+            keyFrames: keyFrames,
+            showNumberRow: keyboardLayoutView.showNumberRow,
+            orientationClass: "portrait",
+            layoutID: "english_letters"
+        )
+        snapshot.save()
+    }
+
     private func checkMemorySafetyNet() {
         let currentMB = currentMemoryMB()
 

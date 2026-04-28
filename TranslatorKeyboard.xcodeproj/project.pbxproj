@@ -9,6 +9,14 @@
 /* Begin PBXBuildFile section */
 		02C6E670C116AD3C1AFE570E /* AccentMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8174B187D22C32A35F1F9DB0 /* AccentMap.swift */; };
 		032A9F0629E551D959D7EA56 /* DictationSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF49409DB05018EFA200D5E0 /* DictationSharedStore.swift */; };
+		033CALIB0001000100000001 /* CalibrationSeedModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0001000100000003 /* CalibrationSeedModel.swift */; };
+		033CALIB0001000100000002 /* CalibrationSeedModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0001000100000003 /* CalibrationSeedModel.swift */; };
+		033CALIB0002000200000001 /* TouchCalibrationSlotID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0002000200000003 /* TouchCalibrationSlotID.swift */; };
+		033CALIB0002000200000002 /* TouchCalibrationSlotID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0002000200000003 /* TouchCalibrationSlotID.swift */; };
+		033CALIB0005000500000001 /* KeyboardGeometrySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0005000500000003 /* KeyboardGeometrySnapshot.swift */; };
+		033CALIB0005000500000002 /* KeyboardGeometrySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0005000500000003 /* KeyboardGeometrySnapshot.swift */; };
+		033CALIB0003000300000001 /* CalibrationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0003000300000003 /* CalibrationViewController.swift */; };
+		033CALIB0004000400000001 /* CalibrationKeyboardMirrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033CALIB0004000400000003 /* CalibrationKeyboardMirrorView.swift */; };
 		049568C612798F1A6F556C96 /* HistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D75782C8A72C172A085B211 /* HistoryManager.swift */; };
 		0683EE6A207C272AFEC716C5 /* QuickNoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB42CA6780213F924CEC9822 /* QuickNoteListView.swift */; };
 		09063E3DB25226B0E651DDD4 /* CorrectionLanguageBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E701A39CEC967EC29145F51 /* CorrectionLanguageBar.swift */; };
@@ -203,6 +211,11 @@
 
 /* Begin PBXFileReference section */
 		032AAD85241D44ADBB503E82 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		033CALIB0001000100000003 /* CalibrationSeedModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationSeedModel.swift; sourceTree = "<group>"; };
+		033CALIB0002000200000003 /* TouchCalibrationSlotID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchCalibrationSlotID.swift; sourceTree = "<group>"; };
+		033CALIB0005000500000003 /* KeyboardGeometrySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardGeometrySnapshot.swift; sourceTree = "<group>"; };
+		033CALIB0003000300000003 /* CalibrationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationViewController.swift; sourceTree = "<group>"; };
+		033CALIB0004000400000003 /* CalibrationKeyboardMirrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationKeyboardMirrorView.swift; sourceTree = "<group>"; };
 		03B45887771678ECF992D3F9 /* AppProcessServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppProcessServices.swift; sourceTree = "<group>"; };
 		03D7ABAFB25DE60E52119088 /* EmojiKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiKeyboardView.swift; sourceTree = "<group>"; };
 		07B224BA196CFC2814BB9DBF /* KeyboardAppearanceSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardAppearanceSettingsViewController.swift; sourceTree = "<group>"; };
@@ -396,6 +409,8 @@
 			isa = PBXGroup;
 			children = (
 				A4247D68C9280B11F5F0FEE8 /* AICorrectionInfoViewController.swift */,
+				033CALIB0003000300000003 /* CalibrationViewController.swift */,
+				033CALIB0004000400000003 /* CalibrationKeyboardMirrorView.swift */,
 				304393CB9DE0BCD91015D573 /* AITranslationInfoViewController.swift */,
 				1024190A000DEB8E1C1C4313 /* FullAccessExplainViewController.swift */,
 				07B224BA196CFC2814BB9DBF /* KeyboardAppearanceSettingsViewController.swift */,
@@ -566,20 +581,14 @@
 			path = KeyboardExtension;
 			sourceTree = "<group>";
 		};
-		CEDB0003CCCC000300000001 /* Debug */ = {
-			isa = PBXGroup;
-			children = (
-				CEDB0001AAAA000100000002 /* ActivationTraceLogger.swift */,
-				CEDB0002BBBB000200000002 /* BlackboxAnomalyLogger.swift */,
-			);
-			path = Debug;
-			sourceTree = "<group>";
-		};
 		90AD3FEDABA364962673A6D5 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				42CCC9E3FC49BD11C45E0795 /* AdditionalKeyboardBootstrap.swift */,
 				4444FF3375AED5A6585B3E94 /* AdminMode.swift */,
+				033CALIB0001000100000003 /* CalibrationSeedModel.swift */,
+				033CALIB0002000200000003 /* TouchCalibrationSlotID.swift */,
+				033CALIB0005000500000003 /* KeyboardGeometrySnapshot.swift */,
 				ECE6ABE349CE322957A5C575 /* AppColors.swift */,
 				6FE78200C931753ED4B82721 /* AppGroupManager.swift */,
 				5D681A74E9A93D63532A05A3 /* ClipboardItem.swift */,
@@ -675,6 +684,15 @@
 				AD513B75C01FA09795C3034B /* ngram_ko.json */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		CEDB0003CCCC000300000001 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				CEDB0001AAAA000100000002 /* ActivationTraceLogger.swift */,
+				CEDB0002BBBB000200000002 /* BlackboxAnomalyLogger.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 		D5F458DE9395B9E1BD16364A /* Voice */ = {
@@ -871,6 +889,9 @@
 				547B5437B56021BBB2E818FA /* FeatureGate.swift in Sources */,
 				1F64F9C7DACF95DECD0B7192 /* FontPool.swift in Sources */,
 				48EB6B73C377FAC506F6929F /* HangulComposer.swift in Sources */,
+				033CALIB0001000100000001 /* CalibrationSeedModel.swift in Sources */,
+				033CALIB0002000200000001 /* TouchCalibrationSlotID.swift in Sources */,
+				033CALIB0005000500000001 /* KeyboardGeometrySnapshot.swift in Sources */,
 				4A0D33ED2FFF4B27586504CA /* HistoryItem.swift in Sources */,
 				CE77B7E5592A2F8E4B218580 /* HistoryManager.swift in Sources */,
 				0DFC99CF3369E6A056A1D839 /* KeyPreviewView.swift in Sources */,
@@ -956,6 +977,11 @@
 				7CA8608420D2089309658501 /* FullAccessExplainViewController.swift in Sources */,
 				4E67E016F3B2AE90EFA8CFEC /* HistoryItem.swift in Sources */,
 				049568C612798F1A6F556C96 /* HistoryManager.swift in Sources */,
+				033CALIB0001000100000002 /* CalibrationSeedModel.swift in Sources */,
+				033CALIB0002000200000002 /* TouchCalibrationSlotID.swift in Sources */,
+				033CALIB0005000500000002 /* KeyboardGeometrySnapshot.swift in Sources */,
+				033CALIB0003000300000001 /* CalibrationViewController.swift in Sources */,
+				033CALIB0004000400000001 /* CalibrationKeyboardMirrorView.swift in Sources */,
 				852F08E3E96F11D539228453 /* HistoryViewController.swift in Sources */,
 				C369E18208E39E4B7032E509 /* HomeViewController.swift in Sources */,
 				4721157B06E92472C3D32057 /* KeyboardAppearanceSettingsViewController.swift in Sources */,
