@@ -103,6 +103,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: TranslatorKeyboard/TranslatorKeyboard.entitlements
         DEVELOPMENT_TEAM: 3Q2D38NW4X
         ADMOB_APP_ID: ca-app-pub-9921649727270589~7890214484
+        TARGETED_DEVICE_FAMILY: "1"
     entitlements:
       path: TranslatorKeyboard/TranslatorKeyboard.entitlements
       properties:
@@ -145,6 +146,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.translatorkeyboard.app.keyboard
         INFOPLIST_FILE: KeyboardExtension/Resources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: KeyboardExtension/KeyboardExtension.entitlements
         DEVELOPMENT_TEAM: 3Q2D38NW4X
     entitlements:
