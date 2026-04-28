@@ -17,8 +17,13 @@ final class CalibrationViewController: UIViewController {
     private var currentCharIndex = 0
     private var collectedSamples: [CalibrationTapSample] = []
     private var consecutiveRejectCount = 0
+    private var isFinishingCalibration = false
 
-    private var currentWord: String { englishWords[currentWordIndex] }
+    /// Safe accessor — force-index 대신 bounds check
+    private var currentWord: String? {
+        guard englishWords.indices.contains(currentWordIndex) else { return nil }
+        return englishWords[currentWordIndex]
+    }
 
     // MARK: - UI
 
@@ -121,13 +126,20 @@ final class CalibrationViewController: UIViewController {
             instructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
         ])
 
-        // Raw touch callback — VC가 intended char 매칭 (race condition 방지)
+        bindMirrorCallbacks()
+    }
+
+    private func bindMirrorCallbacks() {
         mirrorView.onRawTouch = { [weak self] raw in
             self?.handleRawTouch(raw)
         }
     }
 
     private func startCalibration() {
+        isFinishingCalibration = false
+        mirrorView.isUserInteractionEnabled = true
+        bindMirrorCallbacks()
+
         currentWordIndex = 0
         currentCharIndex = 0
         collectedSamples = []
@@ -138,6 +150,7 @@ final class CalibrationViewController: UIViewController {
     // MARK: - Flow
 
     private func showNextWord() {
+        guard !isFinishingCalibration else { return }
         guard currentWordIndex < englishWords.count else {
             finishCalibration()
             return
@@ -148,10 +161,14 @@ final class CalibrationViewController: UIViewController {
     }
 
     private func updateDisplay() {
-        let word = currentWord
-        progressLabel.text = "\(currentWordIndex + 1) / \(englishWords.count)"
+        guard !isFinishingCalibration,
+              let word = currentWord else {
+            return
+        }
 
-        // Subtle word display — bold+underline current char only
+        let visibleIndex = min(currentWordIndex + 1, englishWords.count)
+        progressLabel.text = "\(visibleIndex) / \(englishWords.count)"
+
         let attributed = NSMutableAttributedString(string: word, attributes: [
             .font: UIFont.systemFont(ofSize: 32, weight: .regular),
             .foregroundColor: UIColor.label,
@@ -169,36 +186,32 @@ final class CalibrationViewController: UIViewController {
     // MARK: - Raw Touch → Sample Matching (race-free)
 
     private func handleRawTouch(_ raw: CalibrationRawTouch) {
-        // Backspace
+        guard !isFinishingCalibration else { return }
+
         if raw.isBackspace {
             handleBackspace()
             return
         }
 
-        guard currentWordIndex < englishWords.count else { return }
-        let word = currentWord
-        guard currentCharIndex < word.count else { return }
+        guard let word = currentWord,
+              currentCharIndex < word.count else { return }
 
-        // Current intended char
         let intendedChar = String(word[word.index(word.startIndex, offsetBy: currentCharIndex)]).lowercased()
-
-        // Find intended key button info from mirror letter buttons
-        // (we need intended center — use approximation from actual key data)
         let intendedCenter = findIntendedCenter(for: intendedChar)
         guard let center = intendedCenter else { return }
 
         let dx = Float(raw.pointInKeyboard.x - center.point.x)
         let dy = Float(raw.pointInKeyboard.y - center.point.y)
 
-        // Reject very far taps (but more lenient than before)
         let maxDist = center.keyWidth * 1.5
         if max(abs(CGFloat(dx)), abs(CGFloat(dy))) > maxDist {
             consecutiveRejectCount += 1
-            // 3회 연속 reject → auto-skip this char
             if consecutiveRejectCount >= 3 {
                 consecutiveRejectCount = 0
                 currentCharIndex += 1
-                advanceIfWordComplete()
+                if advanceIfWordComplete(completedWordLength: word.count) {
+                    return
+                }
                 updateDisplay()
             }
             return
@@ -222,14 +235,17 @@ final class CalibrationViewController: UIViewController {
         )
         collectedSamples.append(sample)
 
-        // Advance immediately (before any UI update — prevents race)
         currentCharIndex += 1
-        advanceIfWordComplete()
+        if advanceIfWordComplete(completedWordLength: word.count) {
+            return
+        }
         updateDisplay()
     }
 
     private func handleBackspace() {
-        guard currentCharIndex > 0 else { return }
+        guard !isFinishingCalibration,
+              currentWord != nil,
+              currentCharIndex > 0 else { return }
         currentCharIndex -= 1
         if !collectedSamples.isEmpty {
             collectedSamples.removeLast()
@@ -238,17 +254,24 @@ final class CalibrationViewController: UIViewController {
         updateDisplay()
     }
 
-    private func advanceIfWordComplete() {
-        if currentCharIndex >= currentWord.count {
-            currentWordIndex += 1
-            if currentWordIndex < englishWords.count {
-                currentCharIndex = 0
-                consecutiveRejectCount = 0
-            }
+    /// Returns true if calibration finished (caller must return immediately)
+    @discardableResult
+    private func advanceIfWordComplete(completedWordLength: Int) -> Bool {
+        guard currentCharIndex >= completedWordLength else { return false }
+
+        currentWordIndex += 1
+        if currentWordIndex >= englishWords.count {
+            finishCalibration()
+            return true
         }
+
+        currentCharIndex = 0
+        consecutiveRejectCount = 0
+        return false
     }
 
-    /// Mirror에서 intended key의 center 좌표/row/col 찾기
+    // MARK: - Intended Key Lookup
+
     private struct IntendedKeyInfo {
         let point: CGPoint
         let row: Int
@@ -264,11 +287,8 @@ final class CalibrationViewController: UIViewController {
         ]
         for (row, keys) in rows.enumerated() {
             if let col = keys.firstIndex(of: char.lowercased()) {
-                // Approximate center from layout constants
                 let w = mirrorView.bounds.width
                 guard w > 0 else { return nil }
-                let L = CalibrationKeyboardMirrorView.self  // can't access private L struct
-                // Recalculate from known metrics
                 let sideInset: CGFloat = 3
                 let keySpacingH: CGFloat = 6
                 let toolbarH: CGFloat = 40
@@ -297,17 +317,21 @@ final class CalibrationViewController: UIViewController {
                 case 2: rowY = row0Y + keyH * 2 + keySpV * 2
                 default: return nil
                 }
-                let y = rowY + keyH / 2
-
-                return IntendedKeyInfo(point: CGPoint(x: x, y: y), row: row, col: col, keyWidth: keyWidth)
+                return IntendedKeyInfo(point: CGPoint(x: x, y: rowY + keyH / 2), row: row, col: col, keyWidth: keyWidth)
             }
         }
         return nil
     }
 
-    // MARK: - Seed Generation
+    // MARK: - Finish
 
     private func finishCalibration() {
+        guard !isFinishingCalibration else { return }
+        isFinishingCalibration = true
+
+        mirrorView.onRawTouch = nil
+        mirrorView.isUserInteractionEnabled = false
+
         guard !collectedSamples.isEmpty else {
             dismiss(animated: true)
             return
@@ -324,13 +348,15 @@ final class CalibrationViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "Done", style: .default) { [weak self] _ in
             self?.dismiss(animated: true)
         })
+        guard presentedViewController == nil else { return }
         present(alert, animated: true)
     }
+
+    // MARK: - Seed Generation
 
     private func generateSeedModel() -> CalibrationSeedModel {
         let approxKeyWidth: Float = Float((mirrorView.bounds.width - 6 - 54) / 10)
 
-        // Row seeds — robust: winsorize large deltas
         var rowSamples: [Int: [(dx: Float, dy: Float)]] = [:]
         for s in collectedSamples {
             let clampX = max(-approxKeyWidth * 0.45, min(approxKeyWidth * 0.45, s.deltaX))
@@ -350,7 +376,6 @@ final class CalibrationViewController: UIViewController {
                                   confidence: confidence, recommendedPriorSampleCount: 32))
         }
 
-        // Global seed
         let allDx = collectedSamples.map(\.deltaX)
         let allDy = collectedSamples.map(\.deltaY)
         let globalX = max(-4, min(4, allDx.reduce(0, +) / max(1, Float(allDx.count))))
@@ -358,7 +383,6 @@ final class CalibrationViewController: UIViewController {
         let globalConf = min(1.0, Float(collectedSamples.count) / 40.0)
         let globalSeed = CalibrationSeedModel.GlobalSeed(shiftX: globalX, shiftY: globalY, confidence: globalConf)
 
-        // Per-slot seeds — residual from row mean
         var slotSamples: [String: (row: Int, samples: [(dx: Float, dy: Float)])] = [:]
         for s in collectedSamples {
             var entry = slotSamples[s.intendedSlotID] ?? (s.intendedRow, [])
@@ -389,6 +413,9 @@ final class CalibrationViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func cancelTapped() {
+        isFinishingCalibration = true
+        mirrorView.onRawTouch = nil
+        mirrorView.isUserInteractionEnabled = false
         dismiss(animated: true)
     }
 }
