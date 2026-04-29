@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "重新查看引导";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "掌中的一体化键盘";
 "onboarding.permission.title" = "键盘设置";
-"onboarding.permission.step1" = "前往设置 → 通用 → 键盘 → 添加新键盘\n添加 Translator Keyboard";
+"onboarding.permission.step1" = "前往设置 → 通用 → 键盘 → 添加新键盘\n添加 OneBoard";
 "onboarding.permission.step2" = "请开启\"允许完全访问\"\n（翻译功能需要此权限）";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "键盘";
 "onboarding.setup.anim.row.keyboard" = "键盘";
 "onboarding.setup.anim.row.full_access" = "允许完全访问";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "翻译功能需要完全访问权限。";
 "onboarding.setup.anim.alert.deny" = "不允许";
 "onboarding.setup.anim.alert.allow" = "允许";
-"onboarding.setup.anim.section.access" = "Translator Keyboard 访问权限";
+"onboarding.setup.anim.section.access" = "OneBoard 访问权限";
 "onboarding.setup.anim.section.language" = "偏好语言";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence与Siri";
 "onboarding.setup.anim.row.search" = "搜索";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "点击下方的打开键盘按钮，然后使用🌐按钮切换键盘";
 "onboarding.verify.placeholder" = "点击这里输入";
 "onboarding.verify.waiting" = "等待键盘...";
-"onboarding.verify.switch_hint" = "使用🌐按钮切换到 Translator Keyboard";
+"onboarding.verify.switch_hint" = "使用🌐按钮切换到 OneBoard";
 "onboarding.verify.success" = "设置完成！";
 "onboarding.verify.no_full_access" = "未启用完全访问权限";
 "onboarding.verify.full_access_desc" = "翻译和纠正功能需要完全访问权限";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "返回设置";
 "onboarding.verify.globe_hint" = "通过地球键切换键盘";
 "onboarding.verify.open_keyboard" = "打开键盘";
-"onboarding.verify.waiting_open_keyboard" = "打开键盘后，点击地球键并选择 One Board";
+"onboarding.verify.waiting_open_keyboard" = "打开键盘后，点击地球键并选择 OneBoard";
 "onboarding.verify.tap_outside_to_close" = "点击空白处即可关闭键盘";
 "onboarding.verify.success_title_inline" = "设置完成";
 "onboarding.verify.success_desc_inline" = "现在就可以使用键盘了";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "了解如何关闭iOS上访问剪贴板时出现的粘贴通知。";
 "paste_guide.step1.title" = "打开设置";
-"paste_guide.step1.detail" = "打开iPhone的设置应用，找到Translator Keyboard。";
+"paste_guide.step1.detail" = "打开iPhone的设置应用，找到OneBoard。";
 "paste_guide.step2.title" = "从其他App粘贴";
 "paste_guide.step2.detail" = "找到\"从其他App粘贴\"，将其更改为\"允许\"。";
 "paste_guide.step3.title" = "完成";
 "paste_guide.step3.detail" = "现在可以无通知地使用剪贴板功能。";
 "paste_guide.open_settings" = "前往设置";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "从其他 App 粘贴";
-"paste_guide.anim.section.access" = "Translator Keyboard 访问权限";
+"paste_guide.anim.section.access" = "OneBoard 访问权限";
 "paste_guide.anim.section.language" = "偏好语言";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence与Siri";
 "paste_guide.anim.row.search" = "搜索";
@@ -304,7 +304,7 @@
 "paste_guide.anim.option.deny" = "拒绝";
 "paste_guide.anim.option.allow" = "允许";
 // === Privacy Dashboard ===
-"privacy.header" = "查看Translator Keyboard收集和不收集的数据。";
+"privacy.header" = "查看OneBoard收集和不收集的数据。";
 "privacy.not_collected" = "未收集的数据";
 "privacy.keyboard_input" = "键盘输入：不收集";
 "privacy.passwords_cards" = "密码和银行卡信息：不收集";
@@ -324,9 +324,9 @@
 "full_access.required" = "需要";
 "full_access.not_required" = "不需要";
 "full_access.setup_step1.title" = "添加键盘";
-"full_access.setup_step1.detail" = "设置 → 通用 → 键盘 → 添加新键盘 → Translator Keyboard";
+"full_access.setup_step1.detail" = "设置 → 通用 → 键盘 → 添加新键盘 → OneBoard";
 "full_access.setup_step2.title" = "允许完全访问";
-"full_access.setup_step2.detail" = "点击 Translator Keyboard 并开启「允许完全访问」";
+"full_access.setup_step2.detail" = "点击 OneBoard 并开启「允许完全访问」";
 "full_access.already_granted" = "已开启完全访问权限";
 "full_access.go_settings" = "前往设置";
 

@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "Повторить введение";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "Ваша клавиатура «все в одном»";
 "onboarding.permission.title" = "Настройка клавиатуры";
-"onboarding.permission.step1" = "Перейдите в Настройки → Основные → Клавиатура → Добавить клавиатуру\nи добавьте Translator Keyboard";
+"onboarding.permission.step1" = "Перейдите в Настройки → Основные → Клавиатура → Добавить клавиатуру\nи добавьте OneBoard";
 "onboarding.permission.step2" = "Включите «Полный доступ»\n(Необходим для перевода)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "Клавиатура";
 "onboarding.setup.anim.row.keyboard" = "Клавиатура";
 "onboarding.setup.anim.row.full_access" = "Полный доступ";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "Для перевода требуется полный доступ.";
 "onboarding.setup.anim.alert.deny" = "Не разрешать";
 "onboarding.setup.anim.alert.allow" = "Разрешить";
-"onboarding.setup.anim.section.access" = "Доступ Translator Keyboard";
+"onboarding.setup.anim.section.access" = "Доступ OneBoard";
 "onboarding.setup.anim.section.language" = "Предпочитаемый язык";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence и Siri";
 "onboarding.setup.anim.row.search" = "Поиск";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "Нажмите Открыть клавиатуру, затем переключитесь кнопкой 🌐";
 "onboarding.verify.placeholder" = "Нажмите здесь, чтобы печатать";
 "onboarding.verify.waiting" = "Ожидание клавиатуры...";
-"onboarding.verify.switch_hint" = "Переключитесь на Translator Keyboard с помощью кнопки 🌐";
+"onboarding.verify.switch_hint" = "Переключитесь на OneBoard с помощью кнопки 🌐";
 "onboarding.verify.success" = "Настройка завершена!";
 "onboarding.verify.no_full_access" = "Полный доступ не включён";
 "onboarding.verify.full_access_desc" = "Для перевода и коррекции необходим полный доступ";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "Вернуться в Настройки";
 "onboarding.verify.globe_hint" = "Переключайте клавиатуры клавишей Globe";
 "onboarding.verify.open_keyboard" = "Открыть клавиатуру";
-"onboarding.verify.waiting_open_keyboard" = "Откройте клавиатуру и нажмите клавишу Globe, чтобы выбрать One Board";
+"onboarding.verify.waiting_open_keyboard" = "Откройте клавиатуру и нажмите клавишу Globe, чтобы выбрать OneBoard";
 "onboarding.verify.tap_outside_to_close" = "Нажмите вне области клавиатуры, чтобы закрыть ее";
 "onboarding.verify.success_title_inline" = "Все готово";
 "onboarding.verify.success_desc_inline" = "Клавиатура готова к использованию";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "Узнайте, как отключить уведомление о вставке при доступе к буферу обмена на iOS.";
 "paste_guide.step1.title" = "Откройте Настройки";
-"paste_guide.step1.detail" = "Откройте приложение Настройки на iPhone и найдите Translator Keyboard.";
+"paste_guide.step1.detail" = "Откройте приложение Настройки на iPhone и найдите OneBoard.";
 "paste_guide.step2.title" = "Вставка из других приложений";
 "paste_guide.step2.detail" = "Найдите 'Вставка из других приложений' и измените на 'Разрешить'.";
 "paste_guide.step3.title" = "Готово";
 "paste_guide.step3.detail" = "Теперь вы можете использовать буфер обмена без уведомлений.";
 "paste_guide.open_settings" = "Открыть Настройки";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "Вставка из других приложений";
-"paste_guide.anim.section.access" = "Доступ Translator Keyboard";
+"paste_guide.anim.section.access" = "Доступ OneBoard";
 "paste_guide.anim.section.language" = "Предпочитаемый язык";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence и Siri";
 "paste_guide.anim.row.search" = "Поиск";
@@ -304,7 +304,7 @@
 "paste_guide.anim.option.deny" = "Запретить";
 "paste_guide.anim.option.allow" = "Разрешить";
 // === Privacy Dashboard ===
-"privacy.header" = "Узнайте, какие данные Translator Keyboard собирает и не собирает.";
+"privacy.header" = "Узнайте, какие данные OneBoard собирает и не собирает.";
 "privacy.not_collected" = "Данные не собираются";
 "privacy.keyboard_input" = "Ввод с клавиатуры: Не собирается";
 "privacy.passwords_cards" = "Пароли и данные карт: Не собираются";
@@ -324,9 +324,9 @@
 "full_access.required" = "Требуется";
 "full_access.not_required" = "Не требуется";
 "full_access.setup_step1.title" = "Добавить клавиатуру";
-"full_access.setup_step1.detail" = "Настройки → Основные → Клавиатура → Добавить клавиатуру → Translator Keyboard";
+"full_access.setup_step1.detail" = "Настройки → Основные → Клавиатура → Добавить клавиатуру → OneBoard";
 "full_access.setup_step2.title" = "Разрешить полный доступ";
-"full_access.setup_step2.detail" = "Нажмите на Translator Keyboard и включите «Разрешить полный доступ»";
+"full_access.setup_step2.detail" = "Нажмите на OneBoard и включите «Разрешить полный доступ»";
 "full_access.already_granted" = "Полный доступ уже включён";
 "full_access.go_settings" = "Перейти в настройки";
 

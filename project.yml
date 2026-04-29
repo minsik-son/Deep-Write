@@ -82,7 +82,7 @@ targets:
                 UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        CFBundleDisplayName: Translator Keyboard
+        CFBundleDisplayName: OneBoard
         UILaunchScreen: {}
         GADApplicationIdentifier: $(ADMOB_APP_ID)
         NSUserTrackingUsageDescription: This identifier will be used to deliver personalized ads to you.
@@ -141,7 +141,7 @@ targets:
             RequestsOpenAccess: true
           NSExtensionPointIdentifier: com.apple.keyboard-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).KeyboardViewController
-        CFBundleDisplayName: Translator KB
+        CFBundleDisplayName: OneBoard
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.translatorkeyboard.app.keyboard

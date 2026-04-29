@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "온보딩 다시 보기";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "손안의 올인원 키보드";
 "onboarding.permission.title" = "키보드 설정";
-"onboarding.permission.step1" = "설정 → 일반 → 키보드 → 키보드 추가에서\nTranslator Keyboard를 추가하세요";
+"onboarding.permission.step1" = "설정 → 일반 → 키보드 → 키보드 추가에서\nOneBoard를 추가하세요";
 "onboarding.permission.step2" = "'전체 접근 허용'을 켜주세요\n(번역 기능에 필요합니다)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "키보드";
 "onboarding.setup.anim.row.keyboard" = "키보드";
 "onboarding.setup.anim.row.full_access" = "전체 접근 허용";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "번역 기능을 사용하려면 전체 접근이 필요합니다.";
 "onboarding.setup.anim.alert.deny" = "허용 안 함";
 "onboarding.setup.anim.alert.allow" = "허용";
-"onboarding.setup.anim.section.access" = "Translator Keyboard 접근 허용";
+"onboarding.setup.anim.section.access" = "OneBoard 접근 허용";
 "onboarding.setup.anim.section.language" = "선호하는 언어";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence 및 Siri";
 "onboarding.setup.anim.row.search" = "검색";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "아래의 키보드 열기 버튼을 탭한 뒤, 🌐 버튼으로 키보드를 전환해보세요";
 "onboarding.verify.placeholder" = "여기를 탭해서 입력해보세요";
 "onboarding.verify.waiting" = "키보드를 기다리는 중...";
-"onboarding.verify.switch_hint" = "🌐 버튼으로 Translator Keyboard로 전환해보세요";
+"onboarding.verify.switch_hint" = "🌐 버튼으로 OneBoard로 전환해보세요";
 "onboarding.verify.success" = "설정이 완료되었어요!";
 "onboarding.verify.no_full_access" = "전체 접근이 꺼져 있어요";
 "onboarding.verify.full_access_desc" = "번역·교정 기능을 사용하려면 전체 접근이 필요해요";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "설정으로 돌아가기";
 "onboarding.verify.globe_hint" = "지구본 버튼으로 키보드를 전환해보세요";
 "onboarding.verify.open_keyboard" = "키보드 열기";
-"onboarding.verify.waiting_open_keyboard" = "키보드를 열고 지구본 버튼으로 One Board를 선택해보세요";
+"onboarding.verify.waiting_open_keyboard" = "키보드를 열고 지구본 버튼으로 OneBoard를 선택해보세요";
 "onboarding.verify.tap_outside_to_close" = "빈 공간을 누르면 키보드가 닫혀요";
 "onboarding.verify.success_title_inline" = "설치에 성공했어요";
 "onboarding.verify.success_desc_inline" = "이제 바로 키보드를 사용할 수 있어요";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "iOS에서 클립보드 접근 시 나타나는 붙여넣기 알림을 해제하는 방법입니다.";
 "paste_guide.step1.title" = "설정 앱 열기";
-"paste_guide.step1.detail" = "iPhone의 설정 앱을 열고 Translator Keyboard를 찾으세요.";
+"paste_guide.step1.detail" = "iPhone의 설정 앱을 열고 OneBoard를 찾으세요.";
 "paste_guide.step2.title" = "다른 앱에서 붙여넣기";
 "paste_guide.step2.detail" = "'다른 앱에서 붙여넣기' 항목을 찾아 '허용'으로 변경하세요.";
 "paste_guide.step3.title" = "완료";
 "paste_guide.step3.detail" = "이제 붙여넣기 알림 없이 클립보드 기능을 사용할 수 있습니다.";
 "paste_guide.open_settings" = "설정으로 바로 이동";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "다른 앱에서 붙여넣기";
-"paste_guide.anim.section.access" = "Translator Keyboard 접근 허용";
+"paste_guide.anim.section.access" = "OneBoard 접근 허용";
 "paste_guide.anim.section.language" = "선호하는 언어";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence 및 Siri";
 "paste_guide.anim.row.search" = "검색";
@@ -305,7 +305,7 @@
 "paste_guide.anim.option.allow" = "허용";
 
 // === Privacy Dashboard ===
-"privacy.header" = "Translator Keyboard가 수집하는 데이터와 수집하지 않는 데이터를 확인하세요.";
+"privacy.header" = "OneBoard가 수집하는 데이터와 수집하지 않는 데이터를 확인하세요.";
 "privacy.not_collected" = "수집하지 않는 데이터";
 "privacy.keyboard_input" = "키보드 입력 내용: 수집 안 함";
 "privacy.passwords_cards" = "비밀번호, 카드 정보: 수집 안 함";
@@ -325,9 +325,9 @@
 "full_access.required" = "필요";
 "full_access.not_required" = "불필요";
 "full_access.setup_step1.title" = "키보드 추가";
-"full_access.setup_step1.detail" = "설정 → 일반 → 키보드 → 키보드 추가에서 Translator Keyboard를 추가하세요";
+"full_access.setup_step1.detail" = "설정 → 일반 → 키보드 → 키보드 추가에서 OneBoard를 추가하세요";
 "full_access.setup_step2.title" = "전체 접근 허용";
-"full_access.setup_step2.detail" = "Translator Keyboard를 탭하고 '전체 접근 허용'을 켜주세요";
+"full_access.setup_step2.detail" = "OneBoard를 탭하고 '전체 접근 허용'을 켜주세요";
 "full_access.already_granted" = "이미 권한설정이 완료되어있어요";
 "full_access.go_settings" = "설정으로 이동";
 

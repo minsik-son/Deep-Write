@@ -53,6 +53,14 @@ enum AppConstants {
         static let timeout: TimeInterval = 10
     }
 
+    enum LegalLinks {
+        static let baseURL = "https://oneboard-support.vercel.app"
+        static let privacy = "\(baseURL)/privacy"
+        static let terms = "\(baseURL)/terms"
+        static let faq = "\(baseURL)/faq"
+        static let support = "\(baseURL)/support"
+    }
+
     enum Limits {
         static let maxCharacters = 500
         static let warningCharacters = 150

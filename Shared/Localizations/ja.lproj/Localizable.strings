@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "オンボーディングをやり直す";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "手の中のオールインワンキーボード";
 "onboarding.permission.title" = "キーボード設定";
-"onboarding.permission.step1" = "設定 → 一般 → キーボード → キーボード追加で\nTranslator Keyboardを追加してください";
+"onboarding.permission.step1" = "設定 → 一般 → キーボード → キーボード追加で\nOneBoardを追加してください";
 "onboarding.permission.step2" = "「フルアクセスを許可」をオンにしてください\n（翻訳機能に必要です）";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "キーボード";
 "onboarding.setup.anim.row.keyboard" = "キーボード";
 "onboarding.setup.anim.row.full_access" = "フルアクセスを許可";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "翻訳機能にはフルアクセスが必要です。";
 "onboarding.setup.anim.alert.deny" = "許可しない";
 "onboarding.setup.anim.alert.allow" = "許可";
-"onboarding.setup.anim.section.access" = "Translator Keyboardのアクセス許可";
+"onboarding.setup.anim.section.access" = "OneBoardのアクセス許可";
 "onboarding.setup.anim.section.language" = "優先する言語";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "onboarding.setup.anim.row.search" = "検索";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "下のキーボードを開くボタンをタップして、🌐ボタンで切り替えてください";
 "onboarding.verify.placeholder" = "ここをタップして入力してみてください";
 "onboarding.verify.waiting" = "キーボードを待っています...";
-"onboarding.verify.switch_hint" = "🌐ボタンでTranslator Keyboardに切り替えてください";
+"onboarding.verify.switch_hint" = "🌐ボタンでOneBoardに切り替えてください";
 "onboarding.verify.success" = "設定が完了しました！";
 "onboarding.verify.no_full_access" = "フルアクセスがオフになっています";
 "onboarding.verify.full_access_desc" = "翻訳・校正機能にはフルアクセスが必要です";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "設定に戻る";
 "onboarding.verify.globe_hint" = "地球儀キーでキーボードを切り替えてください";
 "onboarding.verify.open_keyboard" = "キーボードを開く";
-"onboarding.verify.waiting_open_keyboard" = "キーボードを開いて、地球儀キーからOne Boardを選んでください";
+"onboarding.verify.waiting_open_keyboard" = "キーボードを開いて、地球儀キーからOneBoardを選んでください";
 "onboarding.verify.tap_outside_to_close" = "空いている場所をタップするとキーボードを閉じられます";
 "onboarding.verify.success_title_inline" = "設定が完了しました";
 "onboarding.verify.success_desc_inline" = "キーボードをすぐに使えます";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "iOSでクリップボードにアクセスする際に表示されるペースト通知を無効にする方法です。";
 "paste_guide.step1.title" = "設定アプリを開く";
-"paste_guide.step1.detail" = "iPhoneの設定アプリを開き、Translator Keyboardを見つけてください。";
+"paste_guide.step1.detail" = "iPhoneの設定アプリを開き、OneBoardを見つけてください。";
 "paste_guide.step2.title" = "他のアプリからペースト";
 "paste_guide.step2.detail" = "「他のアプリからペースト」を見つけて「許可」に変更してください。";
 "paste_guide.step3.title" = "完了";
 "paste_guide.step3.detail" = "ペースト通知なしでクリップボード機能を使用できます。";
 "paste_guide.open_settings" = "設定へ移動";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "ほかのAppからペースト";
-"paste_guide.anim.section.access" = "Translator Keyboardのアクセス許可";
+"paste_guide.anim.section.access" = "OneBoardのアクセス許可";
 "paste_guide.anim.section.language" = "優先する言語";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "paste_guide.anim.row.search" = "検索";
@@ -305,7 +305,7 @@
 "paste_guide.anim.option.allow" = "許可";
 
 // === Privacy Dashboard ===
-"privacy.header" = "Translator Keyboardが収集するデータと収集しないデータをご確認ください。";
+"privacy.header" = "OneBoardが収集するデータと収集しないデータをご確認ください。";
 "privacy.not_collected" = "収集しないデータ";
 "privacy.keyboard_input" = "キーボード入力内容：収集しません";
 "privacy.passwords_cards" = "パスワード・カード情報：収集しません";
@@ -325,9 +325,9 @@
 "full_access.required" = "必要";
 "full_access.not_required" = "不要";
 "full_access.setup_step1.title" = "キーボードを追加";
-"full_access.setup_step1.detail" = "設定 → 一般 → キーボード → 新しいキーボードを追加 → Translator Keyboard";
+"full_access.setup_step1.detail" = "設定 → 一般 → キーボード → 新しいキーボードを追加 → OneBoard";
 "full_access.setup_step2.title" = "フルアクセスを許可";
-"full_access.setup_step2.detail" = "Translator Keyboardをタップして「フルアクセスを許可」をオンにしてください";
+"full_access.setup_step2.detail" = "OneBoardをタップして「フルアクセスを許可」をオンにしてください";
 "full_access.already_granted" = "フルアクセスは既に有効です";
 "full_access.go_settings" = "設定へ移動";
 

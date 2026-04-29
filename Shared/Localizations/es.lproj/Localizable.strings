@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "Repetir introducción";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "Tu teclado todo en uno";
 "onboarding.permission.title" = "Configuración del teclado";
-"onboarding.permission.step1" = "Ve a Ajustes → General → Teclado → Añadir teclado\ny añade Translator Keyboard";
+"onboarding.permission.step1" = "Ve a Ajustes → General → Teclado → Añadir teclado\ny añade OneBoard";
 "onboarding.permission.step2" = "Activa 'Permitir acceso completo'\n(Necesario para la traducción)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "Teclado";
 "onboarding.setup.anim.row.keyboard" = "Teclado";
 "onboarding.setup.anim.row.full_access" = "Permitir acceso completo";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "Se requiere acceso completo para las funciones de traducción.";
 "onboarding.setup.anim.alert.deny" = "No permitir";
 "onboarding.setup.anim.alert.allow" = "Permitir";
-"onboarding.setup.anim.section.access" = "Acceso de Translator Keyboard";
+"onboarding.setup.anim.section.access" = "Acceso de OneBoard";
 "onboarding.setup.anim.section.language" = "Idioma preferido";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence y Siri";
 "onboarding.setup.anim.row.search" = "Buscar";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "Toca Abrir teclado y luego cambia usando el botón 🌐";
 "onboarding.verify.placeholder" = "Toca aquí para escribir";
 "onboarding.verify.waiting" = "Esperando el teclado...";
-"onboarding.verify.switch_hint" = "Cambia a Translator Keyboard usando el botón 🌐";
+"onboarding.verify.switch_hint" = "Cambia a OneBoard usando el botón 🌐";
 "onboarding.verify.success" = "¡Configuración completada!";
 "onboarding.verify.no_full_access" = "El acceso completo no está activado";
 "onboarding.verify.full_access_desc" = "Se requiere acceso completo para traducción y corrección";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "Volver a Ajustes";
 "onboarding.verify.globe_hint" = "Cambia de teclado con la tecla Globo";
 "onboarding.verify.open_keyboard" = "Abrir teclado";
-"onboarding.verify.waiting_open_keyboard" = "Abre el teclado y toca la tecla Globo para elegir One Board";
+"onboarding.verify.waiting_open_keyboard" = "Abre el teclado y toca la tecla Globo para elegir OneBoard";
 "onboarding.verify.tap_outside_to_close" = "Toca fuera para cerrar el teclado";
 "onboarding.verify.success_title_inline" = "Todo está listo";
 "onboarding.verify.success_desc_inline" = "Tu teclado ya está listo para usarse";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "Aprende cómo desactivar la notificación de pegado que aparece al acceder al portapapeles en iOS.";
 "paste_guide.step1.title" = "Abrir Ajustes";
-"paste_guide.step1.detail" = "Abre la app de Ajustes en tu iPhone y busca Translator Keyboard.";
+"paste_guide.step1.detail" = "Abre la app de Ajustes en tu iPhone y busca OneBoard.";
 "paste_guide.step2.title" = "Pegar desde otras apps";
 "paste_guide.step2.detail" = "Busca 'Pegar desde otras apps' y cámbialo a 'Permitir'.";
 "paste_guide.step3.title" = "Listo";
 "paste_guide.step3.detail" = "Ahora puedes usar la función de portapapeles sin notificaciones.";
 "paste_guide.open_settings" = "Abrir Ajustes";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "Pegar de otras apps";
-"paste_guide.anim.section.access" = "Acceso de Translator Keyboard";
+"paste_guide.anim.section.access" = "Acceso de OneBoard";
 "paste_guide.anim.section.language" = "Idioma preferido";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence y Siri";
 "paste_guide.anim.row.search" = "Buscar";
@@ -304,7 +304,7 @@
 "paste_guide.anim.option.deny" = "Denegar";
 "paste_guide.anim.option.allow" = "Permitir";
 // === Privacy Dashboard ===
-"privacy.header" = "Consulta qué datos recopila y no recopila Translator Keyboard.";
+"privacy.header" = "Consulta qué datos recopila y no recopila OneBoard.";
 "privacy.not_collected" = "Datos no recopilados";
 "privacy.keyboard_input" = "Entrada del teclado: No recopilada";
 "privacy.passwords_cards" = "Contraseñas e info de tarjetas: No recopiladas";
@@ -324,9 +324,9 @@
 "full_access.required" = "Necesario";
 "full_access.not_required" = "No necesario";
 "full_access.setup_step1.title" = "Agregar teclado";
-"full_access.setup_step1.detail" = "Ajustes → General → Teclado → Agregar nuevo teclado → Translator Keyboard";
+"full_access.setup_step1.detail" = "Ajustes → General → Teclado → Agregar nuevo teclado → OneBoard";
 "full_access.setup_step2.title" = "Permitir acceso completo";
-"full_access.setup_step2.detail" = "Toca Translator Keyboard y activa 'Permitir acceso completo'";
+"full_access.setup_step2.detail" = "Toca OneBoard y activa 'Permitir acceso completo'";
 "full_access.already_granted" = "El acceso completo ya está activado";
 "full_access.go_settings" = "Ir a Ajustes";
 

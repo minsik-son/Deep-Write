@@ -3,7 +3,7 @@ import UIKit
 class MainViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Translator Keyboard"
+        title = "OneBoard"
         view.backgroundColor = .systemBackground
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(

@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "Refaire l'introduction";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "Votre clavier tout-en-un";
 "onboarding.permission.title" = "Configuration du clavier";
-"onboarding.permission.step1" = "Allez dans Réglages → Général → Clavier → Ajouter un clavier\net ajoutez Translator Keyboard";
+"onboarding.permission.step1" = "Allez dans Réglages → Général → Clavier → Ajouter un clavier\net ajoutez OneBoard";
 "onboarding.permission.step2" = "Activez « Accès complet »\n(Requis pour la traduction)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "Clavier";
 "onboarding.setup.anim.row.keyboard" = "Clavier";
 "onboarding.setup.anim.row.full_access" = "Accès complet";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "L'accès complet est nécessaire pour la traduction.";
 "onboarding.setup.anim.alert.deny" = "Ne pas autoriser";
 "onboarding.setup.anim.alert.allow" = "Autoriser";
-"onboarding.setup.anim.section.access" = "Accès Translator Keyboard";
+"onboarding.setup.anim.section.access" = "Accès OneBoard";
 "onboarding.setup.anim.section.language" = "Langue préférée";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence et Siri";
 "onboarding.setup.anim.row.search" = "Rechercher";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "Touchez Ouvrir le clavier, puis changez avec le bouton 🌐";
 "onboarding.verify.placeholder" = "Appuyez ici pour taper";
 "onboarding.verify.waiting" = "En attente du clavier...";
-"onboarding.verify.switch_hint" = "Passez à Translator Keyboard avec le bouton 🌐";
+"onboarding.verify.switch_hint" = "Passez à OneBoard avec le bouton 🌐";
 "onboarding.verify.success" = "Configuration terminée !";
 "onboarding.verify.no_full_access" = "L'accès complet n'est pas activé";
 "onboarding.verify.full_access_desc" = "L'accès complet est requis pour la traduction et la correction";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "Retourner aux Réglages";
 "onboarding.verify.globe_hint" = "Changez de clavier avec la touche Globe";
 "onboarding.verify.open_keyboard" = "Ouvrir le clavier";
-"onboarding.verify.waiting_open_keyboard" = "Ouvrez le clavier, puis touchez la touche Globe pour choisir One Board";
+"onboarding.verify.waiting_open_keyboard" = "Ouvrez le clavier, puis touchez la touche Globe pour choisir OneBoard";
 "onboarding.verify.tap_outside_to_close" = "Touchez en dehors pour fermer le clavier";
 "onboarding.verify.success_title_inline" = "C'est prêt";
 "onboarding.verify.success_desc_inline" = "Votre clavier est prêt à être utilisé";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "Découvrez comment désactiver la notification de collage qui apparaît lors de l'accès au presse-papiers sur iOS.";
 "paste_guide.step1.title" = "Ouvrir les Réglages";
-"paste_guide.step1.detail" = "Ouvrez l'app Réglages sur votre iPhone et trouvez Translator Keyboard.";
+"paste_guide.step1.detail" = "Ouvrez l'app Réglages sur votre iPhone et trouvez OneBoard.";
 "paste_guide.step2.title" = "Coller depuis d'autres apps";
 "paste_guide.step2.detail" = "Trouvez 'Coller depuis d'autres apps' et changez-le en 'Autoriser'.";
 "paste_guide.step3.title" = "Terminé";
 "paste_guide.step3.detail" = "Vous pouvez maintenant utiliser la fonction presse-papiers sans notifications.";
 "paste_guide.open_settings" = "Ouvrir les Réglages";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "Coller depuis d'autres apps";
-"paste_guide.anim.section.access" = "Accès Translator Keyboard";
+"paste_guide.anim.section.access" = "Accès OneBoard";
 "paste_guide.anim.section.language" = "Langue préférée";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence et Siri";
 "paste_guide.anim.row.search" = "Rechercher";
@@ -304,7 +304,7 @@
 "paste_guide.anim.option.deny" = "Refuser";
 "paste_guide.anim.option.allow" = "Autoriser";
 // === Privacy Dashboard ===
-"privacy.header" = "Consultez les données que Translator Keyboard collecte et ne collecte pas.";
+"privacy.header" = "Consultez les données que OneBoard collecte et ne collecte pas.";
 "privacy.not_collected" = "Données non collectées";
 "privacy.keyboard_input" = "Saisie clavier : Non collectée";
 "privacy.passwords_cards" = "Mots de passe et cartes : Non collectés";
@@ -324,9 +324,9 @@
 "full_access.required" = "Requis";
 "full_access.not_required" = "Non requis";
 "full_access.setup_step1.title" = "Ajouter le clavier";
-"full_access.setup_step1.detail" = "Réglages → Général → Clavier → Ajouter un clavier → Translator Keyboard";
+"full_access.setup_step1.detail" = "Réglages → Général → Clavier → Ajouter un clavier → OneBoard";
 "full_access.setup_step2.title" = "Autoriser l'accès complet";
-"full_access.setup_step2.detail" = "Appuyez sur Translator Keyboard et activez « Autoriser l'accès complet »";
+"full_access.setup_step2.detail" = "Appuyez sur OneBoard et activez « Autoriser l'accès complet »";
 "full_access.already_granted" = "L'accès complet est déjà activé";
 "full_access.go_settings" = "Aller aux réglages";
 

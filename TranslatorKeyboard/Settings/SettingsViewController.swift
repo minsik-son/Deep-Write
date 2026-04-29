@@ -119,7 +119,7 @@ class SettingsViewController: UITableViewController {
         let label = UILabel()
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        label.text = "Translator Keyboard v\(version) (\(build))"
+        label.text = "OneBoard v\(version) (\(build))"
         label.font = .systemFont(ofSize: 13)
         label.textColor = AppColors.textMuted
         label.textAlignment = .center
@@ -327,15 +327,15 @@ class SettingsViewController: UITableViewController {
                     UIApplication.shared.open(url)
                 }
             case 3:
-                if let url = URL(string: "https://support.translatorkeyboard.com/faq") {
+                if let url = URL(string: AppConstants.LegalLinks.faq) {
                     UIApplication.shared.open(url)
                 }
             case 4:
-                if let url = URL(string: "https://support.translatorkeyboard.com/privacy") {
+                if let url = URL(string: AppConstants.LegalLinks.privacy) {
                     UIApplication.shared.open(url)
                 }
             case 5:
-                if let url = URL(string: "https://support.translatorkeyboard.com/terms") {
+                if let url = URL(string: AppConstants.LegalLinks.terms) {
                     UIApplication.shared.open(url)
                 }
             default: break

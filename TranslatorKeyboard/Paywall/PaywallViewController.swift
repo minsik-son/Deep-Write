@@ -766,13 +766,13 @@ class PaywallViewController: UIViewController {
     }
 
     @objc private func termsTapped() {
-        if let url = URL(string: "https://translatorkeyboard.com/terms") {
+        if let url = URL(string: AppConstants.LegalLinks.terms) {
             UIApplication.shared.open(url)
         }
     }
 
     @objc private func privacyTapped() {
-        if let url = URL(string: "https://translatorkeyboard.com/privacy") {
+        if let url = URL(string: AppConstants.LegalLinks.privacy) {
             UIApplication.shared.open(url)
         }
     }

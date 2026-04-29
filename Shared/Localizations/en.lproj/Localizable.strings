@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "Redo Onboarding";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "Your all-in-one keyboard";
 "onboarding.permission.title" = "Keyboard Setup";
-"onboarding.permission.step1" = "Go to Settings → General → Keyboard → Add Keyboard\nand add Translator Keyboard";
+"onboarding.permission.step1" = "Go to Settings → General → Keyboard → Add Keyboard\nand add OneBoard";
 "onboarding.permission.step2" = "Enable 'Allow Full Access'\n(Required for translation)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "Keyboard";
 "onboarding.setup.anim.row.keyboard" = "Keyboard";
 "onboarding.setup.anim.row.full_access" = "Allow Full Access";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "Full access is required for translation features.";
 "onboarding.setup.anim.alert.deny" = "Don't Allow";
 "onboarding.setup.anim.alert.allow" = "Allow";
-"onboarding.setup.anim.section.access" = "Translator Keyboard Access";
+"onboarding.setup.anim.section.access" = "OneBoard Access";
 "onboarding.setup.anim.section.language" = "Preferred Language";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "onboarding.setup.anim.row.search" = "Search";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "Tap Open Keyboard below, then switch using the 🌐 button";
 "onboarding.verify.placeholder" = "Tap here to type";
 "onboarding.verify.waiting" = "Waiting for keyboard...";
-"onboarding.verify.switch_hint" = "Switch to Translator Keyboard using the 🌐 button";
+"onboarding.verify.switch_hint" = "Switch to OneBoard using the 🌐 button";
 "onboarding.verify.success" = "Setup complete!";
 "onboarding.verify.no_full_access" = "Full Access is not enabled";
 "onboarding.verify.full_access_desc" = "Full Access is required for translation and correction";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "Go back to Settings";
 "onboarding.verify.globe_hint" = "Switch keyboards with the Globe key";
 "onboarding.verify.open_keyboard" = "Open Keyboard";
-"onboarding.verify.waiting_open_keyboard" = "Open the keyboard, then tap the Globe key to choose One Board";
+"onboarding.verify.waiting_open_keyboard" = "Open the keyboard, then tap the Globe key to choose OneBoard";
 "onboarding.verify.tap_outside_to_close" = "Tap outside to close the keyboard";
 "onboarding.verify.success_title_inline" = "You're all set";
 "onboarding.verify.success_desc_inline" = "Your keyboard is ready to use";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "Learn how to disable the paste notification that appears when accessing the clipboard on iOS.";
 "paste_guide.step1.title" = "Open Settings";
-"paste_guide.step1.detail" = "Open the Settings app on your iPhone and find Translator Keyboard.";
+"paste_guide.step1.detail" = "Open the Settings app on your iPhone and find OneBoard.";
 "paste_guide.step2.title" = "Paste from Other Apps";
 "paste_guide.step2.detail" = "Find 'Paste from Other Apps' and change it to 'Allow'.";
 "paste_guide.step3.title" = "Done";
 "paste_guide.step3.detail" = "You can now use the clipboard feature without paste notifications.";
 "paste_guide.open_settings" = "Open Settings";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "Paste from Other Apps";
-"paste_guide.anim.section.access" = "Allow Translator Keyboard to Access";
+"paste_guide.anim.section.access" = "Allow OneBoard to Access";
 "paste_guide.anim.section.language" = "Preferred Language";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "paste_guide.anim.row.search" = "Search";
@@ -305,7 +305,7 @@
 "paste_guide.anim.option.allow" = "Allow";
 
 // === Privacy Dashboard ===
-"privacy.header" = "See what data Translator Keyboard collects and doesn't collect.";
+"privacy.header" = "See what data OneBoard collects and doesn't collect.";
 "privacy.not_collected" = "Data Not Collected";
 "privacy.keyboard_input" = "Keyboard input: Not collected";
 "privacy.passwords_cards" = "Passwords & card info: Not collected";
@@ -325,9 +325,9 @@
 "full_access.required" = "Required";
 "full_access.not_required" = "Not Required";
 "full_access.setup_step1.title" = "Add Keyboard";
-"full_access.setup_step1.detail" = "Settings → General → Keyboard → Add New Keyboard → Translator Keyboard";
+"full_access.setup_step1.detail" = "Settings → General → Keyboard → Add New Keyboard → OneBoard";
 "full_access.setup_step2.title" = "Allow Full Access";
-"full_access.setup_step2.detail" = "Tap Translator Keyboard and enable 'Allow Full Access'";
+"full_access.setup_step2.detail" = "Tap OneBoard and enable 'Allow Full Access'";
 "full_access.already_granted" = "Full access is already enabled";
 "full_access.go_settings" = "Go to Settings";
 

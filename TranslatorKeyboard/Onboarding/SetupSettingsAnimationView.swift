@@ -119,7 +119,7 @@ final class SetupSettingsAnimationView: UIView {
         labelKeyboard.text = L("onboarding.setup.anim.row.keyboard")
         labelLanguage.text = L("onboarding.setup.anim.row.language")
         languageValueLabel.text = L("onboarding.setup.anim.language.current")
-        translatorLabel.text = "Translator KB"
+        translatorLabel.text = "OneBoard"
         fullAccessLabel.text = L("onboarding.setup.anim.row.full_access")
         detailNote.text = L("onboarding.setup.anim.detail.note")
         alertTitleLabel.text = L("onboarding.setup.anim.alert.title")

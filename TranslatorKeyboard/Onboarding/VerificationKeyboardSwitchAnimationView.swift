@@ -202,7 +202,7 @@ final class VerificationKeyboardSwitchAnimationView: UIView {
         listLabel1.textColor = .label
         listLabel1.translatesAutoresizingMaskIntoConstraints = false
 
-        listLabel2.text = "Translator KB"
+        listLabel2.text = "OneBoard"
         listLabel2.font = .systemFont(ofSize: 11, weight: .medium)
         listLabel2.textColor = .systemBlue
         listLabel2.translatesAutoresizingMaskIntoConstraints = false

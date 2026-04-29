@@ -21,12 +21,12 @@
 "settings.redo_onboarding" = "Einführung wiederholen";
 
 // === Onboarding ===
-"onboarding.welcome.title" = "One Board";
+"onboarding.welcome.title" = "OneBoard";
 "onboarding.welcome.subtitle" = "Ihre All-in-One-Tastatur";
 "onboarding.permission.title" = "Tastatur-Einrichtung";
-"onboarding.permission.step1" = "Gehen Sie zu Einstellungen → Allgemein → Tastatur → Tastatur hinzufügen\nund fügen Sie Translator Keyboard hinzu";
+"onboarding.permission.step1" = "Gehen Sie zu Einstellungen → Allgemein → Tastatur → Tastatur hinzufügen\nund fügen Sie OneBoard hinzu";
 "onboarding.permission.step2" = "Aktivieren Sie 'Vollzugriff erlauben'\n(Erforderlich für die Übersetzung)";
-"onboarding.setup.anim.nav.root" = "Translator Keyboard";
+"onboarding.setup.anim.nav.root" = "OneBoard";
 "onboarding.setup.anim.nav.keyboard" = "Tastatur";
 "onboarding.setup.anim.row.keyboard" = "Tastatur";
 "onboarding.setup.anim.row.full_access" = "Vollzugriff erlauben";
@@ -34,7 +34,7 @@
 "onboarding.setup.anim.alert.body" = "Vollzugriff ist für die Übersetzungsfunktion erforderlich.";
 "onboarding.setup.anim.alert.deny" = "Nicht erlauben";
 "onboarding.setup.anim.alert.allow" = "Erlauben";
-"onboarding.setup.anim.section.access" = "Translator Keyboard-Zugriff";
+"onboarding.setup.anim.section.access" = "OneBoard-Zugriff";
 "onboarding.setup.anim.section.language" = "Bevorzugte Sprache";
 "onboarding.setup.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "onboarding.setup.anim.row.search" = "Suchen";
@@ -63,7 +63,7 @@
 "onboarding.verify.instruction" = "Tippe auf Tastatur öffnen und wechsle dann mit dem 🌐-Button";
 "onboarding.verify.placeholder" = "Tippen Sie hier zum Schreiben";
 "onboarding.verify.waiting" = "Warte auf Tastatur...";
-"onboarding.verify.switch_hint" = "Wechseln Sie mit der 🌐-Taste zu Translator Keyboard";
+"onboarding.verify.switch_hint" = "Wechseln Sie mit der 🌐-Taste zu OneBoard";
 "onboarding.verify.success" = "Einrichtung abgeschlossen!";
 "onboarding.verify.no_full_access" = "Voller Zugriff ist nicht aktiviert";
 "onboarding.verify.full_access_desc" = "Voller Zugriff ist für Übersetzung und Korrektur erforderlich";
@@ -73,7 +73,7 @@
 "onboarding.verify.retry" = "Zurück zu Einstellungen";
 "onboarding.verify.globe_hint" = "Wechsle mit der Globus-Taste die Tastatur";
 "onboarding.verify.open_keyboard" = "Tastatur öffnen";
-"onboarding.verify.waiting_open_keyboard" = "Öffne die Tastatur und wähle One Board über die Globus-Taste aus";
+"onboarding.verify.waiting_open_keyboard" = "Öffne die Tastatur und wähle OneBoard über die Globus-Taste aus";
 "onboarding.verify.tap_outside_to_close" = "Tippe außerhalb, um die Tastatur zu schließen";
 "onboarding.verify.success_title_inline" = "Alles ist bereit";
 "onboarding.verify.success_desc_inline" = "Deine Tastatur ist einsatzbereit";
@@ -281,15 +281,15 @@
 // === Paste Guide ===
 "paste_guide.description" = "Erfahren Sie, wie Sie die Einfüge-Benachrichtigung deaktivieren, die beim Zugriff auf die Zwischenablage unter iOS erscheint.";
 "paste_guide.step1.title" = "Einstellungen öffnen";
-"paste_guide.step1.detail" = "Öffnen Sie die Einstellungen-App auf Ihrem iPhone und suchen Sie Translator Keyboard.";
+"paste_guide.step1.detail" = "Öffnen Sie die Einstellungen-App auf Ihrem iPhone und suchen Sie OneBoard.";
 "paste_guide.step2.title" = "Von anderen Apps einfügen";
 "paste_guide.step2.detail" = "Finden Sie 'Von anderen Apps einfügen' und ändern Sie es auf 'Erlauben'.";
 "paste_guide.step3.title" = "Fertig";
 "paste_guide.step3.detail" = "Sie können die Zwischenablage-Funktion jetzt ohne Benachrichtigungen nutzen.";
 "paste_guide.open_settings" = "Einstellungen öffnen";
-"paste_guide.anim.nav.root" = "Translator Keyboard";
+"paste_guide.anim.nav.root" = "OneBoard";
 "paste_guide.anim.nav.detail" = "Aus anderen Apps einsetzen";
-"paste_guide.anim.section.access" = "Translator Keyboard-Zugriff";
+"paste_guide.anim.section.access" = "OneBoard-Zugriff";
 "paste_guide.anim.section.language" = "Bevorzugte Sprache";
 "paste_guide.anim.row.apple_intelligence" = "Apple Intelligence & Siri";
 "paste_guide.anim.row.search" = "Suchen";
@@ -304,7 +304,7 @@
 "paste_guide.anim.option.deny" = "Ablehnen";
 "paste_guide.anim.option.allow" = "Erlauben";
 // === Privacy Dashboard ===
-"privacy.header" = "Sehen Sie, welche Daten Translator Keyboard sammelt und nicht sammelt.";
+"privacy.header" = "Sehen Sie, welche Daten OneBoard sammelt und nicht sammelt.";
 "privacy.not_collected" = "Nicht gesammelte Daten";
 "privacy.keyboard_input" = "Tastatureingabe: Nicht gesammelt";
 "privacy.passwords_cards" = "Passwörter & Kartendaten: Nicht gesammelt";
@@ -324,9 +324,9 @@
 "full_access.required" = "Erforderlich";
 "full_access.not_required" = "Nicht erforderlich";
 "full_access.setup_step1.title" = "Tastatur hinzufügen";
-"full_access.setup_step1.detail" = "Einstellungen → Allgemein → Tastatur → Neue Tastatur hinzufügen → Translator Keyboard";
+"full_access.setup_step1.detail" = "Einstellungen → Allgemein → Tastatur → Neue Tastatur hinzufügen → OneBoard";
 "full_access.setup_step2.title" = "Vollzugriff erlauben";
-"full_access.setup_step2.detail" = "Tippen Sie auf Translator Keyboard und aktivieren Sie 'Vollzugriff erlauben'";
+"full_access.setup_step2.detail" = "Tippen Sie auf OneBoard und aktivieren Sie 'Vollzugriff erlauben'";
 "full_access.already_granted" = "Vollzugriff ist bereits aktiviert";
 "full_access.go_settings" = "Zu den Einstellungen";
 
