@@ -197,12 +197,6 @@ class KeyboardViewController: UIInputViewController {
     private var correctionLanguageCode: String = "ko"
     private var isLanguagePickerVisible = false
 
-    // Tone state
-    private var currentToneStyle: ToneStyle = .none
-    private var tonePickerView: TonePickerView?
-    private var isTonePickerVisible = false
-    private var tonePickerHeightConstraint: NSLayoutConstraint?
-
     // MARK: - Layout Constants
 
     private struct Heights {
@@ -908,9 +902,6 @@ class KeyboardViewController: UIInputViewController {
             phraseInputHeaderView.reloadLocalizedStrings()
         }
         updateLanguageLabels()
-        if currentMode == .correctionMode {
-            correctionLanguageBar.updateToneName(currentToneStyle.displayName)
-        }
     }
 
     private func loadNumberRowSetting() {
@@ -1033,8 +1024,7 @@ class KeyboardViewController: UIInputViewController {
             newHeight = Heights.topPadding + Heights.translationLanguageBar + inputH + keyArea
         case .correctionMode:
             let inputH = correctionInputHeightConstraint?.constant ?? Heights.translationInput
-            let toneH = tonePickerHeightConstraint?.constant ?? 0
-            newHeight = Heights.topPadding + Heights.translationLanguageBar + toneH + inputH + keyArea
+            newHeight = Heights.topPadding + Heights.translationLanguageBar + inputH + keyArea
         case .phraseInputMode:
             let inputH = phraseInputHeightConstraint?.constant ?? Heights.translationInput
             newHeight = Heights.topPadding + Heights.translationLanguageBar + inputH + keyArea
@@ -1386,9 +1376,6 @@ class KeyboardViewController: UIInputViewController {
         }
         correctionLanguageBar.onLanguageTap = { [weak self] in
             self?.showCorrectionLanguagePicker()
-        }
-        correctionLanguageBar.onToneTap = { [weak self] in
-            self?.toggleTonePicker()
         }
         correctionLanguageBar.onCloseTap = { [weak self] in
             self?.exitCorrectionMode()
@@ -2160,14 +2147,6 @@ class KeyboardViewController: UIInputViewController {
         let langName = languageDisplayName(for: correctionLanguageCode)
         correctionLanguageBar.updateLanguageName(langName)
         correctionManager.setLanguage(correctionLanguageCode)
-        if let savedTone = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.toneStyle),
-           let tone = ToneStyle(rawValue: savedTone) {
-            currentToneStyle = tone
-        } else {
-            currentToneStyle = .none
-        }
-        correctionLanguageBar.updateToneName(currentToneStyle.displayName)
-        correctionManager.setTone(currentToneStyle)
         switchMode(to: .correctionMode)
         animateBookOpen([correctionLanguageBar, correctionInputView])
     }
@@ -2182,7 +2161,6 @@ class KeyboardViewController: UIInputViewController {
         defaultTextInputHandler.clear()
         defaultModeComposingLength = 0
         correctionInputHeightConstraint?.constant = Heights.translationInput
-        hideTonePicker()
         hideLanguagePicker()
         animateBookClose([correctionLanguageBar, correctionInputView]) { [weak self] in
             self?.switchMode(to: .defaultMode)
@@ -2439,65 +2417,6 @@ class KeyboardViewController: UIInputViewController {
                 modeTextInputHandler.handleKey(char, isKorean: isKorean)
             }
         }
-    }
-
-    private func toggleTonePicker() {
-        if isTonePickerVisible {
-            hideTonePicker()
-        } else {
-            showTonePicker()
-        }
-    }
-
-    private func ensureTonePickerView() {
-        guard tonePickerView == nil, let inputView = self.inputView else { return }
-        let tp = TonePickerView()
-        tp.translatesAutoresizingMaskIntoConstraints = false
-        tp.isHidden = true
-        tp.onToneSelected = { [weak self] tone in
-            self?.currentToneStyle = tone
-            AppGroupManager.shared.set(tone.rawValue, forKey: AppConstants.UserDefaultsKeys.toneStyle)
-            self?.correctionLanguageBar.updateToneName(tone.displayName)
-            self?.correctionManager.setTone(tone)
-            self?.hideTonePicker()
-            if let text = self?.modeTextInputHandler.fullText, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                self?.correctionManager.reset()
-                self?.correctionManager.requestCorrection(text: text)
-            }
-        }
-        inputView.addSubview(tp)
-
-        // Re-anchor correctionInputView: was pinned to correctionLanguageBar, now pin to tonePicker
-        correctionInputTopConstraint?.isActive = false
-        NSLayoutConstraint.activate([
-            tp.topAnchor.constraint(equalTo: correctionLanguageBar.bottomAnchor),
-            tp.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
-            tp.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
-        ])
-        correctionInputTopConstraint = correctionInputView.topAnchor.constraint(equalTo: tp.bottomAnchor)
-        correctionInputTopConstraint?.isActive = true
-
-        tonePickerHeightConstraint = tp.heightAnchor.constraint(equalToConstant: 0)
-        tonePickerHeightConstraint?.isActive = true
-
-        tonePickerView = tp
-    }
-
-    private func showTonePicker() {
-        ensureTonePickerView()
-        isTonePickerVisible = true
-        tonePickerView?.selectTone(currentToneStyle)
-        tonePickerHeightConstraint?.constant = 38
-        tonePickerView?.show()
-        updateHeight(for: .correctionMode, animated: true)
-    }
-
-    private func hideTonePicker() {
-        guard isTonePickerVisible else { return }
-        isTonePickerVisible = false
-        tonePickerView?.hide()
-        tonePickerHeightConstraint?.constant = 0
-        updateHeight(for: .correctionMode, animated: true)
     }
 
     private func showCorrectionLanguagePicker() {
@@ -3381,8 +3300,6 @@ class KeyboardViewController: UIInputViewController {
             correctionInputView.applyTheme(theme)
             correctionInputView.updateAppearance(isDark: isDark)
         }
-        tonePickerView?.applyTheme(theme)
-        tonePickerView?.updateAppearance(isDark: isDark)
         savedPhrasesView?.applyTheme(theme)
         savedPhrasesView?.updateAppearance(isDark: isDark)
         clipboardHistoryView?.applyTheme(theme)

@@ -73,9 +73,13 @@ class TranslationManager {
         let urlString = AppConstants.API.baseURL + AppConstants.API.translateEndpoint
         guard let url = URL(string: urlString) else { return }
 
+        let requestId = String(UUID().uuidString.prefix(8))
+        let networkStartedAt = CFAbsoluteTimeGetCurrent()
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(requestId, forHTTPHeaderField: "X-OneBoard-Request-ID")
 
         let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
         let tier = SubscriptionStatus.shared.currentTier.rawValue
@@ -86,12 +90,32 @@ class TranslationManager {
             "targetLang": targetLang,
             "tier": tier,
             "deviceId": deviceId,
-            "model": FeatureGate.shared.apiModelName
+            "model": FeatureGate.shared.apiModelName,
+            "requestId": requestId
         ]
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
+        let charCount = text.count
+        let src = sourceLang
+        let tgt = targetLang
+        let model = FeatureGate.shared.apiModelName
+        let retry = retryCount
+
         let task = session.dataTask(with: request) { [weak self] data, response, error in
+            let responseAt = CFAbsoluteTimeGetCurrent()
+            let networkMs = Int((responseAt - networkStartedAt) * 1000)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let serverProvider = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OneBoard-AI-Provider")
+            let serverTimingMs = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OneBoard-Server-Timing-Ms")
+
+            #if DEBUG
+            let stale = generation != self?.currentGeneration
+            NSLog("[AI_LATENCY_CLIENT] requestId=%@ mode=translate cacheHit=false charCount=%d sourceLang=%@ targetLang=%@ tier=%@ requestedModel=%@ networkMs=%d statusCode=%d retryAttempt=%d stale=%d serverProvider=%@ serverTimingMs=%@",
+                  requestId, charCount, src, tgt, tier, model, networkMs, statusCode, retry,
+                  stale ? 1 : 0, serverProvider ?? "-", serverTimingMs ?? "-")
+            #endif
+
             DispatchQueue.main.async {
                 self?.handleResponse(text: text, generation: generation, data: data, response: response, error: error)
             }

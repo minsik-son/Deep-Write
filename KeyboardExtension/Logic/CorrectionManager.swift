@@ -19,14 +19,9 @@ class CorrectionManager {
     private var currentGeneration: Int = 0
 
     private var languageCode: String = "ko"
-    private var toneStyle: ToneStyle = .none
 
     func setLanguage(_ code: String) {
         self.languageCode = code
-    }
-
-    func setTone(_ tone: ToneStyle) {
-        self.toneStyle = tone
     }
 
     func requestCorrection(text: String) {
@@ -35,7 +30,7 @@ class CorrectionManager {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != lastCorrectedText else { return }
 
-        if let cached = cache.get(text: trimmed, source: "correct_\(toneStyle.rawValue)", target: languageCode) {
+        if let cached = cache.get(text: trimmed, source: "correct", target: languageCode) {
             currentGeneration += 1
             lastCorrectedText = trimmed
             delegate?.correctionManager(self, didCorrect: cached, language: languageCode)
@@ -71,9 +66,13 @@ class CorrectionManager {
         let urlString = AppConstants.API.baseURL + AppConstants.API.correctEndpoint
         guard let url = URL(string: urlString) else { return }
 
+        let requestId = String(UUID().uuidString.prefix(8))
+        let networkStartedAt = CFAbsoluteTimeGetCurrent()
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(requestId, forHTTPHeaderField: "X-OneBoard-Request-ID")
 
         let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
         let tier = SubscriptionStatus.shared.currentTier.rawValue
@@ -81,15 +80,33 @@ class CorrectionManager {
         let body: [String: Any] = [
             "text": text,
             "language": languageCode,
-            "tone": toneStyle.rawValue,
             "tier": tier,
             "deviceId": deviceId,
-            "model": FeatureGate.shared.apiModelName
+            "model": FeatureGate.shared.apiModelName,
+            "requestId": requestId
         ]
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
+        let charCount = text.count
+        let lang = languageCode
+        let model = FeatureGate.shared.apiModelName
+        let retry = retryCount
+
         let task = session.dataTask(with: request) { [weak self] data, response, error in
+            let responseAt = CFAbsoluteTimeGetCurrent()
+            let networkMs = Int((responseAt - networkStartedAt) * 1000)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let serverProvider = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OneBoard-AI-Provider")
+            let serverTimingMs = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-OneBoard-Server-Timing-Ms")
+
+            #if DEBUG
+            let stale = generation != self?.currentGeneration
+            NSLog("[AI_LATENCY_CLIENT] requestId=%@ mode=correct cacheHit=false charCount=%d language=%@ tier=%@ requestedModel=%@ networkMs=%d statusCode=%d retryAttempt=%d stale=%d serverProvider=%@ serverTimingMs=%@",
+                  requestId, charCount, lang, tier, model, networkMs, statusCode, retry,
+                  stale ? 1 : 0, serverProvider ?? "-", serverTimingMs ?? "-")
+            #endif
+
             DispatchQueue.main.async {
                 self?.handleResponse(text: text, generation: generation, data: data, response: response, error: error)
             }
@@ -149,7 +166,7 @@ class CorrectionManager {
             return
         }
 
-        cache.set(text: text, source: "correct_\(toneStyle.rawValue)", target: languageCode, translatedText: correctedText)
+        cache.set(text: text, source: "correct", target: languageCode, translatedText: correctedText)
         lastCorrectedText = text
 
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)

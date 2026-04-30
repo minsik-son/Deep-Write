@@ -145,7 +145,12 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         setupLayout()
         updateUI()
         AdManager.shared.delegate = self
-        AdManager.shared.loadRewardedAd()
+        // ATT → UMP → MobileAds.start → ad load 순서 보장
+        AdManager.shared.prepareForAdRequests(from: self) { success in
+            if success {
+                AdManager.shared.loadRewardedAd()
+            }
+        }
     }
 
     override func viewDidDisappear(_ animated: Bool) {

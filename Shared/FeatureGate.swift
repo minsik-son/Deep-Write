@@ -71,10 +71,7 @@ final class FeatureGate {
     // MARK: - AI Model
 
     var apiModelName: String {
-        switch currentTier {
-        case .free: return "gemini-2.5-flash-lite"
-        case .pro, .premium: return "gemini-2.5-flash"
-        }
+        return "gpt-5-nano"
     }
 
     // MARK: - AI 메시지 작성 제한

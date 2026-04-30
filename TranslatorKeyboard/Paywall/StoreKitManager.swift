@@ -97,6 +97,11 @@ final class StoreKitManager {
         }
     }
 
+    /// 앱 시작 시 현재 entitlement 상태를 확인하여 tier를 갱신
+    func refreshCurrentEntitlements() async {
+        await updateCurrentEntitlements()
+    }
+
     private func updateCurrentEntitlements() async {
         var hasActiveSubscription = false
 

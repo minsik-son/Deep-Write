@@ -20,14 +20,68 @@ final class AdManager: NSObject {
     /// When true, reward callback will NOT update DailyUsageManager (for DEBUG test button)
     var isTestMode = false
 
+    // MARK: - Bootstrap State
+
+    /// MobileAds SDK가 process lifecycle에서 start된 적 있는지
+    private var isMobileAdsStarted = false
+    /// ATT + UMP consent 완료 후 광고 요청 가능한 상태인지
+    private(set) var isBootstrapped = false
+
     private override init() {
         super.init()
     }
+
+    // MARK: - Bootstrap (ATT → UMP → MobileAds.start)
+
+    /// ATT/UMP consent를 확인하고 MobileAds SDK를 시작한 뒤 completion(true)를 호출.
+    /// 실패 시 completion(false). process lifecycle에서 MobileAds.start는 1회만 호출.
+    func prepareForAdRequests(from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
+        // 이미 bootstrap 완료 상태면 즉시 성공
+        if isBootstrapped {
+            completion(true)
+            return
+        }
+
+        // 1. ATT
+        ATTManager.shared.requestTrackingAuthorizationIfNeeded { [weak self] in
+            guard let self = self else { completion(false); return }
+
+            // 2. UMP
+            AdConsentManager.shared.updateConsent(from: viewController) { [weak self] canRequest in
+                guard let self = self else { completion(false); return }
+
+                guard canRequest else {
+                    print("[AdManager] Bootstrap: consent denied or failed")
+                    completion(false)
+                    return
+                }
+
+                // 3. MobileAds.start (1회만)
+                if !self.isMobileAdsStarted {
+                    self.isMobileAdsStarted = true
+                    MobileAds.shared.start { _ in
+                        self.isBootstrapped = true
+                        completion(true)
+                    }
+                } else {
+                    self.isBootstrapped = true
+                    completion(true)
+                }
+            }
+        }
+    }
+
+    // MARK: - Load
 
     func loadRewardedAd() {
         guard !isLoading else { return }
         guard AdConfiguration.isConfigured else {
             print("[AdManager] Ad configuration not set — ads disabled")
+            return
+        }
+        // Consent/bootstrap guard — bypass 방지
+        guard isBootstrapped else {
+            print("[AdManager] loadRewardedAd skipped — not bootstrapped (ATT/UMP/MobileAds.start incomplete)")
             return
         }
 
@@ -50,6 +104,8 @@ final class AdManager: NSObject {
             self.isAdReady = true
         }
     }
+
+    // MARK: - Show
 
     func showRewardedAd(from viewController: UIViewController, mode: RewardMode) {
         currentMode = mode
@@ -88,6 +144,8 @@ final class AdManager: NSObject {
         return isAdReady && DailyUsageManager.shared.canWatchRewardedAd(for: mode)
     }
 
+    // MARK: - Reward (변경 금지)
+
     private func grantReward(mode: RewardMode) {
         guard !isTestMode else {
             print("[AdManager] TEST MODE — reward callback received, no usage recorded")
@@ -109,7 +167,7 @@ extension AdManager: FullScreenContentDelegate {
         isAdReady = false
         rewardedAd = nil
         delegate?.adManagerDidDismissAd(self)
-        loadRewardedAd()
+        loadRewardedAd()  // bootstrap guard가 자동 적용됨
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
@@ -117,6 +175,6 @@ extension AdManager: FullScreenContentDelegate {
         isAdReady = false
         rewardedAd = nil
         delegate?.adManagerDidFailToLoad(self)
-        loadRewardedAd()
+        loadRewardedAd()  // bootstrap guard가 자동 적용됨
     }
 }

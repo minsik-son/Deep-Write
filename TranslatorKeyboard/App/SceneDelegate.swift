@@ -19,6 +19,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         AdditionalKeyboardBootstrap.runOnceIfNeeded()
 
+        // StoreKit entitlement refresh — 앱 시작 시 구독 상태를 최신화 (non-blocking)
+        Task {
+            await StoreKitManager.shared.refreshCurrentEntitlements()
+        }
+
         // 라이트/다크 모드 적용
         let isDark = UserDefaults(suiteName: AppConstants.appGroupIdentifier)?.bool(forKey: AppConstants.UserDefaultsKeys.appDarkMode) ?? false
         window?.overrideUserInterfaceStyle = isDark ? .dark : .light
