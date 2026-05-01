@@ -2,6 +2,7 @@ import UIKit
 import GoogleMobileAds
 
 protocol AdManagerDelegate: AnyObject {
+    func adManagerDidLoad(_ manager: AdManager)
     func adManagerDidRewardUser(_ manager: AdManager)
     func adManagerDidFailToLoad(_ manager: AdManager)
     func adManagerDidDismissAd(_ manager: AdManager)
@@ -102,6 +103,7 @@ final class AdManager: NSObject {
             self.rewardedAd = ad
             self.rewardedAd?.fullScreenContentDelegate = self
             self.isAdReady = true
+            self.delegate?.adManagerDidLoad(self)
         }
     }
 
@@ -111,8 +113,8 @@ final class AdManager: NSObject {
         currentMode = mode
 
         guard isAdReady, let rewardedAd = rewardedAd else {
+            // Not ready yet — trigger load but do NOT report failure
             loadRewardedAd()
-            delegate?.adManagerDidFailToLoad(self)
             return
         }
 

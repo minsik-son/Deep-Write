@@ -782,3 +782,4 @@
 // === Reward Charge Complete ===
 "reward.charge_complete" = "Recharge complete";
 "reward.charge_complete_feedback" = "%d uses have been recharged.";
+"reward.cta_loading" = "Preparing ad...";

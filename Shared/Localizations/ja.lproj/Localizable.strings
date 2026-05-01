@@ -782,3 +782,4 @@
 // === Reward Charge Complete ===
 "reward.charge_complete" = "チャージ完了";
 "reward.charge_complete_feedback" = "%d回分チャージされました。";
+"reward.cta_loading" = "広告を準備中...";

@@ -1712,6 +1712,10 @@ class HomeViewController: UIViewController {
 
 #if DEBUG
 extension HomeViewController: AdManagerDelegate {
+    func adManagerDidLoad(_ manager: AdManager) {
+        // DEBUG test — ad loaded, no-op
+    }
+
     func adManagerDidRewardUser(_ manager: AdManager) {
         debugAdTestButton.isEnabled = true
         debugAdTestButton.setTitle("🧪 Reward Received! ✅", for: .normal)

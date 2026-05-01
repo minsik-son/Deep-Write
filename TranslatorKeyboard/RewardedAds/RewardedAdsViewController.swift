@@ -116,6 +116,7 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     private var dotViews: [UIView] = []
     private var isDismissing = false
     private var isAdInProgress = false
+    private var isPreparingAd = true
 
     /// 오늘의 광고 한도를 진짜 다 채웠는지 (daily cap 도달)
     private var isDailyQuotaExhausted: Bool {
@@ -143,12 +144,27 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         super.viewDidLoad()
         view.backgroundColor = AppColors.bg
         setupLayout()
-        updateUI()
         AdManager.shared.delegate = self
-        // ATT → UMP → MobileAds.start → ad load 순서 보장
-        AdManager.shared.prepareForAdRequests(from: self) { success in
-            if success {
-                AdManager.shared.loadRewardedAd()
+
+        // 이미 ad가 준비되어 있으면 loading state skip
+        if AdManager.shared.isAdReady {
+            isPreparingAd = false
+            updateUI()
+        } else {
+            isPreparingAd = true
+            updateUI()
+            // ATT → UMP → MobileAds.start → ad load 순서 보장
+            AdManager.shared.prepareForAdRequests(from: self) { [weak self] success in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    if success {
+                        AdManager.shared.loadRewardedAd()
+                    } else {
+                        self.isPreparingAd = false
+                        self.updateUI()
+                        self.showFeedback(L("reward.ad_failed"), isError: true)
+                    }
+                }
             }
         }
     }
@@ -278,8 +294,13 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
         // Progress
         progressLabel.text = String(format: L("reward.progress"), watched, maxAds)
 
-        // CTA — 3가지 상태 분기
-        if canWatch {
+        // CTA — 4가지 상태 분기 (preparing → ready → done → charge complete)
+        if canWatch && isPreparingAd {
+            // Ad 로딩/준비 중 — 탭 방지
+            ctaButton.setTitle(L("reward.cta_loading"), for: .normal)
+            ctaButton.backgroundColor = AppColors.textMuted
+            ctaButton.isEnabled = false
+        } else if canWatch {
             ctaButton.setTitle(L("reward.cta_watch"), for: .normal)
             ctaButton.backgroundColor = AppColors.tierAccent
             ctaButton.isEnabled = true
@@ -304,6 +325,13 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
 
     @objc private func watchAdTapped() {
         guard !isAdInProgress else { return }
+        guard AdManager.shared.isAdReady else {
+            // Not ready yet — show loading state and trigger load
+            isPreparingAd = true
+            updateUI()
+            AdManager.shared.loadRewardedAd()
+            return
+        }
         isAdInProgress = true
         ctaButton.isEnabled = false
         AdManager.shared.showRewardedAd(from: self, mode: mode)
@@ -329,6 +357,12 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }
 
     // MARK: - AdManagerDelegate
+
+    func adManagerDidLoad(_ manager: AdManager) {
+        isPreparingAd = false
+        isAdInProgress = false
+        updateUI()
+    }
 
     func adManagerDidRewardUser(_ manager: AdManager) {
         isAdInProgress = false
@@ -356,8 +390,8 @@ class RewardedAdsViewController: UIViewController, AdManagerDelegate {
     }
 
     func adManagerDidFailToLoad(_ manager: AdManager) {
+        isPreparingAd = false
         isAdInProgress = false
-        ctaButton.isEnabled = true
         updateUI()
         showFeedback(L("reward.ad_failed"), isError: true)
     }
