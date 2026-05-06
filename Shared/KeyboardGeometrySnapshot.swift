@@ -27,6 +27,16 @@ struct KeyboardGeometrySnapshot: Codable {
     var orientationClass: String
     var layoutID: String
 
+    // Optional metadata (v1.1 — backward compatible)
+    var keyboardLayoutOriginYInInputView: CGFloat?
+    var keyboardLayoutHeight: CGFloat?
+    var toolbarHeight: CGFloat?
+    var topPadding: CGFloat?
+    var showPeriodKey: Bool?
+    var hasAdditionalLanguage: Bool?
+    var languageCode: String?
+    var pairedLanguageCode: String?
+
     // MARK: - App Group IO
 
     private static let storageKey = "keyboard_geometry_snapshot_v1"

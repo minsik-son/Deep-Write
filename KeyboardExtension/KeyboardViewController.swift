@@ -1693,39 +1693,57 @@ class KeyboardViewController: UIInputViewController {
     /// 고메모리 상태에서 cleanup은 delta=0으로 무효하므로, exit(0)으로 프로세스 리스타트가 유일한 해법.
     // MARK: - Geometry Snapshot
 
-    private static var hasSnapshotThisProcess = false
+    private static var lastGeometrySnapshotSignature: String?
 
     private func saveKeyboardGeometrySnapshotIfNeeded() {
-        guard !Self.hasSnapshotThisProcess else { return }
         guard keyboardLayoutView.bounds.width > 0,
               !keyboardLayoutView.allKeyButtons.isEmpty,
-              let window = view.window else { return }
-        Self.hasSnapshotThisProcess = true
+              view.window != nil else { return }
+
+        // Only save for English letters page
+        guard keyboardLayoutView.currentPage == .letters else { return }
+        guard keyboardLayoutView.getCurrentLanguage() == .english else { return }
+
+        let screenBounds = UIScreen.main.bounds
+        let inputFrameInScreen = view.convert(view.bounds, to: nil)
+
+        // Signature-based dedupe
+        let signature = "\(Int(screenBounds.width))x\(Int(screenBounds.height))_\(Int(inputFrameInScreen.origin.y))_\(Int(inputFrameInScreen.height))_\(Int(keyboardLayoutView.bounds.width))x\(Int(keyboardLayoutView.bounds.height))_nr\(keyboardLayoutView.showNumberRow)_pd\(keyboardLayoutView.showPeriodKey)_al\(keyboardLayoutView.additionalLanguagesEnabled)_\(keyboardLayoutView.pairedLanguage)"
+        guard signature != Self.lastGeometrySnapshotSignature else { return }
+        Self.lastGeometrySnapshotSignature = signature
 
         var keyFrames: [KeyboardGeometrySnapshot.KeyFrame] = []
+        // Group buttons by row for col assignment
+        var rowBuckets: [Int: [(key: String, centerX: CGFloat, centerY: CGFloat, width: CGFloat, height: CGFloat)]] = [:]
+
         for button in keyboardLayoutView.allKeyButtons {
-            guard let key = button.accessibilityLabel, key.count == 1 else { continue }
+            guard let key = button.accessibilityLabel, !key.isEmpty else { continue }
             guard let sv = button.superview else { continue }
             let frameInKLV = sv.convert(button.frame, to: keyboardLayoutView)
             let centerInScreen = keyboardLayoutView.convert(
                 CGPoint(x: frameInKLV.midX, y: frameInKLV.midY), to: nil
             )
             let rowIdx = keyboardLayoutView.rowIndexForKeyCenter(frameInKLV.midY)
-            keyFrames.append(.init(
-                key: key,
-                row: rowIdx,
-                col: 0,  // col은 x 정렬 기반으로 calibration mirror에서 재매핑
-                centerXInScreen: centerInScreen.x,
-                centerYInScreen: centerInScreen.y,
-                width: frameInKLV.width,
-                height: frameInKLV.height,
-                physicalSlotID: nil
-            ))
+            rowBuckets[rowIdx, default: []].append((key, centerInScreen.x, centerInScreen.y, frameInKLV.width, frameInKLV.height))
         }
 
-        let klvFrameInScreen = keyboardLayoutView.convert(keyboardLayoutView.bounds, to: nil)
-        let inputFrameInScreen = view.convert(view.bounds, to: nil)
-        let screenBounds = UIScreen.main.bounds
+        for (rowIdx, bucket) in rowBuckets {
+            let sorted = bucket.sorted { $0.centerX < $1.centerX }
+            for (col, item) in sorted.enumerated() {
+                keyFrames.append(.init(
+                    key: item.key,
+                    row: rowIdx,
+                    col: col,
+                    centerXInScreen: item.centerX,
+                    centerYInScreen: item.centerY,
+                    width: item.width,
+                    height: item.height,
+                    physicalSlotID: nil
+                ))
+            }
+        }
+
+        let klvFrameInInputView = keyboardLayoutView.frame
 
         let snapshot = KeyboardGeometrySnapshot(
             createdAt: Date(),
@@ -1736,7 +1754,15 @@ class KeyboardViewController: UIInputViewController {
             keyFrames: keyFrames,
             showNumberRow: keyboardLayoutView.showNumberRow,
             orientationClass: "portrait",
-            layoutID: "english_letters"
+            layoutID: "english_letters",
+            keyboardLayoutOriginYInInputView: klvFrameInInputView.origin.y,
+            keyboardLayoutHeight: klvFrameInInputView.height,
+            toolbarHeight: 40,
+            topPadding: 8,
+            showPeriodKey: keyboardLayoutView.showPeriodKey,
+            hasAdditionalLanguage: keyboardLayoutView.hasAdditionalLanguage,
+            languageCode: "english",
+            pairedLanguageCode: String(describing: keyboardLayoutView.pairedLanguage)
         )
         snapshot.save()
     }

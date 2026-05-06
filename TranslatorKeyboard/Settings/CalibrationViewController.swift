@@ -55,6 +55,7 @@ final class CalibrationViewController: UIViewController {
     }()
 
     private let mirrorView = CalibrationKeyboardMirrorView()
+    private var mirrorHeightConstraint: NSLayoutConstraint?
 
     // MARK: - Lifecycle
 
@@ -109,11 +110,14 @@ final class CalibrationViewController: UIViewController {
         view.addSubview(wordLabel)
         view.addSubview(progressLabel)
 
+        let heightConstraint = mirrorView.heightAnchor.constraint(equalToConstant: mirrorView.preferredMirrorHeight)
+        self.mirrorHeightConstraint = heightConstraint
+
         NSLayoutConstraint.activate([
             mirrorView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             mirrorView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             mirrorView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            mirrorView.heightAnchor.constraint(equalToConstant: mirrorView.intrinsicContentSize.height),
+            heightConstraint,
 
             progressLabel.bottomAnchor.constraint(equalTo: mirrorView.topAnchor, constant: -8),
             progressLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -125,6 +129,12 @@ final class CalibrationViewController: UIViewController {
             instructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             instructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
         ])
+
+        mirrorView.onPreferredHeightChanged = { [weak self] newHeight in
+            guard let self = self else { return }
+            self.mirrorHeightConstraint?.constant = newHeight
+            self.view.layoutIfNeeded()
+        }
 
         bindMirrorCallbacks()
     }
