@@ -131,7 +131,11 @@ class OnboardingViewController: UIViewController {
     }
 
     private func restoreProgress() {
-        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+            print("[AppGroup] Failed to open shared defaults")
+            // use safe default: 0 for integer, false for bool
+            return
+        }
         let savedIndex = min(defaults.integer(forKey: "onboarding_current_page"), pages.count - 1)
 
         if savedIndex > 0, savedIndex < pages.count {
@@ -152,7 +156,10 @@ class OnboardingViewController: UIViewController {
             // swap v1: CTA = 다시 설정으로 이동 (설정 앱 열기)
             if !hasVisitedSettings {
                 hasVisitedSettings = true
-                let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+                guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+                    print("[AppGroup] Failed to open shared defaults")
+                    return
+                }
                 defaults.set(true, forKey: "onboarding_returned_from_settings")
             }
             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -208,7 +215,10 @@ class OnboardingViewController: UIViewController {
         pageViewController.setViewControllers([pages[index]], direction: direction, animated: true)
         pageControl.currentPage = index
         updateCTAForCurrentPage()
-        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+            print("[AppGroup] Failed to open shared defaults")
+            return
+        }
         defaults.set(index, forKey: "onboarding_current_page")
 
         if index == 2 {
@@ -276,7 +286,11 @@ class OnboardingViewController: UIViewController {
     }
 
     private func completeOnboarding() {
-        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+            print("[AppGroup] Failed to open shared defaults")
+            dismiss(animated: true)
+            return
+        }
         defaults.set(true, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
         defaults.removeObject(forKey: "onboarding_current_page")
         defaults.removeObject(forKey: "onboarding_returned_from_settings")
@@ -284,7 +298,11 @@ class OnboardingViewController: UIViewController {
     }
 
     private func showPaywallAfterOnboarding() {
-        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+            print("[AppGroup] Failed to open shared defaults")
+            dismiss(animated: true)
+            return
+        }
         defaults.set(true, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
         defaults.removeObject(forKey: "onboarding_current_page")
         defaults.removeObject(forKey: "onboarding_returned_from_settings")

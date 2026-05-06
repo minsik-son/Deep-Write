@@ -2257,6 +2257,12 @@ class KeyboardViewController: UIInputViewController {
             cv.onDismiss = { [weak self] in
                 self?.hideClipboardHistory()
             }
+            cv.onOnboardingConfirmed = { [weak self] in
+                guard let self = self else { return }
+                self.syncClipboardForVisibleHistory()
+                self.startClipboardMonitoring()
+                self.clipboardHistoryView?.reloadData()
+            }
             inputView.addSubview(cv)
             NSLayoutConstraint.activate([
                 cv.topAnchor.constraint(equalTo: inputView.topAnchor),
@@ -2272,9 +2278,15 @@ class KeyboardViewController: UIInputViewController {
             cv.applyTheme(theme)
             cv.updateAppearance(isDark: isDarkMode)
         }
-        syncClipboardForVisibleHistory()
-        startClipboardMonitoring()
         clipboardHistoryView?.reloadData()
+        // Pasteboard sync/monitor는 onboarding 완료 후에만 시작
+        let canReadClipboard = clipboardHistoryView?.hasCompletedOnboarding ?? false
+        if canReadClipboard {
+            syncClipboardForVisibleHistory()
+            startClipboardMonitoring()
+        } else {
+            stopClipboardMonitoring()
+        }
         clipboardHistoryView?.isHidden = false
         clipboardHistoryView?.alpha = 0
         if let cv = clipboardHistoryView {

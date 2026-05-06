@@ -29,7 +29,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.overrideUserInterfaceStyle = isDark ? .dark : .light
 
         // 온보딩: 첫 실행 시 표시
-        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+        guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+            print("[AppGroup] Failed to open shared defaults")
+            // use safe default: false for bool
+            let onboardingVC = OnboardingViewController()
+            onboardingVC.modalPresentationStyle = .fullScreen
+            tabBarController.present(onboardingVC, animated: false)
+            return
+        }
         if !defaults.bool(forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding) {
             let onboardingVC = OnboardingViewController()
             onboardingVC.modalPresentationStyle = .fullScreen

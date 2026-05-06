@@ -266,6 +266,15 @@ class ClipboardHistoryView: UIView {
         updateEmptyState()
     }
 
+    /// Onboarding confirm 후 pasteboard sync/monitor 시작용 callback
+    var onOnboardingConfirmed: (() -> Void)?
+
+    /// Clipboard onboarding을 완료했는지 (App Group flag)
+    var hasCompletedOnboarding: Bool {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        return defaults?.bool(forKey: AppConstants.UserDefaultsKeys.clipboardOnboardingShown) ?? false
+    }
+
     @objc private func onboardingConfirmTapped() {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(true, forKey: AppConstants.UserDefaultsKeys.clipboardOnboardingShown)
@@ -275,6 +284,7 @@ class ClipboardHistoryView: UIView {
         } completion: { _ in
             self.onboardingCard.isHidden = true
             self.onboardingCard.alpha = 1
+            self.onOnboardingConfirmed?()
         }
     }
 

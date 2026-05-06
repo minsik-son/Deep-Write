@@ -186,7 +186,16 @@ class TextInputHandler: TextInputHandling {
     }
 
     var fullText: String {
-        return composingText.isEmpty ? buffer : buffer + composingText
+        if composingText.isEmpty {
+            return buffer
+        }
+        // cursor 위치에 composingText를 삽입하여 visual cursor 위치와 일치시킨다.
+        // 컴포지션 중인 자모는 cursor 위치에 그려져야 하며, commit 시점에 같은 위치에 박힌다.
+        let safeIndex = max(0, min(cursorIndex, buffer.count))
+        let idx = buffer.index(buffer.startIndex, offsetBy: safeIndex)
+        var result = buffer
+        result.insert(contentsOf: composingText, at: idx)
+        return result
     }
 
     // MARK: - Korean Composition

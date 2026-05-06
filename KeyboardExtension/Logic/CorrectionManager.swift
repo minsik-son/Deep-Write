@@ -147,10 +147,13 @@ class CorrectionManager {
         }
 
         if httpResponse.statusCode == 429 {
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let retryAfter = json["retryAfter"] as? Int {
-                delegate?.correctionManager(self, didFailWithError: .rateLimited(retryAfter))
-            }
+            let bodyRetryAfter: Int? = {
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+                return json["retryAfter"] as? Int
+            }()
+            let headerRetryAfter = Int(httpResponse.value(forHTTPHeaderField: "Retry-After") ?? "")
+            let retryAfter = bodyRetryAfter ?? headerRetryAfter ?? 60
+            delegate?.correctionManager(self, didFailWithError: .rateLimited(retryAfter))
             return
         }
 
@@ -166,11 +169,17 @@ class CorrectionManager {
             return
         }
 
-        cache.set(text: text, source: "correct", target: languageCode, translatedText: correctedText)
+        let normalized = correctedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else {
+            delegate?.correctionManager(self, didFailWithError: .invalidResponse)
+            return
+        }
+
+        cache.set(text: text, source: "correct", target: languageCode, translatedText: normalized)
         lastCorrectedText = text
 
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)
-        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: correctedText, mode: .correct)
+        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: normalized, mode: .correct)
 
         #if DEBUG
         var memInfo = task_vm_info_data_t()
@@ -187,6 +196,6 @@ class CorrectionManager {
         #endif
 
         // 카운트는 세션 종료 시 CompositionSessionManager에서 1회만 기록
-        delegate?.correctionManager(self, didCorrect: correctedText, language: languageCode)
+        delegate?.correctionManager(self, didCorrect: normalized, language: languageCode)
     }
 }

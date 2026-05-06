@@ -4,29 +4,33 @@
 <dict>
     <key>NSPrivacyAccessedAPITypes</key>
     <array>
-        <!-- UserDefaults (App Group shared settings, subscription state, onboarding state) -->
+        <!-- UserDefaults (local app preferences) -->
         <dict>
             <key>NSPrivacyAccessedAPIType</key>
             <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>CA92.1</string>
+                <string>1C8F.1</string>
             </array>
         </dict>
     </array>
     <key>NSPrivacyCollectedDataTypes</key>
     <array>
-        <!-- Device ID (identifierForVendor — API auth / rate limiting) -->
+        <!-- Device ID (identifierForVendor — API auth / rate limiting / ads) -->
         <dict>
             <key>NSPrivacyCollectedDataType</key>
             <string>NSPrivacyCollectedDataTypeDeviceID</string>
             <key>NSPrivacyCollectedDataTypeLinked</key>
-            <false/>
+            <true/>
             <key>NSPrivacyCollectedDataTypeTracking</key>
-            <false/>
+            <true/>
             <key>NSPrivacyCollectedDataTypePurposes</key>
             <array>
                 <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+                <string>NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising</string>
+                <string>NSPrivacyCollectedDataTypePurposeDeveloperAdvertising</string>
+                <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
             </array>
         </dict>
         <!-- Purchase history (StoreKit subscription tier) -->
@@ -44,6 +48,16 @@
         </dict>
     </array>
     <key>NSPrivacyTracking</key>
-    <false/>
+    <true/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array>
+        <string>doubleclick.net</string>
+        <string>googleads.g.doubleclick.net</string>
+        <string>googlesyndication.com</string>
+        <string>pagead2.googlesyndication.com</string>
+        <string>googleadservices.com</string>
+        <string>google-analytics.com</string>
+        <string>app-measurement.com</string>
+    </array>
 </dict>
 </plist>

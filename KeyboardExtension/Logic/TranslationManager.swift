@@ -160,10 +160,13 @@ class TranslationManager {
         }
 
         if httpResponse.statusCode == 429 {
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let retryAfter = json["retryAfter"] as? Int {
-                delegate?.translationManager(self, didFailWithError: .rateLimited(retryAfter))
-            }
+            let bodyRetryAfter: Int? = {
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+                return json["retryAfter"] as? Int
+            }()
+            let headerRetryAfter = Int(httpResponse.value(forHTTPHeaderField: "Retry-After") ?? "")
+            let retryAfter = bodyRetryAfter ?? headerRetryAfter ?? 60
+            delegate?.translationManager(self, didFailWithError: .rateLimited(retryAfter))
             return
         }
 
@@ -179,11 +182,17 @@ class TranslationManager {
             return
         }
 
-        cache.set(text: text, source: sourceLang, target: targetLang, translatedText: translatedText)
+        let normalized = translatedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else {
+            delegate?.translationManager(self, didFailWithError: .invalidResponse)
+            return
+        }
+
+        cache.set(text: text, source: sourceLang, target: targetLang, translatedText: normalized)
         lastTranslatedText = text
 
         // Log to session (stats는 세션 종료 시 CompositionSessionManager에서 처리)
-        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: translatedText, mode: .translate)
+        CompositionSessionManager.shared.recordAPICall(sourceText: text, resultText: normalized, mode: .translate)
 
         #if DEBUG
         var memInfo = task_vm_info_data_t()
@@ -200,6 +209,6 @@ class TranslationManager {
         #endif
 
         // 카운트는 세션 종료 시 CompositionSessionManager에서 1회만 기록
-        delegate?.translationManager(self, didTranslate: translatedText, from: sourceLang, to: targetLang)
+        delegate?.translationManager(self, didTranslate: normalized, from: sourceLang, to: targetLang)
     }
 }

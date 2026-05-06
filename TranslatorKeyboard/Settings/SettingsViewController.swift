@@ -316,7 +316,10 @@ class SettingsViewController: UITableViewController {
         if sectionTitle == L("settings.section.about") {
             switch indexPath.row {
             case 0:
-                let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? UserDefaults.standard
+                guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
+                    print("[AppGroup] Failed to open shared defaults")
+                    return
+                }
                 defaults.set(false, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
                 let onboarding = OnboardingViewController()
                 onboarding.modalPresentationStyle = .fullScreen
