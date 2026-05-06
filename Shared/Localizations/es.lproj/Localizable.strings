@@ -782,3 +782,7 @@
 "reward.charge_complete" = "Recarga completada";
 "reward.charge_complete_feedback" = "Se han recargado %d usos.";
 "reward.cta_loading" = "Preparando anuncio...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "Mejorar la precisión al escribir";
+"home.typing_accuracy.desc" = "Ajusta la detección de teclas a tu forma de escribir.";

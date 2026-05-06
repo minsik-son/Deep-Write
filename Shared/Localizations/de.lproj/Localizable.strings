@@ -782,3 +782,7 @@
 "reward.charge_complete" = "Aufladung abgeschlossen";
 "reward.charge_complete_feedback" = "%d Nutzungen wurden aufgeladen.";
 "reward.cta_loading" = "Werbung wird vorbereitet...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "Tippgenauigkeit verbessern";
+"home.typing_accuracy.desc" = "Passe die Tastenerkennung an deinen Tippstil an.";

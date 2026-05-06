@@ -782,3 +782,7 @@
 "reward.charge_complete" = "充值完成";
 "reward.charge_complete_feedback" = "已充值%d次。";
 "reward.cta_loading" = "正在准备广告...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "提升输入准确度";
+"home.typing_accuracy.desc" = "根据你的输入习惯优化按键识别。";

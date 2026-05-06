@@ -783,3 +783,7 @@
 "reward.charge_complete" = "충전이 완료되었어요";
 "reward.charge_complete_feedback" = "%d회 충전이 완료되었어요.";
 "reward.cta_loading" = "광고 준비 중...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "타이핑 정확도 높이기";
+"home.typing_accuracy.desc" = "내 타이핑 습관에 맞게 키 터치를 조정해요.";

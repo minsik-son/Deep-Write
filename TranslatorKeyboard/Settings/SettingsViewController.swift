@@ -75,27 +75,10 @@ class SettingsViewController: UITableViewController {
                     SettingsItem(title: L("settings.quick_notes"), iconName: "note.text", iconBackgroundColor: .systemYellow, accessory: .chevron),
                 ]
             ),
-            // AI
-            (
-                title: L("settings.section.ai"),
-                items: [
-                    SettingsItem(title: L("settings.ai_correction"), iconName: "wand.and.stars", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
-                    SettingsItem(title: L("settings.ai_translation"), iconName: "arrow.right.arrow.left", iconBackgroundColor: AppColors.green, accessory: .chevron),
-                ]
-            ),
-            // Privacy
-            (
-                title: L("settings.section.privacy"),
-                items: [
-                    SettingsItem(title: L("settings.privacy_dashboard"), iconName: "shield.checkered", iconBackgroundColor: AppColors.green, accessory: .chevron),
-                    SettingsItem(title: L("settings.full_access_explain"), iconName: "lock.open", iconBackgroundColor: AppColors.tierAccent, accessory: .chevron),
-                ]
-            ),
             // About
             (
                 title: L("settings.section.about"),
                 items: [
-                    SettingsItem(title: L("settings.redo_onboarding"), iconName: "arrow.counterclockwise", iconBackgroundColor: .systemBlue, accessory: .chevron),
                     SettingsItem(title: L("settings.paste_guide"), iconName: "doc.on.clipboard", iconBackgroundColor: .systemTeal, accessory: .chevron),
                     SettingsItem(title: L("settings.rate_us"), iconName: "star", iconBackgroundColor: .systemRed, accessory: .chevron),
                     SettingsItem(title: L("settings.faq"), iconName: "questionmark.circle", iconBackgroundColor: .systemGray, accessory: .chevron),
@@ -294,50 +277,23 @@ class SettingsViewController: UITableViewController {
             }
         }
 
-        // AI section
-        if sectionTitle == L("settings.section.ai") {
-            switch indexPath.row {
-            case 0: vc = AICorrectionInfoViewController()
-            case 1: vc = AITranslationInfoViewController()
-            default: break
-            }
-        }
-
-        // Privacy section
-        if sectionTitle == L("settings.section.privacy") {
-            switch indexPath.row {
-            case 0: vc = PrivacyDashboardViewController()
-            case 1: vc = FullAccessExplainViewController()
-            default: break
-            }
-        }
-
         // About section
         if sectionTitle == L("settings.section.about") {
             switch indexPath.row {
-            case 0:
-                guard let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) else {
-                    print("[AppGroup] Failed to open shared defaults")
-                    return
-                }
-                defaults.set(false, forKey: AppConstants.UserDefaultsKeys.hasCompletedOnboarding)
-                let onboarding = OnboardingViewController()
-                onboarding.modalPresentationStyle = .fullScreen
-                present(onboarding, animated: true)
-            case 1: vc = PasteGuideViewController()
-            case 2:
+            case 0: vc = PasteGuideViewController()
+            case 1:
                 if let url = URL(string: "itms-apps://itunes.apple.com/app/id\(AppConstants.mainBundleIdentifier)") {
                     UIApplication.shared.open(url)
                 }
-            case 3:
+            case 2:
                 if let url = URL(string: AppConstants.LegalLinks.faq) {
                     UIApplication.shared.open(url)
                 }
-            case 4:
+            case 3:
                 if let url = URL(string: AppConstants.LegalLinks.privacy) {
                     UIApplication.shared.open(url)
                 }
-            case 5:
+            case 4:
                 if let url = URL(string: AppConstants.LegalLinks.terms) {
                     UIApplication.shared.open(url)
                 }

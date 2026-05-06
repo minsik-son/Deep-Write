@@ -1,7 +1,4 @@
 import UIKit
-#if DEBUG
-import GoogleMobileAds
-#endif
 
 class HomeViewController: UIViewController {
 
@@ -80,19 +77,9 @@ class HomeViewController: UIViewController {
     private var cachedClipboardCount = 0
     private var cachedPhrasesCount = 0
 
-    #if DEBUG
-    private lazy var debugAdTestButton: UIButton = {
-        let btn = UIButton(type: .system)
-        btn.setTitle("🧪 Test Rewarded Ad", for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        btn.setTitleColor(.white, for: .normal)
-        btn.backgroundColor = .systemRed
-        btn.layer.cornerRadius = 12
-        btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.addTarget(self, action: #selector(debugTestAdTapped), for: .touchUpInside)
-        return btn
-    }()
-    #endif
+    // MARK: - Calibration Card Labels
+    private let calibrationTitleLabel = UILabel()
+    private let calibrationDescLabel = UILabel()
 
     deinit {
         NotificationCenter.default.removeObserver(self)
@@ -117,6 +104,7 @@ class HomeViewController: UIViewController {
         super.viewWillAppear(animated)
         StatsManager.shared.checkAndResetWeeklyStats()
         refreshStats()
+        updateCalibrationCardText()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -203,12 +191,6 @@ class HomeViewController: UIViewController {
         let calibrationCard = buildCalibrationCard()
         contentStack.addArrangedSubview(calibrationCard)
 
-        #if DEBUG
-        contentStack.addArrangedSubview(debugAdTestButton)
-        NSLayoutConstraint.activate([
-            debugAdTestButton.heightAnchor.constraint(equalToConstant: 48),
-        ])
-        #endif
     }
 
     // MARK: - 1. Greeting Section
@@ -1181,23 +1163,20 @@ class HomeViewController: UIViewController {
         card.layer.shadowRadius = 8
 
         let iconView = UIImageView()
-        iconView.image = UIImage(systemName: "hand.tap")
-        iconView.tintColor = .systemOrange
+        iconView.image = UIImage(named: "TypingAccuracyIcon") ?? UIImage(systemName: "keyboard")
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
-        let titleLabel = UILabel()
-        titleLabel.text = "Improve Typing Accuracy"
-        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = AppColors.text
+        calibrationTitleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        calibrationTitleLabel.textColor = AppColors.text
 
-        let descLabel = UILabel()
-        descLabel.text = "Quick touch calibration to personalize key detection for your typing style."
-        descLabel.font = .systemFont(ofSize: 13)
-        descLabel.textColor = AppColors.textMuted
-        descLabel.numberOfLines = 2
+        calibrationDescLabel.font = .systemFont(ofSize: 13)
+        calibrationDescLabel.textColor = AppColors.textMuted
+        calibrationDescLabel.numberOfLines = 2
 
-        let textStack = UIStackView(arrangedSubviews: [titleLabel, descLabel])
+        updateCalibrationCardText()
+
+        let textStack = UIStackView(arrangedSubviews: [calibrationTitleLabel, calibrationDescLabel])
         textStack.axis = .vertical
         textStack.spacing = 2
         textStack.translatesAutoresizingMaskIntoConstraints = false
@@ -1215,8 +1194,8 @@ class HomeViewController: UIViewController {
         NSLayoutConstraint.activate([
             iconView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             iconView.centerYAnchor.constraint(equalTo: card.centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: 28),
-            iconView.heightAnchor.constraint(equalToConstant: 28),
+            iconView.widthAnchor.constraint(equalToConstant: 44),
+            iconView.heightAnchor.constraint(equalToConstant: 32),
 
             textStack.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
             textStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
@@ -1239,6 +1218,11 @@ class HomeViewController: UIViewController {
         let vc = CalibrationViewController()
         let nav = UINavigationController(rootViewController: vc)
         present(nav, animated: true)
+    }
+
+    private func updateCalibrationCardText() {
+        calibrationTitleLabel.text = L("home.typing_accuracy.title")
+        calibrationDescLabel.text = L("home.typing_accuracy.desc")
     }
 
     // MARK: - Activity Card
@@ -1410,44 +1394,6 @@ class HomeViewController: UIViewController {
 
         return container
     }
-
-    #if DEBUG
-    // MARK: - DEBUG Ad Test
-
-    @objc private func debugTestAdTapped() {
-        debugAdTestButton.isEnabled = false
-        debugAdTestButton.setTitle("🧪 Loading...", for: .normal)
-
-        // ATT → UMP → MobileAds.start → Load → Present
-        ATTManager.shared.requestTrackingAuthorizationIfNeeded { [weak self] in
-            guard let self = self else { return }
-            AdConsentManager.shared.updateConsent(from: self) { canRequestAds in
-                guard canRequestAds else {
-                    DispatchQueue.main.async {
-                        self.debugAdTestButton.isEnabled = true
-                        self.debugAdTestButton.setTitle("🧪 Consent Denied", for: .normal)
-                    }
-                    return
-                }
-
-                MobileAds.shared.start()
-                AdManager.shared.isTestMode = true
-                AdManager.shared.delegate = self
-                AdManager.shared.loadRewardedAd()
-
-                // Wait for ad to load, then present
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    if AdManager.shared.isAdReady {
-                        AdManager.shared.showRewardedAd(from: self, mode: .correction)
-                    } else {
-                        self.debugAdTestButton.isEnabled = true
-                        self.debugAdTestButton.setTitle("🧪 Load Failed — Retry", for: .normal)
-                    }
-                }
-            }
-        }
-    }
-    #endif
 
     // MARK: - Actions
 
@@ -1709,37 +1655,3 @@ class HomeViewController: UIViewController {
         }
     }
 }
-
-#if DEBUG
-extension HomeViewController: AdManagerDelegate {
-    func adManagerDidLoad(_ manager: AdManager) {
-        // DEBUG test — ad loaded, no-op
-    }
-
-    func adManagerDidRewardUser(_ manager: AdManager) {
-        debugAdTestButton.isEnabled = true
-        debugAdTestButton.setTitle("🧪 Reward Received! ✅", for: .normal)
-        manager.isTestMode = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.debugAdTestButton.setTitle("🧪 Test Rewarded Ad", for: .normal)
-        }
-    }
-
-    func adManagerDidFailToLoad(_ manager: AdManager) {
-        manager.isTestMode = false
-        debugAdTestButton.isEnabled = true
-        debugAdTestButton.setTitle("🧪 Load Failed — Retry", for: .normal)
-    }
-
-    func adManagerDidDismissAd(_ manager: AdManager) {
-        manager.isTestMode = false
-        debugAdTestButton.isEnabled = true
-    }
-
-    func adManagerReachedDailyLimit(_ manager: AdManager) {
-        manager.isTestMode = false
-        debugAdTestButton.isEnabled = true
-        debugAdTestButton.setTitle("🧪 Daily Limit", for: .normal)
-    }
-}
-#endif

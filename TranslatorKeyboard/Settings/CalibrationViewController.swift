@@ -270,57 +270,10 @@ final class CalibrationViewController: UIViewController {
         return false
     }
 
-    // MARK: - Intended Key Lookup
+    // MARK: - Intended Key Lookup (delegated to mirror frame)
 
-    private struct IntendedKeyInfo {
-        let point: CGPoint
-        let row: Int
-        let col: Int
-        let keyWidth: CGFloat
-    }
-
-    private func findIntendedCenter(for char: String) -> IntendedKeyInfo? {
-        let rows: [[String]] = [
-            ["q","w","e","r","t","y","u","i","o","p"],
-            ["a","s","d","f","g","h","j","k","l"],
-            ["z","x","c","v","b","n","m"]
-        ]
-        for (row, keys) in rows.enumerated() {
-            if let col = keys.firstIndex(of: char.lowercased()) {
-                let w = mirrorView.bounds.width
-                guard w > 0 else { return nil }
-                let sideInset: CGFloat = 3
-                let keySpacingH: CGFloat = 6
-                let toolbarH: CGFloat = 40
-                let topPad: CGFloat = 8
-                let numRowH: CGFloat = 40
-                let numRowSpV: CGFloat = 8
-                let keyH: CGFloat = 46
-                let keySpV: CGFloat = 10
-                let topInset: CGFloat = 4
-                let row1Indent: CGFloat = 18
-
-                let indent: CGFloat = (row == 1) ? row1Indent : 0
-                let keyCount = CGFloat(keys.count)
-                let totalSpacing = keySpacingH * (keyCount - 1)
-                let availW = w - 2 * sideInset - 2 * indent - totalSpacing
-                let keyWidth = availW / keyCount
-                let x = sideInset + indent + CGFloat(col) * (keyWidth + keySpacingH) + keyWidth / 2
-
-                let keyAreaTop = topPad + toolbarH
-                let numRowY = keyAreaTop + topInset
-                let row0Y = numRowY + numRowH + numRowSpV
-                let rowY: CGFloat
-                switch row {
-                case 0: rowY = row0Y
-                case 1: rowY = row0Y + keyH + keySpV
-                case 2: rowY = row0Y + keyH * 2 + keySpV * 2
-                default: return nil
-                }
-                return IntendedKeyInfo(point: CGPoint(x: x, y: rowY + keyH / 2), row: row, col: col, keyWidth: keyWidth)
-            }
-        }
-        return nil
+    private func findIntendedCenter(for char: String) -> CalibrationIntendedKeyInfo? {
+        return mirrorView.intendedKeyInfo(for: char)
     }
 
     // MARK: - Finish

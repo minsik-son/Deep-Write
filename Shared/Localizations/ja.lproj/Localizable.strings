@@ -783,3 +783,7 @@
 "reward.charge_complete" = "チャージ完了";
 "reward.charge_complete_feedback" = "%d回分チャージされました。";
 "reward.cta_loading" = "広告を準備中...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "入力精度を高める";
+"home.typing_accuracy.desc" = "あなたの入力スタイルに合わせてキー検出を調整します。";

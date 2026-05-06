@@ -783,3 +783,7 @@
 "reward.charge_complete" = "Recharge complete";
 "reward.charge_complete_feedback" = "%d uses have been recharged.";
 "reward.cta_loading" = "Preparing ad...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "Improve Typing Accuracy";
+"home.typing_accuracy.desc" = "Personalize key detection for your typing style.";

@@ -782,3 +782,7 @@
 "reward.charge_complete" = "Ricarica completata";
 "reward.charge_complete_feedback" = "%d utilizzi sono stati ricaricati.";
 "reward.cta_loading" = "Preparazione annuncio...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "Migliora la precisione di digitazione";
+"home.typing_accuracy.desc" = "Adatta il rilevamento dei tasti al tuo modo di digitare.";

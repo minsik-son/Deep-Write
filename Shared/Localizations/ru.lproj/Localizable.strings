@@ -782,3 +782,7 @@
 "reward.charge_complete" = "Зарядка завершена";
 "reward.charge_complete_feedback" = "Начислено %d использований.";
 "reward.cta_loading" = "Подготовка рекламы...";
+
+// Typing Accuracy
+"home.typing_accuracy.title" = "Повысить точность ввода";
+"home.typing_accuracy.desc" = "Настройте распознавание клавиш под свой стиль набора.";
