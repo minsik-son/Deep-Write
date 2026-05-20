@@ -184,6 +184,7 @@ class KeyboardLayoutView: UIView {
         #if DEBUG
         let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] KLV.didMoveToWindow attached=%d deltaSinceFirstCode=%.2fms", attached, _d)
+        ActivationTraceLogger.shared.mark("KLV.didMoveToWindow", details: "attached=\(attached)")
         #endif
     }
 
@@ -193,6 +194,7 @@ class KeyboardLayoutView: UIView {
         let attached = (superview != nil) ? 1 : 0
         let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] KLV.didMoveToSuperview attached=%d deltaSinceFirstCode=%.2fms", attached, _d)
+        ActivationTraceLogger.shared.mark("KLV.didMoveToSuperview", details: "attached=\(attached)")
         #endif
     }
 
@@ -476,6 +478,7 @@ class KeyboardLayoutView: UIView {
             keyboardContainer.subviews.count,
             memoryAttributionAnimationFlags()
         ))
+        ActivationTraceLogger.shared.mark("KLV.init")
         #endif
     }
 
@@ -590,8 +593,18 @@ class KeyboardLayoutView: UIView {
     var pendingBuildUntilSizedForDiagnostics: Bool { pendingBuildUntilSized }
     private var deferredBuildReason: String = "unknown"
 
+    /// Host inputView의 width readiness를 확인하는 closure.
+    /// KeyboardViewController attach 시 설정된다.
+    var isHostInputWidthReady: (() -> Bool)?
+    /// Host inputView의 현재 width를 반환하는 closure.
+    var currentHostInputWidth: (() -> CGFloat)?
+    /// 마지막 성공적인 buildKeyboard 완료 시의 host width. Host width 변경 시 rebuild 판단에 사용.
+    private var lastBuiltHostWidth: CGFloat = 0
+
     private var shouldDeferBuildUntilSized: Bool {
-        bounds.width <= 0 || bounds.height <= 0
+        if bounds.width <= 0 || bounds.height <= 0 { return true }
+        if isHostInputWidthReady?() == false { return true }
+        return false
     }
 
     // ── Startup batch rebuild ──
@@ -647,6 +660,7 @@ class KeyboardLayoutView: UIView {
             deferredBuildReason = reason
             #if DEBUG
             NSLog("[BuildKeyboardTrace] request reason=%@ path=deferUntilSized deltaSinceFirstCode=%.2fms width=%.2f height=%.2f", reason, _reqDelta, bounds.width, bounds.height)
+            ActivationTraceLogger.shared.mark("KLV.requestBuild", details: "path=deferUntilSized reason=\(reason)")
             #endif
             return
         }
@@ -669,6 +683,15 @@ class KeyboardLayoutView: UIView {
 
     private func buildKeyboard() {
         guard !isTrackpadMode else { return }  // 트랙패드 중 재빌드 방지
+        // Defense-in-depth: host width가 준비되지 않았으면 defer.
+        if shouldDeferBuildUntilSized {
+            pendingBuildUntilSized = true
+            deferredBuildReason = "buildGuard.deferHostNotReady"
+            #if DEBUG
+            NSLog("[BuildKeyboardTrace] buildGuard.deferHostNotReady bounds=%.0fx%.0f hostReady=%d", bounds.width, bounds.height, isHostInputWidthReady?() == true ? 1 : 0)
+            #endif
+            return
+        }
         BlackboxAnomalyLogger.shared.record("buildKeyboard START bounds=\(bounds.width)x\(bounds.height)")
         #if DEBUG
         Self.buildSequence += 1
@@ -676,6 +699,7 @@ class KeyboardLayoutView: UIView {
         let _bkStart = CACurrentMediaTime()
         let _bkDelta = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
         NSLog("[BuildKeyboard] #%d reason=%@ start page=%@ lang=%@ deltaSinceFirstCode=%.2fms", _bkSeq, pendingBuildReason, String(describing: currentPage), String(describing: currentLanguage), _bkDelta)
+        ActivationTraceLogger.shared.mark("KLV.buildKeyboard.start", details: "reason=\(pendingBuildReason) width=\(String(format: "%.0f", bounds.width)) height=\(String(format: "%.0f", bounds.height))")
         pendingBuildReason = "unknown"
         #endif
 
@@ -845,6 +869,9 @@ class KeyboardLayoutView: UIView {
             cv.startAnimation()
         }
 
+        // 성공적인 build 완료 후 host width 기록
+        lastBuiltHostWidth = currentHostInputWidth?() ?? bounds.width
+
         // ── Fix A: 성공적인 full build 후 stale deferred 무효화 ──
         // 이미 최신 상태로 build가 완료되었으므로, width 0 시점에 적재된 과거 deferred는 의미 없음.
         if pendingBuildUntilSized {
@@ -864,6 +891,7 @@ class KeyboardLayoutView: UIView {
             hasLoggedFirstButtonsReady = true
             let _fbr = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
             NSLog("[ActivationTrace] firstButtonsReady buildSeq=%d deltaSinceFirstCode=%.2fms buttons=%d containerSubviews=%d", _bkSeq, _fbr, allKeyButtons.count, keyboardContainer.subviews.count)
+            ActivationTraceLogger.shared.mark("KLV.firstButtonsReady", details: "buttons=\(allKeyButtons.count)")
         }
         // First usable keyboard marker — 프로세스당 1회만
         // isOwnedByActiveController를 요구하지 않음: viewDidAppear 전에 build가 끝날 수 있음
@@ -875,6 +903,7 @@ class KeyboardLayoutView: UIView {
             Self.firstUsableLogged = true
             let _fuk = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
             NSLog("[ActivationTrace] firstUsableKeyboard buildSeq=%d deltaSinceFirstCode=%.2fms buttons=%d size=%.0fx%.0f containerSubviews=%d", _bkSeq, _fuk, allKeyButtons.count, bounds.width, bounds.height, keyboardContainer.subviews.count)
+            ActivationTraceLogger.shared.mark("KLV.firstUsableKeyboard", details: String(format: "width=%.0f height=%.0f buttons=%d", bounds.width, bounds.height, allKeyButtons.count))
         }
         #endif
         BlackboxAnomalyLogger.shared.record("buildKeyboard END buttons=\(allKeyButtons.count) containerSubs=\(keyboardContainer.subviews.count)")
@@ -2635,11 +2664,13 @@ class KeyboardLayoutView: UIView {
             hasLoggedFirstLayout = true
             let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
             NSLog("[ActivationTrace] firstLayoutSubviews deltaSinceFirstCode=%.2fms size=%.0fx%.0f buttons=%d", _d, bounds.width, bounds.height, allKeyButtons.count)
+            ActivationTraceLogger.shared.mark("KLV.layoutSubviews.first", details: String(format: "size=%.0fx%.0f buttons=%d", bounds.width, bounds.height, allKeyButtons.count))
         }
         if !hasLoggedFirstNonZeroBounds, bounds.width > 0, bounds.height > 0 {
             hasLoggedFirstNonZeroBounds = true
             let _d = (CFAbsoluteTimeGetCurrent() - KeyboardViewController.firstCodeEntryTime) * 1000
             NSLog("[ActivationTrace] firstNonZeroBounds deltaSinceFirstCode=%.2fms size=%.0fx%.0f buttons=%d", _d, bounds.width, bounds.height, allKeyButtons.count)
+            ActivationTraceLogger.shared.mark("KLV.firstNonZeroBounds", details: String(format: "width=%.0f height=%.0f buttons=%d", bounds.width, bounds.height, allKeyButtons.count))
         }
         #endif
 
@@ -2663,17 +2694,29 @@ class KeyboardLayoutView: UIView {
                 #endif
             } else if !allKeyButtons.isEmpty {
                 // Fix B+C: 이미 full build가 완료된 상태(buttons > 0)라면
-                // width 0 시점에 적재된 deferred는 stale — 폐기
-                #if DEBUG
-                NSLog("[BuildKeyboardTrace] consumeDeferred path=skipStale reason=%@ deltaSinceFirstCode=%.2fms buttons=%d", deferredBuildReason, _cdDelta, allKeyButtons.count)
-                #endif
-                pendingBuildUntilSized = false
-                deferredBuildReason = "unknown"
+                // width 0 시점에 적재된 deferred는 stale — 폐기.
+                // 단, host width가 lastBuiltHostWidth와 크게 다르면 rebuild 필요.
+                let currentHostWidth = currentHostInputWidth?() ?? bounds.width
+                if abs(currentHostWidth - lastBuiltHostWidth) > 1 {
+                    #if DEBUG
+                    NSLog("[BuildKeyboardTrace] consumeDeferred path=hostWidthMismatch reason=%@ deltaSinceFirstCode=%.2fms oldHostW=%.0f newHostW=%.0f buttons=%d", deferredBuildReason, _cdDelta, lastBuiltHostWidth, currentHostWidth, allKeyButtons.count)
+                    #endif
+                    pendingBuildUntilSized = false
+                    let reason = "consumeDeferred.hostWidthMismatch.\(deferredBuildReason)"
+                    requestBuildKeyboard(reason: reason)
+                } else {
+                    #if DEBUG
+                    NSLog("[BuildKeyboardTrace] consumeDeferred path=skipStale reason=%@ deltaSinceFirstCode=%.2fms buttons=%d", deferredBuildReason, _cdDelta, allKeyButtons.count)
+                    #endif
+                    pendingBuildUntilSized = false
+                    deferredBuildReason = "unknown"
+                }
             } else {
                 pendingBuildUntilSized = false
                 let reason = "consumeDeferred.\(deferredBuildReason)"
                 #if DEBUG
                 NSLog("[BuildKeyboardTrace] consumeDeferred path=execute reason=%@ deltaSinceFirstCode=%.2fms width=%.2f height=%.2f", deferredBuildReason, _cdDelta, bounds.width, bounds.height)
+                ActivationTraceLogger.shared.mark("KLV.consumeDeferred", details: "path=execute reason=\(deferredBuildReason)")
                 #endif
                 requestBuildKeyboard(reason: reason)
             }

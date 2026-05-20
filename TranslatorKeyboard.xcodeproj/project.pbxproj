@@ -159,6 +159,8 @@
 		D312E0EFD4A6F9B4CE29529D /* SnowfallSoftView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBABCAF4BBEF72D1C1887B45 /* SnowfallSoftView.swift */; };
 		D4CE9428A66D99F9390D0E80 /* UnitConverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC34AD787C7CA908F6BA893 /* UnitConverterView.swift */; };
 		D54CCF05094BE64808D474E5 /* ActivationTraceLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4D8C2C0FBBA3240D1FCC18 /* ActivationTraceLogger.swift */; };
+		188789D102A7D823EDF8F10D /* KeyboardStartupSettingsSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64820C57EABC5E91FF6781FE /* KeyboardStartupSettingsSnapshot.swift */; };
+		5257DB3C787AFE21F345B4AE /* KeyboardStartupTraceReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0A5B7FF1107FAA7FB72E8B /* KeyboardStartupTraceReader.swift */; };
 		D6CC0E394E92A0394F2A019A /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = BD3BC26EC80D48EC40C98CBE /* GoogleUserMessagingPlatform */; };
 		D837E794BB744CB87E8C777D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0164D0EA23AE9AE0B0671F1F /* PrivacyInfo.xcprivacy */; };
 		D869F0F11E1BD092BEC5DD2E /* AppProcessServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B45887771678ECF992D3F9 /* AppProcessServices.swift */; };
@@ -270,6 +272,8 @@
 		542F107CFF84E927F85EEC8D /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		5A2EBBAD04041EB4D95709FC /* TextProxyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProxyManager.swift; sourceTree = "<group>"; };
 		5B4D8C2C0FBBA3240D1FCC18 /* ActivationTraceLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationTraceLogger.swift; sourceTree = "<group>"; };
+		64820C57EABC5E91FF6781FE /* KeyboardStartupSettingsSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardStartupSettingsSnapshot.swift; sourceTree = "<group>"; };
+		6C0A5B7FF1107FAA7FB72E8B /* KeyboardStartupTraceReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardStartupTraceReader.swift; sourceTree = "<group>"; };
 		5C94EC309EAB7C7F929DAA35 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		5D681A74E9A93D63532A05A3 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
 		5D75782C8A72C172A085B211 /* HistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryManager.swift; sourceTree = "<group>"; };
@@ -485,6 +489,7 @@
 				3A3E183622B665F86569655B /* AppDelegate.swift */,
 				90A9B64C203AB7EC948D2813 /* MainViewController.swift */,
 				5C94EC309EAB7C7F929DAA35 /* SceneDelegate.swift */,
+				6C0A5B7FF1107FAA7FB72E8B /* KeyboardStartupTraceReader.swift */,
 				8589ED5832FCC2F1F8938CA6 /* TabBarController.swift */,
 			);
 			path = App;
@@ -691,6 +696,7 @@
 			children = (
 				5B4D8C2C0FBBA3240D1FCC18 /* ActivationTraceLogger.swift */,
 				C0F4AB8040BB397B5716EED8 /* BlackboxAnomalyLogger.swift */,
+				64820C57EABC5E91FF6781FE /* KeyboardStartupSettingsSnapshot.swift */,
 			);
 			path = Debug;
 			sourceTree = "<group>";
@@ -846,6 +852,7 @@
 				02C6E670C116AD3C1AFE570E /* AccentMap.swift in Sources */,
 				190A2B4265B222B2B3C9463D /* AccentPopupView.swift in Sources */,
 				D54CCF05094BE64808D474E5 /* ActivationTraceLogger.swift in Sources */,
+				188789D102A7D823EDF8F10D /* KeyboardStartupSettingsSnapshot.swift in Sources */,
 				418971C082C5E6CC07029AB0 /* AdditionalKeyboardBootstrap.swift in Sources */,
 				684A9BD644EA3A73F57C7FF6 /* AdminMode.swift in Sources */,
 				2F16815E35245EF1877EB77B /* AppColors.swift in Sources */,
@@ -996,6 +1003,7 @@
 				3E8A52D5434351B396EA5525 /* RewardedAdsViewController.swift in Sources */,
 				720773087785DB78142EC7CE /* SavedPhrasesManager.swift in Sources */,
 				ECE42B6D027E0DCC06518289 /* SceneDelegate.swift in Sources */,
+				5257DB3C787AFE21F345B4AE /* KeyboardStartupTraceReader.swift in Sources */,
 				F6B6FA0359011DC0F238876E /* SessionManager.swift in Sources */,
 				701F1B0B63878CAE70A94BE1 /* SettingsViewController.swift in Sources */,
 				6FFEABD9F8410C6B3C94BD37 /* SetupSettingsAnimationView.swift in Sources */,

@@ -23,6 +23,8 @@ class KeyboardViewController: UIInputViewController {
     static let firstCodeEntryTime: CFAbsoluteTime = {
         let t = CFAbsoluteTimeGetCurrent()
         NSLog("[ActivationTrace] firstCodeEntry = %.4f", t)
+        ActivationTraceLogger.shared.writeSessionHeader()
+        ActivationTraceLogger.shared.mark("firstCodeEntry")
         return t
     }()
     #endif
@@ -249,6 +251,15 @@ class KeyboardViewController: UIInputViewController {
     /// attachment. Used by `viewWillDisappear` to gate detach against owner
     /// race conditions.
     private var didAttachSharedSurface = false
+
+    /// Host width 0인 transient phase에서 surface attach/build를 지연하기 위한 pending 플래그.
+    private var pendingSurfaceAttach = false
+    /// Surface attach 후 실행해야 하는 초기 configuration이 아직 남아 있는지 여부.
+    private var needsInitialSurfaceConfiguration = false
+    /// Surface callbacks를 현재 owner에게 재설치해야 하는지 여부.
+    private var needsSurfaceCallbackInstall = false
+    /// Attach 후 초기 configuration을 이미 실행했는지 여부 (중복 실행 방지).
+    private var hasRunInitialSurfaceConfigurationForAttachment = false
     private var lastMemoryPressureTransitionAt: CFTimeInterval = 0
     private var stableLowMemoryObservationCount = 0
     private var idleMemoryCleanupWorkItem: DispatchWorkItem?
@@ -296,6 +307,7 @@ class KeyboardViewController: UIInputViewController {
         _ = Self.firstCodeEntryTime // static initializer 강제 트리거
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] init(nibName) self=%@ deltaSinceFirstCode=%.2fms marker=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta, Self.memorySurfaceBuildMarker)
+        ActivationTraceLogger.shared.mark("init(nibName)", details: "marker=\(Self.memorySurfaceBuildMarker)")
         #endif
     }
 
@@ -307,6 +319,7 @@ class KeyboardViewController: UIInputViewController {
         _ = Self.firstCodeEntryTime
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] init(coder) self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta)
+        ActivationTraceLogger.shared.mark("init(coder)")
         #endif
     }
 
@@ -353,11 +366,13 @@ class KeyboardViewController: UIInputViewController {
         let _lvStart = CFAbsoluteTimeGetCurrent()
         let _lvDelta = (_lvStart - Self.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] loadView START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), _lvDelta)
+        ActivationTraceLogger.shared.mark("loadView.start")
         #endif
         super.loadView()
         #if DEBUG
         let _lvEnd = CFAbsoluteTimeGetCurrent()
         NSLog("[ActivationTrace] loadView END delta=%.2fms deltaSinceFirstCode=%.2fms", (_lvEnd - _lvStart) * 1000, (_lvEnd - Self.firstCodeEntryTime) * 1000)
+        ActivationTraceLogger.shared.mark("loadView.end", details: String(format: "duration=%.1fms", (_lvEnd - _lvStart) * 1000))
         #endif
     }
 
@@ -370,6 +385,7 @@ class KeyboardViewController: UIInputViewController {
         NSLog("══════════════════════════════════════")
         let _vdlDelta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
         NSLog("[ActivationTrace] viewDidLoad START self=%@ deltaSinceFirstCode=%.2fms cycle=%d", String(describing: Unmanaged.passUnretained(self).toOpaque()), _vdlDelta, Self.lifecycleCount + 1)
+        ActivationTraceLogger.shared.mark("viewDidLoad.start", details: String(format: "cycle=%d mem=%.1fMB", Self.lifecycleCount + 1, self.currentMemoryMB()))
         #endif
         // CoreTextCacheManager.activate()는 init()으로 이동됨 (Phase 4)
         #if DEBUG
@@ -389,48 +405,78 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let _cs1 = CACurrentMediaTime()
         debugLogMemoryAttribution(event: "setupUI", phase: "start")
+        ActivationTraceLogger.shared.mark("setupUI.start")
         #endif
         setupUI()
         setupHeightConstraint()  // 조기 설치 — host-side layout pass 최소화
         #if DEBUG
         let _cs2 = CACurrentMediaTime()
         debugLogMemoryAttribution(event: "setupUI", phase: "end")
+        ActivationTraceLogger.shared.mark("setupUI.end", details: String(format: "duration=%.1fms", (_cs2 - _cs1) * 1000))
         #endif
         setupDelegates()
         #if DEBUG
         let _cs3 = CACurrentMediaTime()
         #endif
-        setupCallbacks()
+
+        // Surface attach가 defer된 경우 (host width 0, 다른 owner의 surface),
+        // surface-dependent 작업을 runPendingInitialSurfaceConfigurationIfNeeded로 연기한다.
+        let surfaceConfigDeferred = pendingSurfaceAttach
+        if surfaceConfigDeferred {
+            needsInitialSurfaceConfiguration = true
+            needsSurfaceCallbackInstall = true
+            hasRunInitialSurfaceConfigurationForAttachment = false
+            #if DEBUG
+            NSLog("[StartupSurface] deferSurfaceConfig reason=pendingSurfaceAttach hostWidth=%.0f", self.inputView?.bounds.width ?? 0)
+            #endif
+        } else {
+            hasRunInitialSurfaceConfigurationForAttachment = true
+        }
+        if !surfaceConfigDeferred { setupCallbacks() }
         #if DEBUG
         let _cs4 = CACurrentMediaTime()
         let _cs5 = _cs4
+        if !surfaceConfigDeferred {
+            ActivationTraceLogger.shared.mark("loadCachedSettings.start")
+            KeyboardStartupSettingsSnapshot.record()
+        }
         #endif
-        loadCachedSettings()
-        // Final-state 필수 값을 첫 build 이전에 확정 — late async rebuild 제거 목적
-        // 이 설정들은 가벼운 UserDefaults read이므로 viewDidLoad 비용 증가 미미
-        loadNumberRowSetting()
-        loadPeriodKeySetting()
-        loadKeyboardLanguageSetting()
+        if !surfaceConfigDeferred {
+            loadCachedSettings()
+            loadNumberRowSetting()
+            loadPeriodKeySetting()
+            loadKeyboardLanguageSetting()
+        }
         #if DEBUG
         let _cs6 = CACurrentMediaTime()
-        debugLogMemoryAttribution(event: "switchModeInitial", phase: "start")
+        if !surfaceConfigDeferred {
+            debugLogMemoryAttribution(event: "switchModeInitial", phase: "start")
+            ActivationTraceLogger.shared.mark("switchModeInitial.start")
+        }
         #endif
-        switchMode(to: .defaultMode)
+        if !surfaceConfigDeferred { switchMode(to: .defaultMode) }
         #if DEBUG
         let _cs7 = CACurrentMediaTime()
-        debugLogMemoryAttribution(event: "switchModeInitial", phase: "end")
+        if !surfaceConfigDeferred {
+            debugLogMemoryAttribution(event: "switchModeInitial", phase: "end")
+            ActivationTraceLogger.shared.mark("switchModeInitial.end", details: String(format: "duration=%.1fms", (_cs7 - _cs6) * 1000))
+        }
         #endif
-        restoreState()
+        if !surfaceConfigDeferred { restoreState() }
         #if DEBUG
         let _cs8 = CACurrentMediaTime()
-        debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "start")
+        if !surfaceConfigDeferred {
+            debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "start")
+            ActivationTraceLogger.shared.mark("loadTouchLearningData.start")
+        }
         #endif
-
-        // Phase 2: load touch learning data
-        keyboardLayoutView.loadTouchLearningData()
+        if !surfaceConfigDeferred { keyboardLayoutView.loadTouchLearningData() }
         #if DEBUG
         let _cs9 = CACurrentMediaTime()
-        debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "end")
+        if !surfaceConfigDeferred {
+            debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "end")
+            ActivationTraceLogger.shared.mark("loadTouchLearningData.end", details: String(format: "duration=%.1fms", (_cs9 - _cs8) * 1000))
+        }
         #endif
         // Phase 3: suggestion subsystem — deferred to first frame to avoid blocking keyboard usability
         // keyboardLayoutView.predictionEngine will be nil until prewarm completes;
@@ -447,6 +493,19 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ColdStart][viewDidLoad] loadTouchLearningData = %.2fms", (_cs9 - _cs8) * 1000)
         NSLog("[ColdStart][viewDidLoad] total = %.2fms (suggestion deferred), Memory: %.2f MB", (_cs10 - _cs0) * 1000, self.currentMemoryMB())
         NSLog("[ActivationTrace] viewDidLoad END self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
+        ActivationTraceLogger.shared.mark("viewDidLoad.end", details: String(format: "total=%.1fms mem=%.1fMB", (_cs10 - _cs0) * 1000, self.currentMemoryMB()))
+
+        // Stall judgment markers
+        do {
+            let dtSinceFirst = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+            let vdlDuration = (_cs10 - _cs0) * 1000
+            if dtSinceFirst > 500, _vdlDelta > 500 {
+                ActivationTraceLogger.shared.mark("STALL.slowBeforeViewDidLoad", details: String(format: "dt=%.0fms", _vdlDelta))
+            }
+            if vdlDuration > 1000 {
+                ActivationTraceLogger.shared.mark("STALL.slowViewDidLoad", details: String(format: "duration=%.0fms", vdlDuration))
+            }
+        }
         #endif
 
         // 저전력 모드 변경 감지
@@ -501,12 +560,14 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        attemptAttachSurfaceIfHostReady(reason: "viewWillAppear")
         BlackboxAnomalyLogger.shared.record("viewWillAppear self=\(Unmanaged.passUnretained(self).toOpaque())")
         #if DEBUG
         NSLog("[ActivationTrace] viewWillAppear START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 settingsLinkContainer.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
         debugLogMemoryAttribution(event: "viewWillAppear", phase: "start")
+        ActivationTraceLogger.shared.mark("viewWillAppear.start", details: String(format: "mem=%.1fMB", self.currentMemoryMB()))
         #endif
 
         // Allow heavy dismiss cleanup to run once per upcoming visible session.
@@ -580,6 +641,7 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ColdStart][viewWillAppear][sync] calibration+misc = %.2fms", (_wa5 - _wa4) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] updateKeyboardAppearance = %.2fms", (_wa6 - _wa5) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] total = %.2fms, containerSubviews=%d", (_wa6 - _wa0) * 1000, self.toolbarView.settingsLinkContainer.subviews.count)
+        ActivationTraceLogger.shared.mark("viewWillAppear.sync.end", details: String(format: "total=%.1fms updateProxy=%.1f setupHC=%.1f cachedSettings=%.1f toolbar=%.1f calibration=%.1f appearance=%.1f", (_wa6 - _wa0) * 1000, (_wa1 - _wa0) * 1000, (_wa2 - _wa1) * 1000, (_wa3 - _wa2) * 1000, (_wa4 - _wa3) * 1000, (_wa5 - _wa4) * 1000, (_wa6 - _wa5) * 1000))
         #endif
 
         // ── 나머지는 다음 런루프에서 실행 (키보드 UI 먼저 표시) ──
@@ -623,6 +685,7 @@ class KeyboardViewController: UIInputViewController {
             NSLog("[ColdStart][viewWillAppear][async] loadKeyboardLanguageSetting = %.2fms", (_aa5 - _aa4) * 1000)
             NSLog("[ColdStart][viewWillAppear][async] returnKey+autoCap = %.2fms", (_aa6 - _aa5) * 1000)
             NSLog("[ColdStart][viewWillAppear][async] total = %.2fms, Memory: %.2f MB", (_aa6 - _aa0) * 1000, self.currentMemoryMB())
+            ActivationTraceLogger.shared.mark("viewWillAppear.async.end", details: String(format: "total=%.1fms localization=%.1f numberRow=%.1f periodKey=%.1f keyPreview=%.1f kbLang=%.1f returnKey=%.1f", (_aa6 - _aa0) * 1000, (_aa1 - _aa0) * 1000, (_aa2 - _aa1) * 1000, (_aa3 - _aa2) * 1000, (_aa4 - _aa3) * 1000, (_aa5 - _aa4) * 1000, (_aa6 - _aa5) * 1000))
             #endif
         }
 
@@ -640,6 +703,13 @@ class KeyboardViewController: UIInputViewController {
         }
         #if DEBUG
         debugLogMemoryAttribution(event: "viewWillAppear", phase: "end")
+        ActivationTraceLogger.shared.mark("viewWillAppear.end", details: String(format: "mem=%.1fMB", self.currentMemoryMB()))
+        do {
+            let dtSinceFirst = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+            if dtSinceFirst > 1500 {
+                ActivationTraceLogger.shared.mark("STALL.slowFirstNonZeroBounds", details: String(format: "dt=%.0fms", dtSinceFirst))
+            }
+        }
         #endif
     }
 
@@ -689,6 +759,13 @@ class KeyboardViewController: UIInputViewController {
         BlackboxAnomalyLogger.shared.record("viewDidAppear active=true self=\(Unmanaged.passUnretained(self).toOpaque()) buttons=\(keyboardLayoutView.allKeyButtons.count)")
         #if DEBUG
         NSLog("[ActivationTrace] viewDidAppear self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
+        ActivationTraceLogger.shared.mark("viewDidAppear", details: "buttons=\(keyboardLayoutView.allKeyButtons.count)")
+        do {
+            let dtSinceFirst = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
+            if dtSinceFirst > 2000 {
+                ActivationTraceLogger.shared.mark("STALL.slowFirstUsableKeyboard", details: String(format: "dt=%.0fms buttons=%d", dtSinceFirst, keyboardLayoutView.allKeyButtons.count))
+            }
+        }
         NSLog("[InstanceGate] didAppear active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
 
         // First frame presented candidate — CATransaction completion으로 첫 frame commit 추정
@@ -758,6 +835,72 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
+    // MARK: - Host Width Ready Surface Management
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        attemptAttachSurfaceIfHostReady(reason: "viewDidLayoutSubviews")
+        updateSurfaceHorizontalConstraintPriorities(reason: "viewDidLayoutSubviews")
+        runPendingInitialSurfaceConfigurationIfNeeded(reason: "viewDidLayoutSubviews")
+    }
+
+    /// Pending attach가 있고 host width가 준비되면 실제 attach를 실행한다.
+    private func attemptAttachSurfaceIfHostReady(reason: String) {
+        guard pendingSurfaceAttach, isInputHostWidthReady, let inputView = self.inputView else { return }
+        #if DEBUG
+        NSLog("[StartupSurface] attachReady reason=%@ hostWidth=%.0f", reason, inputView.bounds.width)
+        #endif
+        let result = attachKeyboardSurfaceToCurrentInputView(inputView)
+        guard result == .attached || result == .alreadyAttached else { return }
+        installBaseSurfaceConstraints(on: inputView, horizontalPriority: UILayoutPriority(999))
+    }
+
+    /// Host width가 준비되면 horizontal constraints의 priority를 999로 올린다.
+    private func updateSurfaceHorizontalConstraintPriorities(reason: String) {
+        guard isInputHostWidthReady, let surface = Self.sharedKeyboardSurface, surface.owner === self else { return }
+        var elevated = false
+        for c in surface.horizontalAttachConstraints where c.priority.rawValue < 999 {
+            c.priority = UILayoutPriority(999)
+            elevated = true
+        }
+        if elevated {
+            #if DEBUG
+            NSLog("[StartupSurface] horizontalPriority elevated reason=%@ hostWidth=%.0f", reason, self.inputView?.bounds.width ?? 0)
+            #endif
+        }
+    }
+
+    /// Attach가 완료된 후 pending 초기 configuration (callbacks, settings, mode 등)을 실행한다.
+    private func runPendingInitialSurfaceConfigurationIfNeeded(reason: String) {
+        guard didAttachSharedSurface,
+              !hasRunInitialSurfaceConfigurationForAttachment,
+              isInputHostWidthReady else { return }
+        guard let surface = Self.sharedKeyboardSurface, surface.owner === self else { return }
+
+        hasRunInitialSurfaceConfigurationForAttachment = true
+
+        if needsSurfaceCallbackInstall {
+            needsSurfaceCallbackInstall = false
+            setupCallbacks()
+        }
+
+        if needsInitialSurfaceConfiguration {
+            needsInitialSurfaceConfiguration = false
+            #if DEBUG
+            NSLog("[StartupSurface] runPendingConfig reason=%@ hostWidth=%.0f", reason, self.inputView?.bounds.width ?? 0)
+            #endif
+            loadCachedSettings()
+            loadNumberRowSetting()
+            loadPeriodKeySetting()
+            loadKeyboardLanguageSetting()
+            switchMode(to: currentMode)
+            restoreState()
+            keyboardLayoutView.loadTouchLearningData()
+            updateKeyboardAppearance(rebuildKeyboard: true, caller: "pendingSurfaceConfig")
+            toolbarView.rebuildToolbarIfNeeded()
+        }
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
@@ -772,6 +915,7 @@ class KeyboardViewController: UIInputViewController {
 
         #if DEBUG
         kbLogger.info("📌 viewWillDisappear START — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        ActivationTraceLogger.shared.mark("viewWillDisappear.start", details: String(format: "mem=%.1fMB", self.currentMemoryMB()))
         kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
         kbLogger.info("📌 children.count = \(self.children.count)")
         #endif
@@ -936,6 +1080,7 @@ class KeyboardViewController: UIInputViewController {
         Self.diagnoseMemoryBreakdown()
         CoreTextCacheManager.logInterceptStats()
         debugLogMemoryAttribution(event: "viewWillDisappear", phase: "end")
+        ActivationTraceLogger.shared.mark("viewWillDisappear.end", details: String(format: "mem=%.1fMB", self.currentMemoryMB()))
         #endif
 
         // ════════════════════════════════════════════
@@ -1303,44 +1448,20 @@ class KeyboardViewController: UIInputViewController {
         // the shared views as subviews of this controller's inputView. Per-
         // attachment constraints are activated below and stored on the
         // surface so detach can deactivate them cleanly.
-        attachKeyboardSurfaceToCurrentInputView(inputView)
+        let attachResult = attachKeyboardSurfaceToCurrentInputView(inputView)
 
-        // Build per-attachment constraints. These are the only constraints
-        // that anchor the shared (reused) views to this controller's
-        // inputView; they MUST be deactivated on detach so they don't pin
-        // the shared views to a dead inputView.
-        let surfaceToolbarTop = toolbarView.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding)
-        let surfaceToolbarLeading = toolbarView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
-        let surfaceToolbarTrailing = toolbarView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
-        let surfaceToolbarHeight = toolbarView.heightAnchor.constraint(equalToConstant: Heights.toolbar)
+        // attach가 defer되면 surface views가 아직 다른 hierarchy에 있으므로
+        // constraints를 절대 생성하지 않는다 (NSGenericException 방지).
+        if attachResult == .attached || attachResult == .alreadyAttached {
+            let initialHorizontalPriority: UILayoutPriority = isInputHostWidthReady ? UILayoutPriority(999) : UILayoutPriority(250)
+            installBaseSurfaceConstraints(on: inputView, horizontalPriority: initialHorizontalPriority)
+        } else {
+            #if DEBUG
+            NSLog("[StartupSurface] setupUI.deferSurfaceConstraints result=deferredHostWidthZero hostWidth=%.0f", inputView.bounds.width)
+            #endif
+        }
 
-        let surfaceKLVLeading = keyboardLayoutView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
-        let surfaceKLVTrailing = keyboardLayoutView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
-        let surfaceKLVBottom = keyboardLayoutView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor)
-
-        // Fixed height for keyboard layout — prevents stretching when system popup expands inputView
-        keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight())
-
-        // Default: keyboard top = toolbar bottom
-        keyboardTopToToolbarConstraint = keyboardLayoutView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor)
-        keyboardTopToToolbarConstraint?.priority = .defaultHigh
-
-        // Activate all per-attachment constraints together so the layout
-        // engine sees a consistent set in one pass.
-        activateBaseSurfaceConstraints([
-            surfaceToolbarTop,
-            surfaceToolbarLeading,
-            surfaceToolbarTrailing,
-            surfaceToolbarHeight,
-            surfaceKLVLeading,
-            surfaceKLVTrailing,
-            surfaceKLVBottom,
-            keyboardLayoutHeightConstraint!,
-            keyboardTopToToolbarConstraint!,
-        ])
-
-        // Toast — floating on top of everything
-        // centerX/leading/trailing priority를 낮춰 width-0 startup 시 constraint conflict 방지
+        // Toast — controller-local view, surface와 무관하므로 항상 설치 가능.
         inputView.addSubview(toastLabel)
         let toastCenterX = toastLabel.centerXAnchor.constraint(equalTo: inputView.centerXAnchor)
         toastCenterX.priority = .defaultHigh
@@ -1355,6 +1476,9 @@ class KeyboardViewController: UIInputViewController {
             toastTrailing,
             toastLabel.heightAnchor.constraint(equalToConstant: 32),
         ])
+
+        // setupUI 끝에서 host width가 이미 준비되었으면 즉시 priority elevation.
+        updateSurfaceHorizontalConstraintPriorities(reason: "setupUI")
     }
 
     // MARK: - Deferred View Setup
@@ -1912,6 +2036,22 @@ class KeyboardViewController: UIInputViewController {
     }
     #endif
 
+    // MARK: - Surface Attach Result
+
+    private enum SurfaceAttachResult {
+        case attached
+        case alreadyAttached
+        case deferredHostWidthZero
+    }
+
+    // MARK: - Host Width Readiness
+
+    /// iPhone keyboard host의 transient width 0 phase를 구분하기 위한 conservative threshold.
+    private var isInputHostWidthReady: Bool {
+        guard let inputView = self.inputView else { return false }
+        return inputView.bounds.width >= 100
+    }
+
     // ════════════════════════════════════════════
     // MARK: - Reusable Keyboard Surface (v3)
     // (Intentionally outside `#if DEBUG` — surface attach/detach is the core
@@ -1940,6 +2080,22 @@ class KeyboardViewController: UIInputViewController {
         /// attachment). Never persisted across attachments.
         var attachConstraints: [NSLayoutConstraint] = []
 
+        /// Host width에 따라 priority를 조절하는 horizontal constraints (subset of attachConstraints).
+        var horizontalAttachConstraints: [NSLayoutConstraint] = []
+
+        /// Host width 0이었을 때 attach를 요청한 controller ID (pending attach 추적용).
+        var pendingAttachControllerId: String?
+
+        /// 마지막 attach 성공 시점의 host width.
+        var lastHostWidth: CGFloat = 0
+
+        #if DEBUG
+        /// surface.reuse 로그 rate limiting을 위한 마지막 로그 시각.
+        var lastReuseLogAt: CFTimeInterval = 0
+        /// surface.reuse 로그 rate limiting을 위한 마지막 generation.
+        var lastReuseLogGeneration: Int = -1
+        #endif
+
         init() {
             toolbarView = ToolbarView()
             keyboardLayoutView = KeyboardLayoutView()
@@ -1949,16 +2105,24 @@ class KeyboardViewController: UIInputViewController {
     private func acquireKeyboardSurface() -> ReusableKeyboardSurface {
         if let existing = Self.sharedKeyboardSurface {
             #if DEBUG
-            debugPublicMemoryLog(String(
-                format: "[MEM_ATTR] event=surface.reuse t=%.3f cycle=%d %@ surfaceGen=%d surfaceId=%@ toolbarId=%@ klvId=%@",
-                CACurrentMediaTime(),
-                Self.lifecycleCount,
-                debugInstanceIdHex,
-                existing.generation,
-                String(describing: ObjectIdentifier(existing)),
-                String(describing: Unmanaged.passUnretained(existing.toolbarView).toOpaque()),
-                String(describing: Unmanaged.passUnretained(existing.keyboardLayoutView).toOpaque())
-            ))
+            // Rate limit: 최초 1회, generation 변경 후 1회, 마지막 로그 후 1초 이상 경과 시에만 출력
+            let now = CACurrentMediaTime()
+            let shouldLogReuse = existing.lastReuseLogGeneration != existing.generation
+                || (now - existing.lastReuseLogAt) >= 1.0
+            if shouldLogReuse {
+                existing.lastReuseLogAt = now
+                existing.lastReuseLogGeneration = existing.generation
+                debugPublicMemoryLog(String(
+                    format: "[MEM_ATTR] event=surface.reuse t=%.3f cycle=%d %@ surfaceGen=%d surfaceId=%@ toolbarId=%@ klvId=%@",
+                    now,
+                    Self.lifecycleCount,
+                    debugInstanceIdHex,
+                    existing.generation,
+                    String(describing: ObjectIdentifier(existing)),
+                    String(describing: Unmanaged.passUnretained(existing.toolbarView).toOpaque()),
+                    String(describing: Unmanaged.passUnretained(existing.keyboardLayoutView).toOpaque())
+                ))
+            }
             #endif
             return existing
         }
@@ -1977,6 +2141,7 @@ class KeyboardViewController: UIInputViewController {
             String(describing: Unmanaged.passUnretained(created.keyboardLayoutView).toOpaque()),
             Self.memorySurfaceBuildMarker
         ))
+        ActivationTraceLogger.shared.mark("surface.create", details: "createCount=\(Self.sharedSurfaceCreateCount)")
         #endif
         return created
     }
@@ -1991,7 +2156,8 @@ class KeyboardViewController: UIInputViewController {
     /// flag. The old controller's `viewWillDisappear` will then see
     /// `owner !== self` and skip its detach, which is the desired race
     /// guard from plan §Important Implementation Warning.
-    private func attachKeyboardSurfaceToCurrentInputView(_ inputView: UIView) {
+    @discardableResult
+    private func attachKeyboardSurfaceToCurrentInputView(_ inputView: UIView) -> SurfaceAttachResult {
         let surface = acquireKeyboardSurface()
 
         // Idempotent: already attached to this controller's inputView.
@@ -2007,7 +2173,28 @@ class KeyboardViewController: UIInputViewController {
             ))
             #endif
             didAttachSharedSurface = true
-            return
+            return .alreadyAttached
+        }
+
+        // Policy A: host width 0이고, surface가 다른 owner에게 attached 상태면 force-detach 금지.
+        // Width 0인 shadow controller가 live surface를 훔치지 않도록 한다.
+        if !isInputHostWidthReady,
+           surface.isAttached,
+           surface.owner !== self,
+           surface.owner != nil {
+            pendingSurfaceAttach = true
+            needsInitialSurfaceConfiguration = true
+            needsSurfaceCallbackInstall = true
+            hasRunInitialSurfaceConfigurationForAttachment = false
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[StartupSurface] deferStealHostWidthZero %@ hostWidth=%.0f oldOwner=%@",
+                debugInstanceIdHex,
+                self.inputView?.bounds.width ?? 0,
+                String(describing: Unmanaged.passUnretained(surface.owner!).toOpaque())
+            ))
+            #endif
+            return .deferredHostWidthZero
         }
 
         // Force-detach from previous attachment if any.
@@ -2020,15 +2207,17 @@ class KeyboardViewController: UIInputViewController {
                 oldOwnerId = "nil"
             }
             debugPublicMemoryLog(String(
-                format: "[MEM_ATTR] event=surface.attach phase=forceDetachPrevious %@ oldOwner=%@ surfaceGen=%d",
+                format: "[MEM_ATTR] event=surface.attach phase=forceDetachPrevious %@ oldOwner=%@ surfaceGen=%d hostWidth=%.0f",
                 debugInstanceIdHex,
                 oldOwnerId,
-                surface.generation
+                surface.generation,
+                inputView.bounds.width
             ))
             #endif
             // Deactivate previous attachment constraints.
             NSLayoutConstraint.deactivate(surface.attachConstraints)
             surface.attachConstraints.removeAll()
+            surface.horizontalAttachConstraints.removeAll()
             // Detach old previous owner's flag so its `viewWillDisappear`
             // will see no ownership and skip detach.
             surface.owner?.didAttachSharedSurface = false
@@ -2047,7 +2236,9 @@ class KeyboardViewController: UIInputViewController {
             inputView.addSubview($0)
         }
         surface.isAttached = true
+        surface.lastHostWidth = inputView.bounds.width
         didAttachSharedSurface = true
+        pendingSurfaceAttach = false
 
         // Minimal state reset to keep KLV consistent with this new controller:
         // - clear stale prediction engine so `viewDidAppear` re-assigns it
@@ -2057,22 +2248,101 @@ class KeyboardViewController: UIInputViewController {
         //   keyboard appearance for the new context.
         surface.keyboardLayoutView.predictionEngine = nil
 
+        // KLV에 host width readiness provider 연결
+        surface.keyboardLayoutView.isHostInputWidthReady = { [weak inputView] in
+            (inputView?.bounds.width ?? 0) >= 100
+        }
+        surface.keyboardLayoutView.currentHostInputWidth = { [weak inputView] in
+            inputView?.bounds.width ?? 0
+        }
+
         #if DEBUG
         debugPublicMemoryLog(String(
-            format: "[MEM_ATTR] event=surface.attach phase=attached %@ surfaceGen=%d createCount=%d",
+            format: "[MEM_ATTR] event=surface.attach phase=attached %@ surfaceGen=%d createCount=%d hostWidth=%.0f",
             debugInstanceIdHex,
             surface.generation,
-            Self.sharedSurfaceCreateCount
+            Self.sharedSurfaceCreateCount,
+            inputView.bounds.width
         ))
+        ActivationTraceLogger.shared.mark("surface.attach.end", details: "gen=\(surface.generation)")
         #endif
+        return .attached
     }
 
     /// Activate the per-attachment constraints stored on the shared surface.
-    /// Called from `setupUI` after `attachKeyboardSurfaceToCurrentInputView`.
-    private func activateBaseSurfaceConstraints(_ constraints: [NSLayoutConstraint]) {
-        guard let surface = Self.sharedKeyboardSurface else { return }
+    /// Defense-in-depth: surface views must be in the same hierarchy as inputView.
+    private func activateBaseSurfaceConstraints(
+        _ constraints: [NSLayoutConstraint],
+        horizontalConstraints: [NSLayoutConstraint] = [],
+        for inputView: UIView
+    ) {
+        guard let surface = Self.sharedKeyboardSurface,
+              surface.owner === self,
+              surface.toolbarView.superview === inputView,
+              surface.keyboardLayoutView.superview === inputView else {
+            #if DEBUG
+            NSLog("[StartupSurface] activateBaseSurfaceConstraints.skip reason=notInHierarchy")
+            #endif
+            return
+        }
         surface.attachConstraints = constraints
+        surface.horizontalAttachConstraints = horizontalConstraints
         NSLayoutConstraint.activate(constraints)
+    }
+
+    /// Surface constraints를 생성하고 활성화하는 통합 helper.
+    /// setupUI와 attemptAttachSurfaceIfHostReady 양쪽에서 사용.
+    private func installBaseSurfaceConstraints(on inputView: UIView, horizontalPriority: UILayoutPriority) {
+        guard let surface = Self.sharedKeyboardSurface,
+              surface.owner === self,
+              surface.toolbarView.superview === inputView,
+              surface.keyboardLayoutView.superview === inputView else {
+            #if DEBUG
+            NSLog("[StartupSurface] installBaseSurfaceConstraints.skip reason=notInHierarchy hostWidth=%.0f", inputView.bounds.width)
+            #endif
+            return
+        }
+
+        // 기존 constraints가 있으면 먼저 deactivate
+        if !surface.attachConstraints.isEmpty {
+            NSLayoutConstraint.deactivate(surface.attachConstraints)
+            surface.attachConstraints.removeAll()
+            surface.horizontalAttachConstraints.removeAll()
+        }
+
+        let surfaceToolbarTop = toolbarView.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding)
+        let surfaceToolbarLeading = toolbarView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceToolbarTrailing = toolbarView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceToolbarHeight = toolbarView.heightAnchor.constraint(equalToConstant: Heights.toolbar)
+
+        let surfaceKLVLeading = keyboardLayoutView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceKLVTrailing = keyboardLayoutView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceKLVBottom = keyboardLayoutView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor)
+
+        keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight())
+        keyboardTopToToolbarConstraint = keyboardLayoutView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor)
+        keyboardTopToToolbarConstraint?.priority = .defaultHigh
+
+        let horizontalConstraints = [surfaceToolbarLeading, surfaceToolbarTrailing, surfaceKLVLeading, surfaceKLVTrailing]
+        for c in horizontalConstraints {
+            c.priority = horizontalPriority
+        }
+
+        activateBaseSurfaceConstraints([
+            surfaceToolbarTop,
+            surfaceToolbarLeading,
+            surfaceToolbarTrailing,
+            surfaceToolbarHeight,
+            surfaceKLVLeading,
+            surfaceKLVTrailing,
+            surfaceKLVBottom,
+            keyboardLayoutHeightConstraint!,
+            keyboardTopToToolbarConstraint!,
+        ], horizontalConstraints: horizontalConstraints, for: inputView)
+
+        #if DEBUG
+        NSLog("[StartupSurface] installBaseSurfaceConstraints hostWidth=%.0f hPriority=%.0f", inputView.bounds.width, horizontalPriority.rawValue)
+        #endif
     }
 
     /// Detach the shared surface from this controller's `inputView`.
@@ -2105,6 +2375,7 @@ class KeyboardViewController: UIInputViewController {
         // a deactivated constraint set against the new attachment).
         NSLayoutConstraint.deactivate(surface.attachConstraints)
         surface.attachConstraints.removeAll()
+        surface.horizontalAttachConstraints.removeAll()
 
         surface.toolbarView.removeFromSuperview()
         surface.keyboardLayoutView.removeFromSuperview()
@@ -2118,6 +2389,7 @@ class KeyboardViewController: UIInputViewController {
             debugInstanceIdHex,
             surface.generation
         ))
+        ActivationTraceLogger.shared.mark("surface.detach.end", details: "gen=\(surface.generation)")
         #endif
     }
 
@@ -2170,6 +2442,7 @@ class KeyboardViewController: UIInputViewController {
             type: .debug,
             "[MEM_ATTR] event=surface.destroy phase=destroyed reason=\(reason) currentMB=\(String(format: "%.2f", currentMB))"
         )
+        ActivationTraceLogger.shared.mark("surface.destroy", details: "reason=\(reason) mem=\(String(format: "%.1f", currentMB))MB")
         #endif
     }
 

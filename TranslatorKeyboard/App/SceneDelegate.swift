@@ -64,6 +64,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         sceneLog.debug("event=sceneDidBecomeActive")
+        #if DEBUG
+        KeyboardStartupTraceReader.dumpLatestTraceToConsole()
+        #endif
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
