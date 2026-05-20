@@ -1,4 +1,17 @@
 import UIKit
+import os.log
+
+#if DEBUG
+private let klvMemoryDebugLog = OSLog(
+    subsystem: "com.translatorkeyboard.keyboard",
+    category: "MemoryDebug"
+)
+
+@inline(__always)
+private func klvDebugMemLog(_ message: String) {
+    os_log("%{public}@", log: klvMemoryDebugLog, type: .debug, message)
+}
+#endif
 
 enum KeyboardPage {
     case letters
@@ -229,6 +242,7 @@ class KeyboardLayoutView: UIView {
     private var snowfallSoftView: SnowfallSoftView?
     private var cherryBlossomView: CherryBlossomView?
     private var isMemoryConstrained = false
+    private var memoryWarningCount = 0
 
     // Mercury Ripple 렌즈 굴절 애니메이션
     private var lensDisplayLink: CADisplayLink?
@@ -454,6 +468,15 @@ class KeyboardLayoutView: UIView {
             name: UIApplication.didReceiveMemoryWarningNotification,
             object: nil
         )
+        #if DEBUG
+        klvDebugMemLog(String(
+            format: "[MEM_ATTR] event=KLV.init phase=end id=%@ buttons=%d containerSubs=%d animFlags=%@",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            allKeyButtons.count,
+            keyboardContainer.subviews.count,
+            memoryAttributionAnimationFlags()
+        ))
+        #endif
     }
 
     required init?(coder: NSCoder) {
@@ -2341,11 +2364,8 @@ class KeyboardLayoutView: UIView {
         #endif
         self.isDark = isDark
 
-        // Phase 7: 메모리 경고 후 영구 차단 방지
-        // handleMemoryWarning()의 asyncAfter 복구가 키보드 확장에서 실행되지 않으므로
-        // updateAppearance 진입 시 강제 리셋하여 애니메이션 재생성을 보장한다.
-        // 진짜 메모리 위기 시에는 SafetyNet(22MB soft cleanup) / Graceful Restart(40MB exit(0))가 처리.
-        isMemoryConstrained = false
+        // Memory pressure state is controlled by KeyboardViewController.
+        // updateAppearance must not silently re-enable heavy effects.
 
         if let theme = customTheme {
             // 그라데이션 배경 처리
@@ -2712,6 +2732,7 @@ class KeyboardLayoutView: UIView {
             stopWaveAnimation()
             return
         }
+        guard !isMemoryConstrained || isWaveAnimationActive else { return }
 
         if isWaveAnimationActive {
             // 이미 실행 중이면 projection만 재계산 (DisplayLink 유지)
@@ -2727,6 +2748,7 @@ class KeyboardLayoutView: UIView {
             stopWaveAnimation()
             return
         }
+        guard !isMemoryConstrained else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         guard !isWaveAnimationActive else { return }
 
@@ -2885,6 +2907,7 @@ class KeyboardLayoutView: UIView {
             stopEdgeGlowAnimation()
             return
         }
+        guard !isMemoryConstrained || isEdgeGlowAnimationActive else { return }
 
         // 테마 색상 캐시 업데이트
         if case .edgeGlow(let borderColor, _) = theme.keyVisualStyle {
@@ -2900,6 +2923,7 @@ class KeyboardLayoutView: UIView {
 
     private func startEdgeGlowAnimation() {
         guard let theme = customTheme, theme.needsEdgeGlowAnimation else { return }
+        guard !isMemoryConstrained else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
         guard !isEdgeGlowAnimationActive else { return }
 
@@ -3063,6 +3087,7 @@ class KeyboardLayoutView: UIView {
     // MARK: - Mercury Ripple Lens Animation
 
     private func startLensAnimation() {
+        guard !isMemoryConstrained else { return }
         guard !isLensAnimationActive else { return }
         guard let _ = mercuryRippleView, mercuryRippleView?.isActive == true else { return }
         guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
@@ -3242,40 +3267,37 @@ class KeyboardLayoutView: UIView {
         }
     }
 
-    @objc private func handleMemoryWarning() {
+    func enterInvisibleMemoryPressureMode() {
         isMemoryConstrained = true
+        performVisiblePreservingCleanup()
+    }
 
-        if let rv = matrixRainView {
-            rv.stopAnimation()
-            rv.removeFromSuperview()
-            matrixRainView = nil
+    func performVisiblePreservingCleanup() {
+        cachedKeyProjections.removeAll(keepingCapacity: false)
+        cachedButtonCentersInRippleView.removeAll(keepingCapacity: false)
+
+        for subview in subviews where subview.isHidden || subview.alpha == 0 {
+            subview.layer.contents = nil
+            subview.layer.sublayers?.forEach { $0.contents = nil }
         }
 
-        // 리플 + 렌즈 애니메이션 정리
-        stopLensAnimation()
-        if let rv = mercuryRippleView {
-            rv.stopAnimation()
-            rv.removeFromSuperview()
-            mercuryRippleView = nil
+        for subview in keyboardContainer.subviews where subview.isHidden || subview.alpha == 0 {
+            subview.layer.contents = nil
+            subview.layer.sublayers?.forEach { $0.contents = nil }
         }
+    }
 
-        if let sv = stardustView {
-            sv.stopAnimation()
-            sv.removeFromSuperview()
-            stardustView = nil
-        }
+    func enterSurvivalModePreservingBaseTheme() {
+        isMemoryConstrained = true
+        performVisiblePreservingCleanup()
 
-        if let sv = snowfallView {
-            sv.stopAnimation()
-            sv.removeFromSuperview()
-            snowfallView = nil
-        }
-
-        if let cv = cherryBlossomView {
-            cv.stopAnimation()
-            cv.removeFromSuperview()
-            cherryBlossomView = nil
-        }
+        matrixRainView?.pauseAnimation()
+        mercuryRippleView?.pauseAnimation()
+        pauseLensAnimation()
+        stardustView?.pauseAnimation()
+        snowfallView?.pauseAnimation()
+        snowfallSoftView?.pauseAnimation()
+        cherryBlossomView?.pauseAnimation()
 
         if isWaveAnimationActive {
             stopWaveAnimation()
@@ -3283,10 +3305,73 @@ class KeyboardLayoutView: UIView {
         if isEdgeGlowAnimationActive {
             stopEdgeGlowAnimation()
         }
+    }
 
-        // Phase 7: asyncAfter 복구 제거
-        // 키보드 확장은 dismiss 후 RunLoop가 정지되어 asyncAfter가 실행되지 않음.
-        // isMemoryConstrained 리셋은 updateAppearance() 진입 시 처리됨 (변경 2 참조).
+    func exitMemoryPressureMode() {
+        guard isMemoryConstrained else { return }
+        isMemoryConstrained = false
+        memoryWarningCount = 0
+        updateAppearance(isDark: isDark, rebuildKeyboard: false)
+        restartDeferredThemeAnimationsIfNeeded()
+    }
+
+    func performDeepMemoryCleanupForDismiss() {
+        prepareForDismiss()
+        MatrixRainView.clearCharacterImageCache()
+        StardustView.clearSparkImageCache()
+    }
+
+    #if DEBUG
+    func memoryAttributionAnimationFlags() -> String {
+        [
+            "animMatrix=\(matrixRainView == nil ? 0 : 1)",
+            "animMercury=\(mercuryRippleView == nil ? 0 : 1)",
+            "animStardust=\(stardustView == nil ? 0 : 1)",
+            "animSnowfall=\(snowfallView == nil ? 0 : 1)",
+            "animSnowfallSoft=\(snowfallSoftView == nil ? 0 : 1)",
+            "animCherry=\(cherryBlossomView == nil ? 0 : 1)"
+        ].joined(separator: " ")
+    }
+    #endif
+
+    private func restartDeferredThemeAnimationsIfNeeded() {
+        guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
+
+        if let theme = customTheme, theme.needsWaveAnimation {
+            startWaveAnimationIfNeeded()
+        }
+        if let theme = customTheme, theme.needsRainAnimation {
+            matrixRainView?.startAnimation()
+        }
+        if let theme = customTheme, theme.needsRippleAnimation {
+            mercuryRippleView?.startAnimation()
+            startLensAnimation()
+        }
+        if let theme = customTheme, theme.needsStardustAnimation {
+            stardustView?.startAnimation()
+        }
+        if let theme = customTheme, theme.needsEdgeGlowAnimation {
+            startEdgeGlowAnimation()
+        }
+        if let theme = customTheme, theme.needsSnowfallAnimation {
+            if theme.id == "premium_soft_snowfall" {
+                snowfallSoftView?.startAnimation()
+            } else {
+                snowfallView?.startAnimation()
+            }
+        }
+        if let theme = customTheme, theme.needsCherryBlossomAnimation {
+            cherryBlossomView?.startAnimation()
+        }
+    }
+
+    @objc private func handleMemoryWarning() {
+        memoryWarningCount += 1
+        if memoryWarningCount >= 2 {
+            enterSurvivalModePreservingBaseTheme()
+        } else {
+            enterInvisibleMemoryPressureMode()
+        }
     }
 
     // MARK: - Early Teardown (키보드 dismiss 시 호출)
@@ -3312,6 +3397,17 @@ class KeyboardLayoutView: UIView {
     /// 무거운 애니메이션 뷰와 CADisplayLink를 즉시 정리하여 오버랩 구간 메모리 피크 억제.
     /// 멱등성(Idempotent) 보장 — 여러 번 호출해도 안전.
     func prepareForDismiss() {
+        #if DEBUG
+        klvDebugMemLog(String(
+            format: "[MEM_ATTR] event=KLV.prepareForDismiss phase=start id=%@ buttons=%d containerSubs=%d animFlags=%@ dlActive=%d",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            allKeyButtons.count,
+            keyboardContainer.subviews.count,
+            memoryAttributionAnimationFlags(),
+            (waveDisplayLink != nil || lensDisplayLink != nil || edgeGlowDisplayLink != nil || displayLink != nil) ? 1 : 0
+        ))
+        #endif
+
         // CADisplayLink 전부 정지 + 해제
         stopWaveAnimation()
         waveDisplayLink?.invalidate()
@@ -3327,6 +3423,16 @@ class KeyboardLayoutView: UIView {
 
         displayLink?.invalidate()
         displayLink = nil
+
+        // Long-press / repeat timers — left dangling on dismiss otherwise.
+        backspaceTimer?.invalidate()
+        backspaceTimer = nil
+        backspaceRepeatTimer?.invalidate()
+        backspaceRepeatTimer = nil
+        spaceLongPressTimer?.invalidate()
+        spaceLongPressTimer = nil
+        accentLongPressTimer?.invalidate()
+        accentLongPressTimer = nil
 
         // 애니메이션 뷰 정지 + 제거 + nil
         if let rv = matrixRainView {
@@ -3348,6 +3454,11 @@ class KeyboardLayoutView: UIView {
             sv.stopAnimation()
             sv.removeFromSuperview()
             snowfallView = nil
+        }
+        if let sv = snowfallSoftView {
+            sv.stopAnimation()
+            sv.removeFromSuperview()
+            snowfallSoftView = nil
         }
         if let cv = cherryBlossomView {
             cv.stopAnimation()
@@ -3374,27 +3485,42 @@ class KeyboardLayoutView: UIView {
             gl.removeFromSuperlayer()
             gradientLayer = nil
         }
+
+        #if DEBUG
+        klvDebugMemLog(String(
+            format: "[MEM_ATTR] event=KLV.prepareForDismiss phase=end id=%@ buttons=%d containerSubs=%d animFlags=%@",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            allKeyButtons.count,
+            keyboardContainer.subviews.count,
+            memoryAttributionAnimationFlags()
+        ))
+        #endif
     }
 
     deinit {
-        stopWaveAnimation()
-        waveDisplayLink?.invalidate()
-        waveDisplayLink = nil
-        stopLensAnimation()
-        lensDisplayLink?.invalidate()
-        lensDisplayLink = nil
-        matrixRainView?.stopAnimation()
-        mercuryRippleView?.stopAnimation()
-        stardustView?.stopAnimation()
-        snowfallView?.stopAnimation()
-        snowfallSoftView?.stopAnimation()
-        snowfallSoftView?.removeFromSuperview()
-        snowfallSoftView = nil
-        cherryBlossomView?.stopAnimation()
-        stopEdgeGlowAnimation()
-        edgeGlowDisplayLink?.invalidate()
-        edgeGlowDisplayLink = nil
-        NotificationCenter.default.removeObserver(self, name: UIApplication.didReceiveMemoryWarningNotification, object: nil)
+        #if DEBUG
+        klvDebugMemLog(String(
+            format: "[MEM_ATTR] event=KLV.deinit phase=start id=%@ buttons=%d containerSubs=%d animFlags=%@",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            allKeyButtons.count,
+            keyboardContainer.subviews.count,
+            memoryAttributionAnimationFlags()
+        ))
+        #endif
+        // Delegate full teardown to the idempotent prepareForDismiss() so we
+        // don't miss any newly-added animation / timer / layer resources.
+        prepareForDismiss()
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+        #if DEBUG
+        klvDebugMemLog(String(
+            format: "[MEM_ATTR] event=KLV.deinit phase=end id=%@",
+            String(describing: Unmanaged.passUnretained(self).toOpaque())
+        ))
+        #endif
     }
 
     func getCurrentLanguage() -> KeyboardLanguage {

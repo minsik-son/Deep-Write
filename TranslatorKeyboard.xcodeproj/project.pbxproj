@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -211,7 +211,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0164D0EA23AE9AE0B0671F1F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		0164D0EA23AE9AE0B0671F1F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		022DCE4974E8889394223AB1 /* CalibrationSeedModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationSeedModel.swift; sourceTree = "<group>"; };
 		032AAD85241D44ADBB503E82 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		03B45887771678ECF992D3F9 /* AppProcessServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppProcessServices.swift; sourceTree = "<group>"; };
@@ -223,7 +223,7 @@
 		11AE8D80E15CF01D67DFD7C3 /* TranslationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationCache.swift; sourceTree = "<group>"; };
 		133AE5A709C45DBDECC7EDDF /* DarwinNotificationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarwinNotificationBridge.swift; sourceTree = "<group>"; };
 		148E6803B9B3CF6404E31522 /* LanguageSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSettingsViewController.swift; sourceTree = "<group>"; };
-		15F02063B8037FB8B731BEE2 /* KeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		15F02063B8037FB8B731BEE2 /* KeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.extensionkit-extension"; path = KeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		16CD373CECF5920072EF289B /* AppDictationRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDictationRuntime.swift; sourceTree = "<group>"; };
 		181ED075D59486675D7F6A4D /* ChatReplyGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatReplyGeneratorView.swift; sourceTree = "<group>"; };
 		18A6BA17416255C12D0F7035 /* SetupSettingsAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupSettingsAnimationView.swift; sourceTree = "<group>"; };
@@ -254,7 +254,7 @@
 		3BFCAC4F13D863A2C57BAB5E /* FontPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontPool.swift; sourceTree = "<group>"; };
 		3C123F0A0098EFAA0501D648 /* DiffSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffSuggestionView.swift; sourceTree = "<group>"; };
 		3C4DC1BFA145449987C9F548 /* SnowfallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowfallView.swift; sourceTree = "<group>"; };
-		3C7CC49E68CB60E4B13F6A34 /* Products.storekit */ = {isa = PBXFileReference; path = Products.storekit; sourceTree = "<group>"; };
+		3C7CC49E68CB60E4B13F6A34 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		3C9634D0D3CD8CF53DDA9CC1 /* ToneStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToneStyle.swift; sourceTree = "<group>"; };
 		3D2E761B9E64E9AE2533FC79 /* AccentPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccentPopupView.swift; sourceTree = "<group>"; };
 		3FE6C8A86C22CE87CAE26624 /* KeyboardTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardTheme.swift; sourceTree = "<group>"; };
@@ -335,7 +335,7 @@
 		C63CC5F8905248023302E058 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
 		CE7D57EE28DFAB35051C440A /* SavedPhrasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedPhrasesView.swift; sourceTree = "<group>"; };
 		CEFCD59B19D6B214370C504C /* TranslatorKeyboard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TranslatorKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		CF30703BC12CC25722DB7DB7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CF30703BC12CC25722DB7DB7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CF49409DB05018EFA200D5E0 /* DictationSharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationSharedStore.swift; sourceTree = "<group>"; };
 		D2A622D20B52EE0DCC0DC9AB /* DailyUsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyUsageData.swift; sourceTree = "<group>"; };
 		D466482591CD18ACB2300B2B /* ContextBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextBuffer.swift; sourceTree = "<group>"; };
@@ -813,7 +813,6 @@
 				915EFEA7DF7BBE28ED7BBA62 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				D77C8678D487BD624C9C56E4 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1264,7 +1263,7 @@
 				73C6956E3EA6543795916132 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		6B62E4FA60A7E8D8993D4B05 /* Build configuration list for PBXProject "TranslatorKeyboard" */ = {
 			isa = XCConfigurationList;
@@ -1273,7 +1272,7 @@
 				8C6DA7645D22348B673C22D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		9D3D6648925293CE63CA9778 /* Build configuration list for PBXNativeTarget "TranslatorKeyboard" */ = {
 			isa = XCConfigurationList;
@@ -1282,7 +1281,7 @@
 				674EFDBB8B4D7519F6B95AFC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 

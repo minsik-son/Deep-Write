@@ -1,5 +1,17 @@
 import UIKit
-import SwiftUI
+import os.log
+
+#if DEBUG
+private let toolbarMemoryDebugLog = OSLog(
+    subsystem: "com.translatorkeyboard.keyboard",
+    category: "MemoryDebug"
+)
+
+@inline(__always)
+private func toolbarDebugMemLog(_ message: String) {
+    os_log("%{public}@", log: toolbarMemoryDebugLog, type: .debug, message)
+}
+#endif
 
 class ToolbarView: UIView {
 
@@ -34,6 +46,7 @@ class ToolbarView: UIView {
     var onDateTimeInsertLongPress: (() -> Void)?
     var onDismissKeyboardTap: (() -> Void)?
     var onUnitConverterTap: (() -> Void)?
+    var onSettingsTap: (() -> Void)?
 
     // MARK: - Toolbar Views
 
@@ -46,12 +59,23 @@ class ToolbarView: UIView {
         return sv
     }()
 
-    /// SwiftUI Link를 담는 컨테이너 뷰 (UIHostingController.view가 들어감)
+    /// Settings button container (UIKit — no SwiftUI dependency)
     let settingsLinkContainer: UIView = {
         let v = UIView()
         v.backgroundColor = .clear
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
+    }()
+
+    private let settingsButton: UIButton = {
+        let button = UIButton(type: .system)
+        if let image = UIImage(named: "icon_toolbar_settings")?.withRenderingMode(.alwaysTemplate) {
+            button.setImage(image, for: .normal)
+        }
+        button.tintColor = .label
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.accessibilityLabel = "Settings"
+        return button
     }()
 
     // Status label
@@ -113,10 +137,79 @@ class ToolbarView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
+        #if DEBUG
+        toolbarDebugMemLog(String(
+            format: "[MEM_ATTR] event=ToolbarView.init phase=end id=%@ arranged=%d chips=%d",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            toolbarStack.arrangedSubviews.count,
+            suggestionChipStack.arrangedSubviews.count
+        ))
+        #endif
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        #if DEBUG
+        toolbarDebugMemLog(String(
+            format: "[MEM_ATTR] event=ToolbarView.deinit phase=start id=%@ arranged=%d chips=%d",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            toolbarStack.arrangedSubviews.count,
+            suggestionChipStack.arrangedSubviews.count
+        ))
+        #endif
+        // ToolbarView holds no timers / displayLinks / observers; closures use
+        // [weak self] from the controller side. Suggestion chips + wood pattern
+        // overlays are released once the view leaves the hierarchy.
+    }
+
+    /// Idempotent teardown called by the controller after `viewWillDisappear`.
+    /// Nils retained callbacks and releases transient suggestion / overlay UI
+    /// without touching input state. Safe to call multiple times.
+    func prepareForControllerRelease() {
+        onTranslateToggle = nil
+        onCorrectionToggle = nil
+        onEmojiKeyboardToggle = nil
+        onSavedPhrasesTap = nil
+        onClipboardTap = nil
+        onQuickNoteTap = nil
+        onSuggestionTap = nil
+        onSuggestionDismiss = nil
+        onCalculatorTap = nil
+        onChatReplyGeneratorTap = nil
+        onDictationTap = nil
+        onCursorLeftTap = nil
+        onCursorRightTap = nil
+        onDeleteWordTap = nil
+        onUndoTap = nil
+        onRedoTap = nil
+        onSelectAllTap = nil
+        onCopyTap = nil
+        onPasteTap = nil
+        onCutTap = nil
+        onCaseTransformTap = nil
+        onDateTimeInsertTap = nil
+        onDateTimeInsertLongPress = nil
+        onDismissKeyboardTap = nil
+        onUnitConverterTap = nil
+        onSettingsTap = nil
+
+        // Transient chips are not user input state — safe to drop.
+        suggestionChipStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        // Wood-pattern overlays on toolbar buttons will be reapplied by theme.
+        cleanupWoodToolbarStyle()
+
+        #if DEBUG
+        toolbarDebugMemLog(String(
+            format: "[MEM_ATTR] event=ToolbarView.prepareForControllerRelease phase=end id=%@ arranged=%d chips=%d",
+            String(describing: Unmanaged.passUnretained(self).toOpaque()),
+            toolbarStack.arrangedSubviews.count,
+            suggestionChipStack.arrangedSubviews.count
+        ))
+        #endif
     }
 
     // MARK: - Setup
@@ -131,6 +224,16 @@ class ToolbarView: UIView {
         addSubview(dismissButton)
 
         dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
+
+        // Settings button inside container
+        settingsLinkContainer.addSubview(settingsButton)
+        settingsButton.addTarget(self, action: #selector(settingsButtonTapped), for: .touchUpInside)
+        NSLayoutConstraint.activate([
+            settingsButton.topAnchor.constraint(equalTo: settingsLinkContainer.topAnchor),
+            settingsButton.bottomAnchor.constraint(equalTo: settingsLinkContainer.bottomAnchor),
+            settingsButton.leadingAnchor.constraint(equalTo: settingsLinkContainer.leadingAnchor),
+            settingsButton.trailingAnchor.constraint(equalTo: settingsLinkContainer.trailingAnchor),
+        ])
 
         NSLayoutConstraint.activate([
             toolbarStack.topAnchor.constraint(equalTo: topAnchor, constant: 3),
@@ -392,10 +495,11 @@ class ToolbarView: UIView {
                 : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1)
         }
 
-        // 모든 아이콘 버튼 색상 업데이트 (settingsLinkContainer 제외)
+        // 모든 아이콘 버튼 색상 업데이트
         for case let btn as UIButton in toolbarStack.arrangedSubviews {
             btn.tintColor = textColor
         }
+        settingsButton.tintColor = textColor
 
         // Dismiss button
         dismissButton.setTitleColor(textColor, for: .normal)
@@ -547,22 +651,30 @@ class ToolbarView: UIView {
         // Toolbar mode
         guard !toolbarStack.isHidden else { return nil }
 
-        // settingsLinkContainer 영역은 SwiftUI Link가 처리하도록 우선 통과
-        let containerPoint = convert(point, to: settingsLinkContainer)
-        if settingsLinkContainer.bounds.contains(containerPoint) {
-            return settingsLinkContainer.hitTest(containerPoint, with: event)
-        }
-
         // 나머지 영역은 가장 가까운 버튼으로 라우팅
         let stackPoint = convert(point, to: toolbarStack)
         var nearestButton: UIButton?
         var nearestDistance: CGFloat = .greatestFiniteMagnitude
-        for case let btn as UIButton in toolbarStack.arrangedSubviews {
-            let btnCenter = CGPoint(x: btn.frame.midX, y: btn.frame.midY)
-            let dist = abs(stackPoint.x - btnCenter.x)
-            if dist < nearestDistance {
-                nearestDistance = dist
-                nearestButton = btn
+        for arranged in toolbarStack.arrangedSubviews {
+            let btn: UIButton
+            if arranged === settingsLinkContainer {
+                btn = settingsButton
+                // settingsButton center in stack coordinate
+                let btnCenterInStack = settingsLinkContainer.convert(
+                    CGPoint(x: settingsButton.bounds.midX, y: settingsButton.bounds.midY),
+                    to: toolbarStack)
+                let dist = abs(stackPoint.x - btnCenterInStack.x)
+                if dist < nearestDistance {
+                    nearestDistance = dist
+                    nearestButton = btn
+                }
+            } else if let b = arranged as? UIButton {
+                let btnCenter = CGPoint(x: b.frame.midX, y: b.frame.midY)
+                let dist = abs(stackPoint.x - btnCenter.x)
+                if dist < nearestDistance {
+                    nearestDistance = dist
+                    nearestButton = b
+                }
             }
         }
         return nearestButton ?? super.hitTest(point, with: event)
@@ -599,6 +711,7 @@ class ToolbarView: UIView {
     }
     @objc private func dismissKeyboardTapped() { onDismissKeyboardTap?() }
     @objc private func unitConverterTapped() { onUnitConverterTap?() }
+    @objc private func settingsButtonTapped() { onSettingsTap?() }
 
     @objc private func emojiButtonTapped() {
         onEmojiKeyboardToggle?()

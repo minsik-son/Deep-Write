@@ -1,5 +1,4 @@
 import UIKit
-import SwiftUI
 import os.log
 
 enum KeyboardMode {
@@ -26,6 +25,15 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ActivationTrace] firstCodeEntry = %.4f", t)
         return t
     }()
+    #endif
+
+    #if DEBUG
+    /// Unique build marker — used by `strings <KeyboardExtension binary>` to
+    /// verify the device is actually running v3 reusable-surface code, not a
+    /// stale build (the previous prompt cycle observed log strings missing in
+    /// device logs even when source contained them). Logged once in `init`
+    /// so the literal is retained in the binary.
+    static let memorySurfaceBuildMarker = "ReusableKeyboardSurface_v3"
     #endif
 
     private var currentMode: KeyboardMode = .defaultMode
@@ -73,18 +81,37 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - UI Components
 
-    private lazy var toolbarView = ToolbarView()
-    /// 프로세스 수명 동안 유지되는 단일 UIHostingController (SwiftUI 런타임 누적 방지)
-    private static var sharedSettingsHC: UIHostingController<SettingsLinkView>?
-    /// 현재 VC에서 사용 중인 참조 (weak — static이 소유권 보유)
-    private weak var settingsLinkHostingController: UIHostingController<SettingsLinkView>?
-    /// re-parent 시 이전 constraint를 명시적으로 정리하기 위한 참조
-    private var settingsHCConstraints: [NSLayoutConstraint] = []
+    // ════════════════════════════════════════════
+    // Reusable keyboard surface (v3) — process-local sharing of the base
+    // toolbar + keyboardLayoutView across `KeyboardViewController` lifecycles.
+    // Per-instance views (translation/correction/phrase/emoji/clipboard/etc.)
+    // are still instance-local and lazy.
+    //
+    // The previous per-cycle UI graph churn was the dominant source of the
+    // `viewDidLoad.end` baseline drift; reusing the same UIKit object graph
+    // across cycles stops that allocation churn at the source.
+    // ════════════════════════════════════════════
+
+    /// Shared keyboard surface across the keyboard extension process.
+    /// Allocated lazily on first access; only destroyed by
+    /// `destroySharedKeyboardSurfaceIfHidden` while hidden + above the high
+    /// memory threshold.
+    private static var sharedKeyboardSurface: ReusableKeyboardSurface?
+
+    /// Number of `ReusableKeyboardSurface` instances created (monotonic).
+    /// Should usually be `1` in a healthy 30-cycle run.
+    private static var sharedSurfaceCreateCount: Int = 0
+
+    /// Read-through to the shared surface's toolbar view.
+    private var toolbarView: ToolbarView { acquireKeyboardSurface().toolbarView }
+
+    /// Read-through to the shared surface's keyboard layout view.
+    private var keyboardLayoutView: KeyboardLayoutView { acquireKeyboardSurface().keyboardLayoutView }
+
     private lazy var translationLanguageBar = TranslationLanguageBar()
     private lazy var translationInputView = TranslationInputView()
     private lazy var correctionLanguageBar = CorrectionLanguageBar()
     private lazy var correctionInputView = TranslationInputView()
-    private lazy var keyboardLayoutView = KeyboardLayoutView()
     private var emojiKeyboardView: EmojiKeyboardView?
     private var languagePickerView: LanguagePickerView?
     private var savedPhrasesView: SavedPhrasesView?
@@ -191,6 +218,43 @@ class KeyboardViewController: UIInputViewController {
     private var isSuggestionDismissedForCurrentWord = false
     private var hasUserTypedSinceAppeared = false
 
+    // MARK: - No-Exit Memory Stabilization
+
+    private enum MemoryPressureState: String {
+        case normal
+        case softPressure
+        case invisiblePressure
+        case stabilizationPending
+        case survival
+    }
+
+    private var memoryPressureState: MemoryPressureState = .normal
+    private var shouldDeepCleanOnDisappear = false
+    private var needsLazyRecreationOnNextAppear = false
+
+    /// Guard: heavy `viewWillDisappear` cleanup runs at most once per visible session.
+    /// Reset in `viewWillAppear` (re-entering visibility). The system sometimes calls
+    /// `viewWillDisappear` more than once for the same visible session during
+    /// host-app transitions (notification center, app switcher), and the heavy
+    /// teardown then races with the next instance's `viewDidLoad` and contributes
+    /// to the baseline drift.
+    private var didRunDismissCleanupForCurrentVisibility = false
+
+    /// Guard: KLV/Toolbar callbacks have been nilled after dismiss. `viewWillAppear`
+    /// re-installs them via `setupCallbacks()` when this is true so reused
+    /// controller instances remain functional.
+    private var didNilCallbacksAfterDismiss = false
+
+    /// Track whether this controller currently owns the shared surface
+    /// attachment. Used by `viewWillDisappear` to gate detach against owner
+    /// race conditions.
+    private var didAttachSharedSurface = false
+    private var lastMemoryPressureTransitionAt: CFTimeInterval = 0
+    private var stableLowMemoryObservationCount = 0
+    private var idleMemoryCleanupWorkItem: DispatchWorkItem?
+    private var lastHeavyFeatureEvent: String?
+    private var lastHeavyFeatureAt: CFTimeInterval = 0
+
     // Language state
     private var sourceLanguageCode: String = "ko"
     private var targetLanguageCode: String = "en"
@@ -231,7 +295,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         _ = Self.firstCodeEntryTime // static initializer 강제 트리거
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
-        NSLog("[ActivationTrace] init(nibName) self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta)
+        NSLog("[ActivationTrace] init(nibName) self=%@ deltaSinceFirstCode=%.2fms marker=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()), delta, Self.memorySurfaceBuildMarker)
         #endif
     }
 
@@ -249,6 +313,7 @@ class KeyboardViewController: UIInputViewController {
     deinit {
         #if DEBUG
         let deinitMemory = Self.measurePhysFootprint()
+        debugLogMemoryAttribution(event: "deinit", phase: "start", extra: "children=\(children.count)")
         kbLogger.warning("💀 KeyboardViewController DEINIT — pid=\(ProcessInfo.processInfo.processIdentifier) [cycle \(Self.lifecycleCount)]")
         kbLogger.warning("💀 children.count at deinit = \(self.children.count)")
         kbLogger.warning("💀 Memory at DEINIT: \(deinitMemory, format: .fixed(precision: 2)) MB (phys_footprint)")
@@ -261,16 +326,8 @@ class KeyboardViewController: UIInputViewController {
 
         // NotificationCenter 정리 (스레드 무관 — iOS 9+ 안전)
         NotificationCenter.default.removeObserver(self)
-
-        // UIHostingController는 static으로 프로세스 수명 동안 유지
-        // deinit에서 파괴하지 않음 — 다음 VC가 re-parent하여 재사용
-        if let hc = settingsLinkHostingController, hc.parent === self {
-            NSLayoutConstraint.deactivate(settingsHCConstraints)
-            settingsHCConstraints = []
-            hc.willMove(toParent: nil)
-            hc.view.removeFromSuperview()
-            hc.removeFromParent()
-        }
+        idleMemoryCleanupWorkItem?.cancel()
+        idleMemoryCleanupWorkItem = nil
 
         #if DEBUG
         let afterCleanup = Self.measurePhysFootprint()
@@ -287,6 +344,7 @@ class KeyboardViewController: UIInputViewController {
         // 다음 사이클 viewDidLoad에서 비교할 수 있도록 저장
         Self.lastDeinitMemory = finalMemory
         CoreTextCacheManager.logInterceptStats()
+        debugLogMemoryAttribution(event: "deinit", phase: "end")
         #endif
     }
 
@@ -324,16 +382,19 @@ class KeyboardViewController: UIInputViewController {
         #endif
 
         #if DEBUG
+        debugLogMemoryAttribution(event: "viewDidLoad", phase: "start")
         let _cs0 = CACurrentMediaTime()
         #endif
         HistoryManager.shared.migrateClipboardHistoryIfNeeded()
         #if DEBUG
         let _cs1 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "setupUI", phase: "start")
         #endif
         setupUI()
         setupHeightConstraint()  // 조기 설치 — host-side layout pass 최소화
         #if DEBUG
         let _cs2 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "setupUI", phase: "end")
         #endif
         setupDelegates()
         #if DEBUG
@@ -342,10 +403,7 @@ class KeyboardViewController: UIInputViewController {
         setupCallbacks()
         #if DEBUG
         let _cs4 = CACurrentMediaTime()
-        #endif
-        setupSettingsLink()
-        #if DEBUG
-        let _cs5 = CACurrentMediaTime()
+        let _cs5 = _cs4
         #endif
         loadCachedSettings()
         // Final-state 필수 값을 첫 build 이전에 확정 — late async rebuild 제거 목적
@@ -355,20 +413,24 @@ class KeyboardViewController: UIInputViewController {
         loadKeyboardLanguageSetting()
         #if DEBUG
         let _cs6 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "switchModeInitial", phase: "start")
         #endif
         switchMode(to: .defaultMode)
         #if DEBUG
         let _cs7 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "switchModeInitial", phase: "end")
         #endif
         restoreState()
         #if DEBUG
         let _cs8 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "start")
         #endif
 
         // Phase 2: load touch learning data
         keyboardLayoutView.loadTouchLearningData()
         #if DEBUG
         let _cs9 = CACurrentMediaTime()
+        debugLogMemoryAttribution(event: "loadTouchLearningData", phase: "end")
         #endif
         // Phase 3: suggestion subsystem — deferred to first frame to avoid blocking keyboard usability
         // keyboardLayoutView.predictionEngine will be nil until prewarm completes;
@@ -379,7 +441,6 @@ class KeyboardViewController: UIInputViewController {
         NSLog("[ColdStart][viewDidLoad] setupUI = %.2fms", (_cs2 - _cs1) * 1000)
         NSLog("[ColdStart][viewDidLoad] setupDelegates = %.2fms", (_cs3 - _cs2) * 1000)
         NSLog("[ColdStart][viewDidLoad] setupCallbacks = %.2fms", (_cs4 - _cs3) * 1000)
-        NSLog("[ColdStart][viewDidLoad] setupSettingsLink = %.2fms", (_cs5 - _cs4) * 1000)
         NSLog("[ColdStart][viewDidLoad] loadCachedSettings = %.2fms", (_cs6 - _cs5) * 1000)
         NSLog("[ColdStart][viewDidLoad] switchMode = %.2fms", (_cs7 - _cs6) * 1000)
         NSLog("[ColdStart][viewDidLoad] restoreState = %.2fms", (_cs8 - _cs7) * 1000)
@@ -403,6 +464,7 @@ class KeyboardViewController: UIInputViewController {
         Self.logMallocZoneStats()
         kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
         Self.diagnoseMemoryBreakdown()
+        debugLogMemoryAttribution(event: "viewDidLoad", phase: "end")
 
         // 이전 사이클 DEINIT과 비교 — asyncAfter 대체
         if Self.lastDeinitMemory > 0 {
@@ -415,58 +477,21 @@ class KeyboardViewController: UIInputViewController {
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        let currentMB = currentMemoryMB()
         #if DEBUG
-        kbLogger.warning("⚠️ didReceiveMemoryWarning! Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        debugLogMemoryAttribution(event: "didReceiveMemoryWarning", phase: "start")
+        debugPublicMemoryLog(String(format: "[MemoryStabilization] didReceiveMemoryWarning memory=%.2fMB state=%@", currentMB, memoryPressureState.rawValue))
         #endif
 
-        // Dictation: memory warning시 현재 상태 보존하며 종료
-        if isShowingDictation {
-            dictationCoordinator?.forceFinalizePreservingCurrentState()
-            dismissDictation()
+        if currentMB >= Self.memorySurvivalEnterMB || memoryPressureState == .survival {
+            enterSurvivalMode(currentMB: currentMB, source: "system.warning")
+        } else {
+            enterInvisiblePressure(currentMB: currentMB, source: "system.warning")
         }
-
-        // Static 캐시 일괄 해제
-        ThemePatternRenderer.clearCache()
-        MatrixRainView.clearCharacterImageCache()
-
-        // 계산기가 열려있으면 메모리 확보를 위해 정리 후 defaultMode 복귀
-        if let calc = calculatorView {
-            calc.removeFromSuperview()
-            calculatorView = nil
-            modeBeforeCalculator = nil
-            switchMode(to: .defaultMode)
-        }
-
-        // 단위 변환기 정리
-        if let converter = unitConverterView {
-            converter.removeFromSuperview()
-            unitConverterView = nil
-            modeBeforeUnitConverter = nil
-            switchMode(to: .defaultMode)
-        }
-
-        // 날짜/시간 메뉴 정리
-        hideDateTimeMenu()
-
-        // Chat Reply Generator 메모리 확보
-        if chatReplyView != nil {
-            chatReplyManager?.cancelPending()
-            chatReplyManager?.clearCache()
-            chatReplyManager = nil
-            chatReplyView?.prepareForDismiss()
-            chatReplyView?.removeFromSuperview()
-            chatReplyView = nil
-            isShowingChatReply = false
-            modeTextInputHandler.clear()
-            keyboardLayoutView.isHidden = false
-            toolbarView.isHidden = false
-            switchMode(to: .defaultMode)
-        }
-
-        ChatReplyCache.shared.clear()
 
         #if DEBUG
-        kbLogger.warning("⚠️ After cache clear — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
+        debugPublicMemoryLog(String(format: "[MemoryStabilization] didReceiveMemoryWarning after=%.2fMB state=%@", currentMemoryMB(), memoryPressureState.rawValue))
+        debugLogMemoryAttribution(event: "didReceiveMemoryWarning", phase: "end")
         #endif
     }
 
@@ -480,10 +505,30 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         NSLog("[ActivationTrace] viewWillAppear START self=%@ deltaSinceFirstCode=%.2fms", String(describing: Unmanaged.passUnretained(self).toOpaque()), (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000)
         kbLogger.info("📌 viewWillAppear — pid=\(ProcessInfo.processInfo.processIdentifier), Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
-        kbLogger.info("📌 settingsLinkHostingController isNil=\(self.settingsLinkHostingController == nil), container.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
+        kbLogger.info("📌 settingsLinkContainer.subviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
+        debugLogMemoryAttribution(event: "viewWillAppear", phase: "start")
         #endif
 
+        // Allow heavy dismiss cleanup to run once per upcoming visible session.
+        didRunDismissCleanupForCurrentVisibility = false
+
+        // If a previous dismiss nilled callbacks (Phase B teardown), re-install
+        // them so a reused controller instance is functional on this appearance.
+        if didNilCallbacksAfterDismiss {
+            setupCallbacks()
+            didNilCallbacksAfterDismiss = false
+            #if DEBUG
+            debugLogMemoryAttribution(event: "viewWillAppear", phase: "callbacksReinstalled")
+            #endif
+        }
+
         applyKeyboardInterfaceStyleOverride()
+        if needsLazyRecreationOnNextAppear {
+            keyboardLayoutView.enterInvisibleMemoryPressureMode()
+            #if DEBUG
+            debugPublicMemoryLog("[MemoryStabilization] next appear uses lazy recreation; heavy effects deferred")
+            #endif
+        }
 
         // ════════════════════════════════════════════
         // 조기 해제 복원 — 같은 인스턴스 재사용 시 (알림센터, 앱 스위처 등)
@@ -512,8 +557,6 @@ class KeyboardViewController: UIInputViewController {
         let _wa4 = CACurrentMediaTime()
         #endif
 
-        // 툴바 재구성 이후 settings link attach 보장
-        ensureSettingsLinkAttachedIfNeeded()
         // 새 calibration seed가 있으면 reload (기존 online data 보존)
         keyboardLayoutView.reloadCalibrationSeedIfNeeded()
         #if DEBUG
@@ -522,17 +565,21 @@ class KeyboardViewController: UIInputViewController {
 
         // Phase 7: 키보드 오픈 시 테마 + 애니메이션 확실히 초기화
         // rebuildKeyboard: false — batch commit에서 1회만 rebuild
+        #if DEBUG
+        debugLogMemoryAttribution(event: "updateKeyboardAppearance", phase: "start", extra: "caller=viewWillAppear.sync")
+        #endif
         updateKeyboardAppearance(rebuildKeyboard: false, caller: "viewWillAppear.sync")
         keyboardLayoutView.endStartupBatch(reason: "startup.sync.commit")
         #if DEBUG
+        debugLogMemoryAttribution(event: "updateKeyboardAppearance", phase: "end", extra: "caller=viewWillAppear.sync")
         let _wa6 = CACurrentMediaTime()
         NSLog("[ColdStart][viewWillAppear][sync] updateProxy = %.2fms", (_wa1 - _wa0) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] setupHeightConstraint = %.2fms", (_wa2 - _wa1) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] loadCachedSettings = %.2fms", (_wa3 - _wa2) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] rebuildToolbarIfNeeded = %.2fms", (_wa4 - _wa3) * 1000)
-        NSLog("[ColdStart][viewWillAppear][sync] ensureSettingsLinkAttached = %.2fms", (_wa5 - _wa4) * 1000)
+        NSLog("[ColdStart][viewWillAppear][sync] calibration+misc = %.2fms", (_wa5 - _wa4) * 1000)
         NSLog("[ColdStart][viewWillAppear][sync] updateKeyboardAppearance = %.2fms", (_wa6 - _wa5) * 1000)
-        NSLog("[ColdStart][viewWillAppear][sync] total = %.2fms, settingsHC isNil=%d, containerSubviews=%d", (_wa6 - _wa0) * 1000, self.settingsLinkHostingController == nil ? 1 : 0, self.toolbarView.settingsLinkContainer.subviews.count)
+        NSLog("[ColdStart][viewWillAppear][sync] total = %.2fms, containerSubviews=%d", (_wa6 - _wa0) * 1000, self.toolbarView.settingsLinkContainer.subviews.count)
         #endif
 
         // ── 나머지는 다음 런루프에서 실행 (키보드 UI 먼저 표시) ──
@@ -588,6 +635,12 @@ class KeyboardViewController: UIInputViewController {
         stopClipboardMonitoring()
 
         AppGroupManager.shared.set(self.hasFullAccess, forKey: AppConstants.UserDefaultsKeys.keyboardFullAccessEnabled)
+        if needsLazyRecreationOnNextAppear {
+            scheduleLazyRecreationProbe()
+        }
+        #if DEBUG
+        debugLogMemoryAttribution(event: "viewWillAppear", phase: "end")
+        #endif
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -694,11 +747,13 @@ class KeyboardViewController: UIInputViewController {
             #if DEBUG
             let _spStart = CACurrentMediaTime()
             NSLog("[SuggestionInit] prewarm START active=true self=%@", String(describing: Unmanaged.passUnretained(self).toOpaque()))
+            debugLogMemoryAttribution(event: "suggestionPrewarm", phase: "start")
             #endif
             let engine = suggestionManager.predictionEngineRef
             keyboardLayoutView.predictionEngine = engine
             #if DEBUG
             NSLog("[SuggestionInit] prewarm END = %.2fms", (CACurrentMediaTime() - _spStart) * 1000)
+            debugLogMemoryAttribution(event: "suggestionPrewarm", phase: "end")
             #endif
         }
     }
@@ -719,6 +774,34 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("📌 viewWillDisappear START — Memory: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 self address = \(String(describing: Unmanaged.passUnretained(self).toOpaque()))")
         kbLogger.info("📌 children.count = \(self.children.count)")
+        #endif
+
+        // ════════════════════════════════════════════
+        // Idempotent guard — `viewWillDisappear` may be called multiple times
+        // for the same visible session (notification center, app switcher).
+        // Heavy teardown should only run once per visible session.
+        // ════════════════════════════════════════════
+        let isDuplicateDismiss = didRunDismissCleanupForCurrentVisibility
+        if isDuplicateDismiss {
+            #if DEBUG
+            debugLogMemoryAttribution(event: "viewWillDisappear", phase: "duplicateSkip")
+            #endif
+            // Still allow lightweight bookkeeping every time.
+            // saveTouchLearningData() is also re-run here so any newly-observed
+            // touch samples between the first and second dismiss are persisted.
+            keyboardLayoutView.saveTouchLearningData()
+            return
+        }
+        didRunDismissCleanupForCurrentVisibility = true
+
+        let dismissStartMemory = currentMemoryMB()
+        transitionMemoryPressureIfNeeded(
+            currentMB: dismissStartMemory,
+            source: "viewWillDisappear.start",
+            allowRecovery: false
+        )
+        #if DEBUG
+        debugLogMemoryAttribution(event: "viewWillDisappear", phase: "start", extra: "stage=afterTransition")
         #endif
 
         stopClipboardMonitoring()
@@ -771,28 +854,15 @@ class KeyboardViewController: UIInputViewController {
         // 조기 해제 (Early Teardown) — 단계별 메모리 측정
         // ════════════════════════════════════════════
 
+        let cleanupStart = CACurrentMediaTime()
+
         #if DEBUG
         let mem0 = currentMemoryMB()
+        let mem1 = mem0
         #endif
 
-        // 1) UIHostingController — static 재사용이므로 detach만 (파괴하지 않음)
-        if let hc = settingsLinkHostingController {
-            NSLayoutConstraint.deactivate(settingsHCConstraints)
-            settingsHCConstraints = []
-            hc.willMove(toParent: nil)
-            hc.view.removeFromSuperview()
-            hc.removeFromParent()
-            // settingsLinkHostingController는 weak이므로 nil 할당 불필요
-            // Self.sharedSettingsHC는 유지 — 다음 사이클에서 재사용
-        }
-
-        #if DEBUG
-        let mem1 = currentMemoryMB()
-        kbLogger.info("🔬 [1] UIHostingController 정리 후 — Memory: \(mem1, format: .fixed(precision: 2)) MB (delta: \(mem1 - mem0, format: .fixed(precision: 2)) MB)")
-        #endif
-
-        // 2) KeyboardLayoutView 애니메이션 + CADisplayLink 정리
-        keyboardLayoutView.prepareForDismiss()
+        // 1) KeyboardLayoutView 애니메이션 + CADisplayLink 정리
+        keyboardLayoutView.performDeepMemoryCleanupForDismiss()
 
         #if DEBUG
         let mem2 = currentMemoryMB()
@@ -805,6 +875,7 @@ class KeyboardViewController: UIInputViewController {
         #endif
         ThemePatternRenderer.clearCache()
         MatrixRainView.clearCharacterImageCache()
+        StardustView.clearSparkImageCache()
 
         #if DEBUG
         let mem3 = currentMemoryMB()
@@ -864,30 +935,117 @@ class KeyboardViewController: UIInputViewController {
         Self.logMallocZoneStats()
         Self.diagnoseMemoryBreakdown()
         CoreTextCacheManager.logInterceptStats()
+        debugLogMemoryAttribution(event: "viewWillDisappear", phase: "end")
         #endif
+
+        // ════════════════════════════════════════════
+        // Phase B: sever closed-keyboard references.
+        // After visibility ends, nil callbacks that retain controller/view graph
+        // so the next instance's lifecycle does not race with retained closures
+        // from this one. Re-installed by `setupCallbacks()` on next viewWillAppear.
+        //
+        // Hard constraints honored:
+        //   - textDocumentProxy / composing / dictation / user text NOT touched.
+        //   - Heavy animation views already torn down above; we do not change
+        //     visible UX, only nil closures and idempotently clear toolbar
+        //     callbacks.
+        // ════════════════════════════════════════════
+        keyboardLayoutView.onKeyTap = nil
+        keyboardLayoutView.onLanguageChanged = nil
+        keyboardLayoutView.onCursorMove = nil
+        keyboardLayoutView.onTrackpadModeChanged = nil
+        keyboardLayoutView.onHeightChangeNeeded = nil
+        keyboardLayoutView.onFirstVisibleCandidate = nil
+
+        toolbarView.onTranslateToggle = nil
+        toolbarView.onCorrectionToggle = nil
+        toolbarView.onEmojiKeyboardToggle = nil
+        toolbarView.onSavedPhrasesTap = nil
+        toolbarView.onClipboardTap = nil
+        toolbarView.onQuickNoteTap = nil
+        toolbarView.onSuggestionTap = nil
+        toolbarView.onSuggestionDismiss = nil
+        toolbarView.onCalculatorTap = nil
+        toolbarView.onChatReplyGeneratorTap = nil
+        toolbarView.onDictationTap = nil
+        toolbarView.onCursorLeftTap = nil
+        toolbarView.onCursorRightTap = nil
+        toolbarView.onDeleteWordTap = nil
+        toolbarView.onUndoTap = nil
+        toolbarView.onRedoTap = nil
+        toolbarView.onSelectAllTap = nil
+        toolbarView.onCopyTap = nil
+        toolbarView.onPasteTap = nil
+        toolbarView.onCutTap = nil
+        toolbarView.onCaseTransformTap = nil
+        toolbarView.onDateTimeInsertTap = nil
+        toolbarView.onDateTimeInsertLongPress = nil
+        toolbarView.onDismissKeyboardTap = nil
+        toolbarView.onUnitConverterTap = nil
+        toolbarView.onSettingsTap = nil
+
+        // Also let the toolbar release transient suggestion chips / overlays.
+        toolbarView.prepareForControllerRelease()
+
+        didNilCallbacksAfterDismiss = true
+        #if DEBUG
+        debugLogMemoryAttribution(event: "viewWillDisappear", phase: "callbacksNilled")
+        #endif
+
+        // ════════════════════════════════════════════
+        // v3: detach the shared keyboard surface from this controller's
+        // inputView. Strict owner gate inside — a stale `viewWillDisappear`
+        // from a previous controller that no longer owns the surface will
+        // skip detach so it cannot remove the new controller's live UI.
+        //
+        // We do NOT destroy the surface here; reuse is the whole point.
+        // Hidden-only destroy below evaluates whether memory pressure
+        // warrants tearing the surface down.
+        // ════════════════════════════════════════════
+        detachKeyboardSurfaceIfOwned()
 
         // ═══ 시스템 캐시 cleanup + malloc pressure relief — Release에서도 실행 ═══
         triggerSystemCacheCleanup()
         malloc_zone_pressure_relief(nil, 0)
 
+        // Hidden-only destroy after pressure relief: only fires if surface
+        // is no longer attached, has no owner, and current memory is above
+        // the high-watermark threshold (recommended >= 38MB).
+        Self.destroySharedKeyboardSurfaceIfHidden(
+            reason: "viewWillDisappear",
+            currentMB: currentMemoryMB()
+        )
+
         #if DEBUG
         let memAfterRelief = currentMemoryMB()
         kbLogger.info("🔬 [malloc_pressure_relief] viewWillDisappear 후 → \(memAfterRelief, format: .fixed(precision: 2)) MB")
         kbLogger.info("📌 os_proc_available_memory: \(os_proc_available_memory() / 1024 / 1024) MB")
+        debugLogMemoryAttribution(event: "viewWillDisappear", phase: "afterPressureRelief")
         #endif
 
-        // ═══ Graceful Restart — Phase 6 ═══
-        // 메모리 누적이 임계치를 넘으면 프로세스를 깨끗하게 종료.
-        // 키보드가 닫히는 시점이므로 유저 입력 손실 없음.
-        // 다음 키보드 열기 시 iOS가 fresh 프로세스를 생성하여 baseline ~13MB로 리셋.
-        // 애니메이션, 모든 기능이 처음부터 완벽하게 동작.
-        let finalMemoryForRestart = currentMemoryMB()
-        if finalMemoryForRestart > Self.memoryGracefulExitMB {
+        let finalMemoryAfterCleanup = currentMemoryMB()
+        evaluateMemoryRecoveryIfEligible(currentMB: finalMemoryAfterCleanup, source: "viewWillDisappear")
+        if finalMemoryAfterCleanup >= Self.memoryStabilizationExitMB || shouldDeepCleanOnDisappear {
+            shouldDeepCleanOnDisappear = finalMemoryAfterCleanup >= Self.memoryInvisiblePressureExitMB
+            needsLazyRecreationOnNextAppear = finalMemoryAfterCleanup >= Self.memoryStabilizationExitMB
             #if DEBUG
-            kbLogger.warning("🔄 [GracefulRestart] phys_footprint: \(finalMemoryForRestart, format: .fixed(precision: 1)) MB > \(Self.memoryGracefulExitMB, format: .fixed(precision: 1)) MB — 프로세스 리스타트")
+            debugPublicMemoryLog(String(
+                format: "[MemoryStabilization] no direct termination after dismiss cleanup; memory=%.1fMB state=%@ lazyNextAppear=%d",
+                finalMemoryAfterCleanup,
+                memoryPressureState.rawValue,
+                needsLazyRecreationOnNextAppear ? 1 : 0))
             #endif
-            exit(0)
         }
+
+        #if DEBUG
+        debugLogDismissSummary(physStart: dismissStartMemory, physEnd: finalMemoryAfterCleanup)
+        let cleanupDurationMs = (CACurrentMediaTime() - cleanupStart) * 1000
+        if cleanupDurationMs > 50 {
+            debugPublicMemoryLog(String(format: "[MemoryStabilization] dismiss cleanup exceeded budget: %.1fms", cleanupDurationMs))
+        } else {
+            debugPublicMemoryLog(String(format: "[MemoryStabilization] dismiss cleanup duration=%.1fms", cleanupDurationMs))
+        }
+        #endif
     }
 
     private func reloadLocalizedStrings() {
@@ -1140,34 +1298,46 @@ class KeyboardViewController: UIInputViewController {
         inputView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         inputView.clipsToBounds = true
 
-        // Only add always-needed views: toolbar + keyboard layout
-        // Translation, correction, phrase views are deferred to first mode entry
-        [toolbarView, keyboardLayoutView].forEach {
-            $0.translatesAutoresizingMaskIntoConstraints = false
-            inputView.addSubview($0)
-        }
+        // v3: attach shared surface (toolbar + KLV). This force-detaches any
+        // stale attachment from a previous controller's inputView, then adds
+        // the shared views as subviews of this controller's inputView. Per-
+        // attachment constraints are activated below and stored on the
+        // surface so detach can deactivate them cleanly.
+        attachKeyboardSurfaceToCurrentInputView(inputView)
 
-        NSLayoutConstraint.activate([
-            // Toolbar — pinned to top with padding
-            toolbarView.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding),
-            toolbarView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
-            toolbarView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
-            toolbarView.heightAnchor.constraint(equalToConstant: Heights.toolbar),
+        // Build per-attachment constraints. These are the only constraints
+        // that anchor the shared (reused) views to this controller's
+        // inputView; they MUST be deactivated on detach so they don't pin
+        // the shared views to a dead inputView.
+        let surfaceToolbarTop = toolbarView.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding)
+        let surfaceToolbarLeading = toolbarView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceToolbarTrailing = toolbarView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceToolbarHeight = toolbarView.heightAnchor.constraint(equalToConstant: Heights.toolbar)
 
-            // Keyboard Layout
-            keyboardLayoutView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor),
-            keyboardLayoutView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor),
-            keyboardLayoutView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor),
-        ])
+        let surfaceKLVLeading = keyboardLayoutView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceKLVTrailing = keyboardLayoutView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceKLVBottom = keyboardLayoutView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor)
 
         // Fixed height for keyboard layout — prevents stretching when system popup expands inputView
         keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight())
-        keyboardLayoutHeightConstraint?.isActive = true
 
         // Default: keyboard top = toolbar bottom
         keyboardTopToToolbarConstraint = keyboardLayoutView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor)
         keyboardTopToToolbarConstraint?.priority = .defaultHigh
-        keyboardTopToToolbarConstraint?.isActive = true
+
+        // Activate all per-attachment constraints together so the layout
+        // engine sees a consistent set in one pass.
+        activateBaseSurfaceConstraints([
+            surfaceToolbarTop,
+            surfaceToolbarLeading,
+            surfaceToolbarTrailing,
+            surfaceToolbarHeight,
+            surfaceKLVLeading,
+            surfaceKLVTrailing,
+            surfaceKLVBottom,
+            keyboardLayoutHeightConstraint!,
+            keyboardTopToToolbarConstraint!,
+        ])
 
         // Toast — floating on top of everything
         // centerX/leading/trailing priority를 낮춰 width-0 startup 시 constraint conflict 방지
@@ -1193,6 +1363,7 @@ class KeyboardViewController: UIInputViewController {
         guard !isTranslationViewsSetUp, let inputView = self.inputView else { return }
         #if DEBUG
         let memBefore = currentMemoryMB()
+        debugLogMemoryAttribution(event: "setupTranslationViews", phase: "start")
         kbLogger.info("🔬 setupTranslationViews START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
         #endif
         isTranslationViewsSetUp = true
@@ -1234,6 +1405,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let memAfter = currentMemoryMB()
         kbLogger.info("🔬 setupTranslationViews END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        debugLogMemoryAttribution(event: "setupTranslationViews", phase: "end")
         #endif
     }
 
@@ -1241,6 +1413,7 @@ class KeyboardViewController: UIInputViewController {
         guard !isCorrectionViewsSetUp, let inputView = self.inputView else { return }
         #if DEBUG
         let memBefore = currentMemoryMB()
+        debugLogMemoryAttribution(event: "setupCorrectionViews", phase: "start")
         kbLogger.info("🔬 setupCorrectionViews START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
         #endif
         isCorrectionViewsSetUp = true
@@ -1283,6 +1456,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let memAfter = currentMemoryMB()
         kbLogger.info("🔬 setupCorrectionViews END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        debugLogMemoryAttribution(event: "setupCorrectionViews", phase: "end")
         #endif
     }
 
@@ -1444,7 +1618,9 @@ class KeyboardViewController: UIInputViewController {
             self?.hideContextMenu()
             self?.startDictation()
         }
-        // onLogoTap, onLogoLongPress 제거 — + 버튼은 SwiftUI Link가 직접 처리
+        toolbarView.onSettingsTap = { [weak self] in
+            self?.openContainingApp(path: "settings")
+        }
         toolbarView.onSuggestionTap = { [weak self] suggestion in
             self?.applySuggestion(suggestion)
         }
@@ -1569,108 +1745,13 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    // MARK: - SwiftUI Settings Link
-
-    /// attach 상태를 확인하여 필요 시 setupSettingsLink()를 재호출한다.
-    /// nil 체크만으로는 static 참조가 살아 있어 복원이 누락되는 버그를 방지.
-    private func ensureSettingsLinkAttachedIfNeeded() {
-        guard ToolbarConfiguration.load().contains(.settings) else { return }
-
-        guard let hc = Self.sharedSettingsHC else {
-            setupSettingsLink()
-            return
-        }
-
-        let isAttachedToCurrentVC = (hc.parent === self)
-        let isInsideContainer = (hc.view.superview === toolbarView.settingsLinkContainer)
-        let hasContainerSubview = !toolbarView.settingsLinkContainer.subviews.isEmpty
-
-        #if DEBUG
-        kbLogger.info("🔗 ensureSettingsLinkAttachedIfNeeded — parentMatch=\(isAttachedToCurrentVC) superviewMatch=\(isInsideContainer) containerSubviews=\(self.toolbarView.settingsLinkContainer.subviews.count)")
-        #endif
-
-        if !isAttachedToCurrentVC || !isInsideContainer || !hasContainerSubview {
-            setupSettingsLink()
-        }
-    }
-
-    private func setupSettingsLink() {
-        #if DEBUG
-        kbLogger.info("🔗 setupSettingsLink START — sharedHC isNil=\(Self.sharedSettingsHC == nil), localRef isNil=\(self.settingsLinkHostingController == nil)")
-        kbLogger.info("🔗 container.subviews.count BEFORE = \(self.toolbarView.settingsLinkContainer.subviews.count)")
-        #endif
-
-        // ── static 인스턴스가 없으면 최초 1회 생성 ──
-        if Self.sharedSettingsHC == nil {
-            let hc = UIHostingController(rootView: SettingsLinkView())
-            hc.view.translatesAutoresizingMaskIntoConstraints = false
-            hc.view.backgroundColor = .clear
-            Self.sharedSettingsHC = hc
-            #if DEBUG
-            kbLogger.info("🔗 UIHostingController 최초 생성 (프로세스 수명 동안 재사용)")
-            #endif
-        }
-
-        guard let hc = Self.sharedSettingsHC else { return }
-
-        // ── 이미 정상 attach 상태면 중복 작업 방지 ──
-        if hc.parent === self,
-           hc.view.superview === toolbarView.settingsLinkContainer,
-           !toolbarView.settingsLinkContainer.subviews.isEmpty {
-            self.settingsLinkHostingController = hc
-            return
-        }
-
-        // ── 이전 VC/상태에서 detach (re-parent 준비) ──
-        NSLayoutConstraint.deactivate(settingsHCConstraints)
-        settingsHCConstraints = []
-        if hc.parent != nil {
-            hc.willMove(toParent: nil)
-            hc.view.removeFromSuperview()
-            hc.removeFromParent()
-        }
-
-        // ── 현재 VC에 attach ──
-        addChild(hc)
-        hc.view.translatesAutoresizingMaskIntoConstraints = false
-        toolbarView.settingsLinkContainer.addSubview(hc.view)
-        hc.didMove(toParent: self)
-
-        // 컨테이너에 꽉 채움 — constraint를 변수에 보관하여 re-parent 시 명시적 정리 가능
-        let constraints = [
-            hc.view.topAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.topAnchor),
-            hc.view.bottomAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.bottomAnchor),
-            hc.view.leadingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.leadingAnchor),
-            hc.view.trailingAnchor.constraint(equalTo: toolbarView.settingsLinkContainer.trailingAnchor),
-        ]
-        NSLayoutConstraint.activate(constraints)
-        self.settingsHCConstraints = constraints
-
-        // weak 참조 보관
-        self.settingsLinkHostingController = hc
-
-        #if DEBUG
-        kbLogger.info("🔗 setupSettingsLink END — container.subviews.count AFTER = \(self.toolbarView.settingsLinkContainer.subviews.count)")
-        kbLogger.info("🔗 Memory after setupSettingsLink: \(self.currentMemoryMB(), format: .fixed(precision: 2)) MB")
-        kbLogger.info("🔗 children.count = \(self.children.count)")
-        #endif
-    }
+    // MARK: - Settings (UIKit callback — SwiftUI removed)
 
     // MARK: - System Cache Cleanup
 
-    /// 시스템 프레임워크(CoreText, CoreAnimation, UIKit)의 내부 캐시를
-    /// 메모리 경고 notification을 통해 자체 purge하도록 유도.
-    /// CoreText의 NSCache는 이 notification에 반응하여 글리프 캐시를 해제한다.
-    /// 시스템 프레임워크 캐시를 직접 정리.
-    /// Release 빌드에서도 동작해야 하므로 #if DEBUG 밖에 위치.
-    ///
-    /// Phase 6 v2: didReceiveMemoryWarningNotification post 제거.
-    /// 이유:
-    /// 1. 모든 테스트에서 메모리 회수 효과 = 0.0000 MB (무효)
-    /// 2. KeyboardLayoutView.handleMemoryWarning()가 이 notification에 반응하여
-    ///    isMemoryConstrained=true + 모든 애니메이션 뷰 제거하는 치명적 부작용 발생
-    /// 3. 키보드 dismiss 후 asyncAfter 미실행으로 isMemoryConstrained가 영구 true
-    /// 4. 결과: 애니메이션이 처음부터 작동하지 않는 버그
+    /// 시스템 프레임워크 캐시를 직접 정리한다.
+    /// Release 빌드에서도 동작해야 하므로 #if DEBUG 밖에 위치한다.
+    /// didReceiveMemoryWarningNotification을 직접 post하지 않는다.
     private func triggerSystemCacheCleanup() {
         // 1) 추적된 CoreText 캐시 직접 클리어
         CoreTextCacheManager.shared.clearGlyphCaches()
@@ -1684,13 +1765,816 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    // MARK: - Memory Safety Net (Phase 5)
+    private func recordHeavyFeatureEvent(_ event: String) {
+        lastHeavyFeatureEvent = event
+        lastHeavyFeatureAt = CACurrentMediaTime()
+    }
 
-    /// 메모리 안전망 — phys_footprint 기반
+    #if DEBUG
+    private struct DebugMallocSnapshot {
+        let allocatedMB: Double
+        let inUseMB: Double
+        let freeMB: Double
+    }
+
+    private static var highVisibleBaselineCount = 0
+    private static var highDeinitBaselineCount = 0
+    private static var lastVisibleBaselineCycle = -1
+    private static var lastDeinitBaselineCycle = -1
+    private static var lastVisibleDriftLogCycle = -1
+    private static var lastDeinitDriftLogCycle = -1
+    private static var lastMallocDriftLogCycle = -1
+
+    private static func debugMallocSnapshot() -> DebugMallocSnapshot {
+        guard let zone = malloc_default_zone() else {
+            return DebugMallocSnapshot(allocatedMB: 0, inUseMB: 0, freeMB: 0)
+        }
+        var stats = malloc_statistics_t()
+        malloc_zone_statistics(zone, &stats)
+        let allocatedMB = Double(stats.size_allocated) / (1024 * 1024)
+        let inUseMB = Double(stats.size_in_use) / (1024 * 1024)
+        return DebugMallocSnapshot(
+            allocatedMB: allocatedMB,
+            inUseMB: inUseMB,
+            freeMB: allocatedMB - inUseMB
+        )
+    }
+
+    private func debugCurrentThemeId() -> String {
+        KeyboardTheme.currentTheme()?.id ?? "default"
+    }
+
+    private func debugOptionalViewFlags() -> String {
+        [
+            "emoji=\(emojiKeyboardView == nil ? 0 : 1)",
+            "clipboard=\(clipboardHistoryView == nil ? 0 : 1)",
+            "savedPhrases=\(savedPhrasesView == nil ? 0 : 1)",
+            "languagePicker=\(languagePickerView == nil ? 0 : 1)",
+            "calculator=\(calculatorView == nil ? 0 : 1)",
+            "unitConverter=\(unitConverterView == nil ? 0 : 1)",
+            "quickNoteList=\(quickNoteListView == nil ? 0 : 1)",
+            "quickNoteRead=\(quickNoteReadView == nil ? 0 : 1)",
+            "quickNoteEdit=\(quickNoteEditView == nil ? 0 : 1)",
+            "chatReply=\(chatReplyView == nil ? 0 : 1)"
+        ].joined(separator: " ")
+    }
+
+    private func debugAnimationViewFlags() -> String {
+        // With the reusable shared surface, KLV is created lazily on first
+        // surface access. Avoid forcing creation here just to log a flag set;
+        // if the surface doesn't exist yet, report all-zero so the log line
+        // remains attribution-safe.
+        guard Self.sharedKeyboardSurface != nil else {
+            return [
+                "animMatrix=0",
+                "animMercury=0",
+                "animStardust=0",
+                "animSnowfall=0",
+                "animSnowfallSoft=0",
+                "animCherry=0"
+            ].joined(separator: " ")
+        }
+        return keyboardLayoutView.memoryAttributionAnimationFlags()
+    }
+
+    private func debugCheckBaselineDrift(
+        event: String,
+        phase: String,
+        physMB: Double,
+        malloc: DebugMallocSnapshot
+    ) {
+        let location = "\(event).\(phase)"
+        let cycle = Self.lifecycleCount
+
+        if (event == "viewDidLoad" || event == "viewWillAppear"),
+           (phase == "start" || phase == "end") {
+            if physMB >= 30 {
+                if Self.lastVisibleBaselineCycle != cycle {
+                    Self.lastVisibleBaselineCycle = cycle
+                    Self.highVisibleBaselineCount += 1
+                }
+            } else if Self.lastVisibleBaselineCycle != cycle {
+                Self.highVisibleBaselineCount = 0
+            }
+
+            if Self.highVisibleBaselineCount >= 3,
+               Self.lastVisibleDriftLogCycle != cycle {
+                Self.lastVisibleDriftLogCycle = cycle
+                debugPublicMemoryLog(String(
+                    format: "[MEM_BASELINE_DRIFT] cycle=%d location=%@ phys=%.2f allocated=%.2f inUse=%.2f free=%.2f suspect=visibleBaseline",
+                    cycle, location, physMB, malloc.allocatedMB, malloc.inUseMB, malloc.freeMB))
+            }
+        }
+
+        if event == "deinit",
+           phase == "end",
+           Self.lastDeinitBaselineCycle != cycle {
+            Self.lastDeinitBaselineCycle = cycle
+            if physMB >= 30 {
+                Self.highDeinitBaselineCount += 1
+            } else {
+                Self.highDeinitBaselineCount = 0
+            }
+
+            if Self.highDeinitBaselineCount >= 3,
+               Self.lastDeinitDriftLogCycle != cycle {
+                Self.lastDeinitDriftLogCycle = cycle
+                debugPublicMemoryLog(String(
+                    format: "[MEM_BASELINE_DRIFT] cycle=%d location=%@ phys=%.2f allocated=%.2f inUse=%.2f free=%.2f suspect=deinitBaseline",
+                    cycle, location, physMB, malloc.allocatedMB, malloc.inUseMB, malloc.freeMB))
+            }
+        }
+
+        if malloc.allocatedMB >= 48,
+           malloc.freeMB >= 18,
+           Self.lastMallocDriftLogCycle != cycle {
+            Self.lastMallocDriftLogCycle = cycle
+            debugPublicMemoryLog(String(
+                format: "[MEM_BASELINE_DRIFT] cycle=%d location=%@ phys=%.2f allocated=%.2f inUse=%.2f free=%.2f suspect=heapArenaOrRetainedCache",
+                cycle, location, physMB, malloc.allocatedMB, malloc.inUseMB, malloc.freeMB))
+        }
+    }
+
+    private static let memoryDebugLog = OSLog(
+        subsystem: "com.translatorkeyboard.keyboard",
+        category: "MemoryDebug"
+    )
+
+    private func debugPublicMemoryLog(_ message: String) {
+        os_log("%{public}@", log: Self.memoryDebugLog, type: .debug, message)
+    }
+
+    /// Compact stable identity for this controller instance — DEBUG attribution only.
+    /// Used to disambiguate overlapping lifecycle events between successive
+    /// `KeyboardViewController` instances during open/close cycles.
+    private var debugInstanceIdHex: String {
+        "id=\(String(describing: Unmanaged.passUnretained(self).toOpaque()))"
+    }
+    #endif
+
+    // ════════════════════════════════════════════
+    // MARK: - Reusable Keyboard Surface (v3)
+    // (Intentionally outside `#if DEBUG` — surface attach/detach is the core
+    //  Release behavior; only log lines inside the helpers are DEBUG-gated.)
+    // ════════════════════════════════════════════
+
+    /// Process-local holder for the base keyboard surface (`ToolbarView` +
+    /// `KeyboardLayoutView`). Shared across `KeyboardViewController`
+    /// instances; the *only* objects intentionally retained across the
+    /// extension lifecycle.
+    private final class ReusableKeyboardSurface {
+        let toolbarView: ToolbarView
+        let keyboardLayoutView: KeyboardLayoutView
+        /// Weak so a controller dropping out of the active set cannot pin the
+        /// surface to a stale instance.
+        weak var owner: KeyboardViewController?
+        /// True between `attachKeyboardSurfaceToCurrentInputView` and
+        /// `detachKeyboardSurfaceIfOwned`. Used to gate hidden-only destroy.
+        var isAttached: Bool = false
+        /// Monotonic — only useful for DEBUG attribution. Incremented on each
+        /// attach so adjacent log lines can be correlated.
+        var generation: Int = 0
+        /// Constraints belonging to the *current* attachment between the
+        /// shared views and the current controller's `inputView`. Deactivated
+        /// on detach and on force-detach (next controller stealing
+        /// attachment). Never persisted across attachments.
+        var attachConstraints: [NSLayoutConstraint] = []
+
+        init() {
+            toolbarView = ToolbarView()
+            keyboardLayoutView = KeyboardLayoutView()
+        }
+    }
+
+    private func acquireKeyboardSurface() -> ReusableKeyboardSurface {
+        if let existing = Self.sharedKeyboardSurface {
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[MEM_ATTR] event=surface.reuse t=%.3f cycle=%d %@ surfaceGen=%d surfaceId=%@ toolbarId=%@ klvId=%@",
+                CACurrentMediaTime(),
+                Self.lifecycleCount,
+                debugInstanceIdHex,
+                existing.generation,
+                String(describing: ObjectIdentifier(existing)),
+                String(describing: Unmanaged.passUnretained(existing.toolbarView).toOpaque()),
+                String(describing: Unmanaged.passUnretained(existing.keyboardLayoutView).toOpaque())
+            ))
+            #endif
+            return existing
+        }
+        let created = ReusableKeyboardSurface()
+        Self.sharedSurfaceCreateCount += 1
+        Self.sharedKeyboardSurface = created
+        #if DEBUG
+        debugPublicMemoryLog(String(
+            format: "[MEM_ATTR] event=surface.create t=%.3f cycle=%d %@ createCount=%d surfaceId=%@ toolbarId=%@ klvId=%@ marker=%@",
+            CACurrentMediaTime(),
+            Self.lifecycleCount,
+            debugInstanceIdHex,
+            Self.sharedSurfaceCreateCount,
+            String(describing: ObjectIdentifier(created)),
+            String(describing: Unmanaged.passUnretained(created.toolbarView).toOpaque()),
+            String(describing: Unmanaged.passUnretained(created.keyboardLayoutView).toOpaque()),
+            Self.memorySurfaceBuildMarker
+        ))
+        #endif
+        return created
+    }
+
+    /// Attach the shared surface to this controller's `inputView`.
+    /// Idempotent for this controller — calling twice without an intervening
+    /// detach is a no-op.
     ///
-    /// Phase 6: CRITICAL 단계를 제거하고 Graceful Restart로 대체.
-    /// 애니메이션 캐시, CALayer backing store 등을 건드리지 않는다.
-    /// 고메모리 상태에서 cleanup은 delta=0으로 무효하므로, exit(0)으로 프로세스 리스타트가 유일한 해법.
+    /// If the surface is currently attached to another controller's input
+    /// view (lifecycle overlap), force-detach: deactivate its constraints,
+    /// remove from the old superview, clear that controller's attachment
+    /// flag. The old controller's `viewWillDisappear` will then see
+    /// `owner !== self` and skip its detach, which is the desired race
+    /// guard from plan §Important Implementation Warning.
+    private func attachKeyboardSurfaceToCurrentInputView(_ inputView: UIView) {
+        let surface = acquireKeyboardSurface()
+
+        // Idempotent: already attached to this controller's inputView.
+        if surface.owner === self,
+           surface.isAttached,
+           surface.toolbarView.superview === inputView,
+           surface.keyboardLayoutView.superview === inputView {
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[MEM_ATTR] event=surface.attach phase=alreadyAttached %@ surfaceGen=%d",
+                debugInstanceIdHex,
+                surface.generation
+            ))
+            #endif
+            didAttachSharedSurface = true
+            return
+        }
+
+        // Force-detach from previous attachment if any.
+        if surface.isAttached || surface.toolbarView.superview != nil || surface.keyboardLayoutView.superview != nil {
+            #if DEBUG
+            let oldOwnerId: String
+            if let oldOwner = surface.owner {
+                oldOwnerId = String(describing: Unmanaged.passUnretained(oldOwner).toOpaque())
+            } else {
+                oldOwnerId = "nil"
+            }
+            debugPublicMemoryLog(String(
+                format: "[MEM_ATTR] event=surface.attach phase=forceDetachPrevious %@ oldOwner=%@ surfaceGen=%d",
+                debugInstanceIdHex,
+                oldOwnerId,
+                surface.generation
+            ))
+            #endif
+            // Deactivate previous attachment constraints.
+            NSLayoutConstraint.deactivate(surface.attachConstraints)
+            surface.attachConstraints.removeAll()
+            // Detach old previous owner's flag so its `viewWillDisappear`
+            // will see no ownership and skip detach.
+            surface.owner?.didAttachSharedSurface = false
+            // Remove from any old superview. Safe to call when superview is nil.
+            surface.toolbarView.removeFromSuperview()
+            surface.keyboardLayoutView.removeFromSuperview()
+            surface.owner = nil
+            surface.isAttached = false
+        }
+
+        // Take ownership and attach to current input view.
+        surface.generation += 1
+        surface.owner = self
+        [surface.toolbarView, surface.keyboardLayoutView].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            inputView.addSubview($0)
+        }
+        surface.isAttached = true
+        didAttachSharedSurface = true
+
+        // Minimal state reset to keep KLV consistent with this new controller:
+        // - clear stale prediction engine so `viewDidAppear` re-assigns it
+        //   from the current controller's `suggestionManager`.
+        // - any caps lock / shift / page session leak between host fields is
+        //   small surface area and existing `viewWillAppear` flow rebuilds
+        //   keyboard appearance for the new context.
+        surface.keyboardLayoutView.predictionEngine = nil
+
+        #if DEBUG
+        debugPublicMemoryLog(String(
+            format: "[MEM_ATTR] event=surface.attach phase=attached %@ surfaceGen=%d createCount=%d",
+            debugInstanceIdHex,
+            surface.generation,
+            Self.sharedSurfaceCreateCount
+        ))
+        #endif
+    }
+
+    /// Activate the per-attachment constraints stored on the shared surface.
+    /// Called from `setupUI` after `attachKeyboardSurfaceToCurrentInputView`.
+    private func activateBaseSurfaceConstraints(_ constraints: [NSLayoutConstraint]) {
+        guard let surface = Self.sharedKeyboardSurface else { return }
+        surface.attachConstraints = constraints
+        NSLayoutConstraint.activate(constraints)
+    }
+
+    /// Detach the shared surface from this controller's `inputView`.
+    /// Strict owner gate: a stale `viewWillDisappear` from a previous
+    /// controller must NOT detach the new controller's live surface.
+    private func detachKeyboardSurfaceIfOwned() {
+        guard let surface = Self.sharedKeyboardSurface else { return }
+        guard surface.owner === self else {
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[MEM_ATTR] event=surface.detach phase=skipStaleOwner %@ surfaceGen=%d",
+                debugInstanceIdHex,
+                surface.generation
+            ))
+            #endif
+            return
+        }
+        guard didAttachSharedSurface else {
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[MEM_ATTR] event=surface.detach phase=skipNotAttached %@",
+                debugInstanceIdHex
+            ))
+            #endif
+            return
+        }
+
+        // Deactivate per-attachment constraints first (must happen before
+        // removeFromSuperview so old inputView's layout pass doesn't fight
+        // a deactivated constraint set against the new attachment).
+        NSLayoutConstraint.deactivate(surface.attachConstraints)
+        surface.attachConstraints.removeAll()
+
+        surface.toolbarView.removeFromSuperview()
+        surface.keyboardLayoutView.removeFromSuperview()
+        surface.isAttached = false
+        surface.owner = nil
+        didAttachSharedSurface = false
+
+        #if DEBUG
+        debugPublicMemoryLog(String(
+            format: "[MEM_ATTR] event=surface.detach phase=detached %@ surfaceGen=%d",
+            debugInstanceIdHex,
+            surface.generation
+        ))
+        #endif
+    }
+
+    /// Hidden-only destroy. Reusable surface is meant to live for the
+    /// extension's lifetime; only release it when memory pressure is high
+    /// AND we are not currently visible. Called from `viewWillDisappear`
+    /// after detach and pressure-relief.
+    private static func destroySharedKeyboardSurfaceIfHidden(reason: String, currentMB: Double) {
+        guard let surface = sharedKeyboardSurface else { return }
+        // Must not destroy while attached / owned / visible.
+        guard !surface.isAttached, surface.owner == nil else {
+            #if DEBUG
+            os_log(
+                "%{public}@",
+                log: memoryDebugLog,
+                type: .debug,
+                "[MEM_ATTR] event=surface.destroy phase=skipAttached reason=\(reason) attached=\(surface.isAttached) hasOwner=\(surface.owner != nil)"
+            )
+            #endif
+            return
+        }
+        // High-memory threshold gate.
+        let threshold: Double = 38.0
+        guard currentMB >= threshold else {
+            #if DEBUG
+            os_log(
+                "%{public}@",
+                log: memoryDebugLog,
+                type: .debug,
+                "[MEM_ATTR] event=surface.destroy phase=skipBelowThreshold reason=\(reason) currentMB=\(String(format: "%.2f", currentMB)) threshold=\(threshold)"
+            )
+            #endif
+            return
+        }
+
+        // Tear down KLV resources fully before dropping the strong ref.
+        surface.keyboardLayoutView.prepareForDismiss()
+        surface.toolbarView.prepareForControllerRelease()
+        // Drop superview links if any survived a misordered detach.
+        surface.toolbarView.removeFromSuperview()
+        surface.keyboardLayoutView.removeFromSuperview()
+
+        sharedKeyboardSurface = nil
+        malloc_zone_pressure_relief(nil, 0)
+
+        #if DEBUG
+        os_log(
+            "%{public}@",
+            log: memoryDebugLog,
+            type: .debug,
+            "[MEM_ATTR] event=surface.destroy phase=destroyed reason=\(reason) currentMB=\(String(format: "%.2f", currentMB))"
+        )
+        #endif
+    }
+
+    #if DEBUG
+    private func debugLogMemoryAttribution(event: String, phase: String, extra: String = "") {
+        let physMB = currentMemoryMB()
+        let malloc = Self.debugMallocSnapshot()
+        let cycle = Self.lifecycleCount
+        let themeId = debugCurrentThemeId()
+        let optionals = debugOptionalViewFlags()
+        let animations = debugAnimationViewFlags()
+        // Always tag with the controller instance id so memory attribution can
+        // be matched across overlapping open/close cycles (the previous instance
+        // and the next instance can coexist briefly during keyboard handoff).
+        let identity = debugInstanceIdHex
+        let suffix = extra.isEmpty ? "" : " \(extra)"
+
+        let line = String(
+            format: "[MEM_ATTR] event=%@ phase=%@ t=%.3f cycle=%d mode=%@ theme=%@ state=%@ phys=%.2f allocated=%.2f inUse=%.2f free=%.2f %@ %@ %@%@",
+            event,
+            phase,
+            CACurrentMediaTime(),
+            cycle,
+            String(describing: currentMode),
+            themeId,
+            memoryPressureState.rawValue,
+            physMB,
+            malloc.allocatedMB,
+            malloc.inUseMB,
+            malloc.freeMB,
+            identity,
+            optionals,
+            animations,
+            suffix)
+        debugPublicMemoryLog(line)
+
+        debugCheckBaselineDrift(event: event, phase: phase, physMB: physMB, malloc: malloc)
+    }
+
+    private func debugLogDismissSummary(physStart: Double, physEnd: Double) {
+        let age: Double
+        if lastHeavyFeatureAt > 0 {
+            age = CACurrentMediaTime() - lastHeavyFeatureAt
+        } else {
+            age = -1
+        }
+        let lastHeavy = lastHeavyFeatureEvent ?? "none"
+        let malloc = Self.debugMallocSnapshot()
+        let optionals = debugOptionalViewFlags()
+        let animations = debugAnimationViewFlags()
+        let line = String(
+            format: "[MEM_ATTR] event=dismissSummary phase=summary t=%.3f cycle=%d mode=%@ theme=%@ state=%@ physStart=%.2f physEnd=%.2f delta=%.2f allocated=%.2f inUse=%.2f free=%.2f %@ %@ lastHeavy=%@ age=%.2f",
+            CACurrentMediaTime(),
+            Self.lifecycleCount,
+            String(describing: currentMode),
+            debugCurrentThemeId(),
+            memoryPressureState.rawValue,
+            physStart,
+            physEnd,
+            physEnd - physStart,
+            malloc.allocatedMB,
+            malloc.inUseMB,
+            malloc.freeMB,
+            optionals,
+            animations,
+            lastHeavy,
+            age)
+        debugPublicMemoryLog(line)
+    }
+    #endif
+
+    // MARK: - No-Exit Memory Stabilization
+
+    private var isAtLeastInvisibleMemoryPressure: Bool {
+        switch memoryPressureState {
+        case .normal, .softPressure:
+            return false
+        case .invisiblePressure, .stabilizationPending, .survival:
+            return true
+        }
+    }
+
+    private func setMemoryPressureState(_ newState: MemoryPressureState, currentMB: Double, source: String) {
+        guard memoryPressureState != newState else { return }
+        let oldState = memoryPressureState
+        memoryPressureState = newState
+        lastMemoryPressureTransitionAt = CACurrentMediaTime()
+        stableLowMemoryObservationCount = 0
+        #if DEBUG
+        debugPublicMemoryLog(String(
+            format: "[MemoryStabilization] state %@ -> %@ source=%@ memory=%.1fMB",
+            oldState.rawValue,
+            newState.rawValue,
+            source,
+            currentMB))
+        #endif
+    }
+
+    private func performSoftMemoryCleanup(source: String) {
+        #if DEBUG
+        debugLogMemoryAttribution(event: "performSoftMemoryCleanup", phase: "start", extra: "source=\(source)")
+        let before = currentMemoryMB()
+        let start = CACurrentMediaTime()
+        #endif
+
+        CoreTextCacheManager.shared.clearGlyphCaches()
+        FontPool.clearIfNeeded()
+        URLCache.shared.removeAllCachedResponses()
+        keyboardLayoutView.performVisiblePreservingCleanup()
+        releaseHiddenLayerBackingStores(in: view)
+        malloc_zone_pressure_relief(nil, 0)
+
+        #if DEBUG
+        let after = currentMemoryMB()
+        let duration = (CACurrentMediaTime() - start) * 1000
+        debugPublicMemoryLog(String(
+            format: "[MemoryStabilization] soft cleanup source=%@ %.1fMB -> %.1fMB duration=%.1fms",
+            source,
+            before,
+            after,
+            duration))
+        debugLogMemoryAttribution(event: "performSoftMemoryCleanup", phase: "end", extra: String(format: "source=%@ duration=%.1f", source, duration))
+        #endif
+    }
+
+    private func releaseHiddenLayerBackingStores(in root: UIView) {
+        for subview in root.subviews {
+            if subview.isHidden || subview.alpha == 0 {
+                subview.layer.contents = nil
+                subview.layer.sublayers?.forEach { $0.contents = nil }
+            }
+            releaseHiddenLayerBackingStores(in: subview)
+        }
+    }
+
+    private func releaseHiddenOptionalViewsForPressure() {
+        #if DEBUG
+        debugLogMemoryAttribution(event: "releaseHiddenOptionalViewsForPressure", phase: "start")
+        #endif
+        if let ev = emojiKeyboardView, ev.isHidden {
+            ev.prepareForDismiss()
+            ev.removeFromSuperview()
+            emojiKeyboardView = nil
+            isEmojiMode = false
+        }
+        if let cv = clipboardHistoryView, cv.isHidden || cv.alpha == 0 {
+            cv.removeFromSuperview()
+            clipboardHistoryView = nil
+            stopClipboardMonitoring()
+        }
+        if let sv = savedPhrasesView, sv.isHidden || sv.alpha == 0 {
+            sv.removeFromSuperview()
+            savedPhrasesView = nil
+        }
+        if !isLanguagePickerVisible, let lp = languagePickerView {
+            lp.removeFromSuperview()
+            languagePickerView = nil
+        }
+        if currentMode != .quickNoteMode {
+            quickNoteReadView?.removeFromSuperview()
+            quickNoteReadView = nil
+            quickNoteListView?.removeFromSuperview()
+            quickNoteListView = nil
+            quickNoteEditView?.removeFromSuperview()
+            quickNoteEditView = nil
+            quickNoteTextInputHandler = nil
+            quickNoteSubState = .list
+            editingNote = nil
+        }
+        if !isShowingChatReply, let view = chatReplyView {
+            view.prepareForDismiss()
+            view.removeFromSuperview()
+            chatReplyView = nil
+            chatReplyManager?.cancelPending()
+            chatReplyManager?.clearCache()
+            chatReplyManager = nil
+            chatReplyExpandedHeight = 0
+        }
+        if let calc = calculatorView, calc.isHidden || calc.alpha == 0 {
+            calc.removeFromSuperview()
+            calculatorView = nil
+            modeBeforeCalculator = nil
+        }
+        if let converter = unitConverterView, converter.isHidden || converter.alpha == 0 {
+            converter.removeFromSuperview()
+            unitConverterView = nil
+            modeBeforeUnitConverter = nil
+        }
+        if let menu = dateTimeMenuView, menu.isHidden || menu.alpha == 0 {
+            menu.removeFromSuperview()
+            dateTimeMenuView = nil
+        }
+        ChatReplyCache.shared.clear()
+        #if DEBUG
+        debugLogMemoryAttribution(event: "releaseHiddenOptionalViewsForPressure", phase: "end")
+        #endif
+    }
+
+    private func enterSoftPressure(currentMB: Double, source: String) {
+        setMemoryPressureState(.softPressure, currentMB: currentMB, source: source)
+        performSoftMemoryCleanup(source: source)
+    }
+
+    private func enterInvisiblePressure(currentMB: Double, source: String) {
+        setMemoryPressureState(.invisiblePressure, currentMB: currentMB, source: source)
+        shouldDeepCleanOnDisappear = true
+        keyboardLayoutView.enterInvisibleMemoryPressureMode()
+        performSoftMemoryCleanup(source: source)
+        releaseHiddenOptionalViewsForPressure()
+    }
+
+    private func enterStabilizationPending(currentMB: Double, source: String) {
+        setMemoryPressureState(.stabilizationPending, currentMB: currentMB, source: source)
+        shouldDeepCleanOnDisappear = true
+        needsLazyRecreationOnNextAppear = true
+        keyboardLayoutView.enterInvisibleMemoryPressureMode()
+        performSoftMemoryCleanup(source: source)
+        releaseHiddenOptionalViewsForPressure()
+    }
+
+    private func enterSurvivalMode(currentMB: Double, source: String) {
+        setMemoryPressureState(.survival, currentMB: currentMB, source: source)
+        shouldDeepCleanOnDisappear = true
+        needsLazyRecreationOnNextAppear = true
+        keyboardLayoutView.enterSurvivalModePreservingBaseTheme()
+        performSoftMemoryCleanup(source: source)
+        releaseHiddenOptionalViewsForPressure()
+    }
+
+    private func performCurrentStateMaintenance(currentMB: Double, source: String) {
+        switch memoryPressureState {
+        case .normal:
+            break
+        case .softPressure:
+            performSoftMemoryCleanup(source: source)
+        case .invisiblePressure:
+            keyboardLayoutView.enterInvisibleMemoryPressureMode()
+            performSoftMemoryCleanup(source: source)
+            releaseHiddenOptionalViewsForPressure()
+        case .stabilizationPending:
+            needsLazyRecreationOnNextAppear = true
+            keyboardLayoutView.enterInvisibleMemoryPressureMode()
+            performSoftMemoryCleanup(source: source)
+            releaseHiddenOptionalViewsForPressure()
+        case .survival:
+            keyboardLayoutView.enterSurvivalModePreservingBaseTheme()
+            performSoftMemoryCleanup(source: source)
+            releaseHiddenOptionalViewsForPressure()
+        }
+    }
+
+    private func transitionMemoryPressureIfNeeded(currentMB: Double, source: String, allowRecovery: Bool) {
+        if memoryPressureState == .survival,
+           currentMB > Self.memorySurvivalExitMB {
+            performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            return
+        }
+
+        if currentMB >= Self.memorySurvivalEnterMB {
+            enterSurvivalMode(currentMB: currentMB, source: source)
+            return
+        }
+
+        if currentMB >= Self.memoryStabilizationEnterMB {
+            if memoryPressureState == .stabilizationPending {
+                performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            } else {
+                enterStabilizationPending(currentMB: currentMB, source: source)
+            }
+            return
+        }
+
+        switch memoryPressureState {
+        case .stabilizationPending where currentMB > Self.memoryStabilizationExitMB:
+            performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            return
+        case .invisiblePressure where currentMB > Self.memoryInvisiblePressureExitMB:
+            performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            return
+        default:
+            break
+        }
+
+        if !allowRecovery, isAtLeastInvisibleMemoryPressure {
+            performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            return
+        }
+
+        let now = CACurrentMediaTime()
+        if now - lastMemoryPressureTransitionAt < Self.memoryStateTransitionCooldown {
+            performCurrentStateMaintenance(currentMB: currentMB, source: source)
+            return
+        }
+
+        if currentMB >= Self.memoryStabilizationEnterMB {
+            enterStabilizationPending(currentMB: currentMB, source: source)
+        } else if currentMB >= Self.memoryInvisiblePressureEnterMB {
+            enterInvisiblePressure(currentMB: currentMB, source: source)
+        } else if currentMB >= Self.memorySoftPressureEnterMB {
+            enterSoftPressure(currentMB: currentMB, source: source)
+        } else if allowRecovery {
+            evaluateMemoryRecoveryIfEligible(currentMB: currentMB, source: source)
+        }
+    }
+
+    private func evaluateMemoryRecoveryIfEligible(currentMB: Double, source: String) {
+        let targetExitMB: Double
+        switch memoryPressureState {
+        case .normal:
+            stableLowMemoryObservationCount = 0
+            return
+        case .softPressure:
+            targetExitMB = Self.memorySoftPressureEnterMB
+        case .invisiblePressure:
+            targetExitMB = Self.memoryInvisiblePressureExitMB
+        case .stabilizationPending:
+            targetExitMB = Self.memoryStabilizationExitMB
+        case .survival:
+            targetExitMB = Self.memorySurvivalExitMB
+        }
+
+        guard currentMB <= targetExitMB else {
+            stableLowMemoryObservationCount = 0
+            return
+        }
+
+        stableLowMemoryObservationCount += 1
+        guard stableLowMemoryObservationCount >= 2 else {
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[MemoryStabilization] low memory observation %d/2 source=%@ memory=%.1fMB",
+                stableLowMemoryObservationCount,
+                source,
+                currentMB))
+            #endif
+            return
+        }
+
+        let nextState: MemoryPressureState
+        if currentMB >= Self.memoryStabilizationExitMB {
+            nextState = .stabilizationPending
+        } else if currentMB >= Self.memoryInvisiblePressureExitMB {
+            nextState = .invisiblePressure
+        } else if currentMB >= Self.memorySoftPressureEnterMB {
+            nextState = .softPressure
+        } else {
+            nextState = .normal
+        }
+
+        setMemoryPressureState(nextState, currentMB: currentMB, source: "\(source).recovery")
+        stableLowMemoryObservationCount = 0
+        shouldDeepCleanOnDisappear = nextState != .normal && nextState != .softPressure
+        needsLazyRecreationOnNextAppear = nextState == .stabilizationPending || nextState == .survival
+
+        if nextState == .normal || nextState == .softPressure {
+            keyboardLayoutView.exitMemoryPressureMode()
+        } else {
+            keyboardLayoutView.enterInvisibleMemoryPressureMode()
+        }
+    }
+
+    private func prepareForUserRequestedHeavyAllocation(source: String) {
+        recordHeavyFeatureEvent(source)
+        let currentMB = currentMemoryMB()
+        if isAtLeastInvisibleMemoryPressure || currentMB >= Self.memoryInvisiblePressureEnterMB {
+            performSoftMemoryCleanup(source: "preHeavy.\(source)")
+            releaseHiddenOptionalViewsForPressure()
+        }
+        transitionMemoryPressureIfNeeded(currentMB: currentMemoryMB(), source: "preHeavy.\(source)", allowRecovery: false)
+    }
+
+    private func scheduleIdleMemoryCleanupIfNeeded() {
+        guard isAtLeastInvisibleMemoryPressure else { return }
+        idleMemoryCleanupWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, self.isAtLeastInvisibleMemoryPressure else { return }
+            self.performSoftMemoryCleanup(source: "idle")
+            self.evaluateMemoryRecoveryIfEligible(currentMB: self.currentMemoryMB(), source: "idle")
+        }
+        idleMemoryCleanupWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
+    }
+
+    private func scheduleLazyRecreationProbe(after delay: TimeInterval = 0.35) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.handleLazyRecreationProbe()
+        }
+    }
+
+    private func handleLazyRecreationProbe() {
+        guard needsLazyRecreationOnNextAppear || isAtLeastInvisibleMemoryPressure else { return }
+        let currentMB = currentMemoryMB()
+        transitionMemoryPressureIfNeeded(currentMB: currentMB, source: "lazyRecreationProbe", allowRecovery: true)
+
+        if needsLazyRecreationOnNextAppear, currentMB <= Self.memoryStabilizationExitMB {
+            if stableLowMemoryObservationCount < 2 {
+                scheduleLazyRecreationProbe(after: 0.35)
+            }
+        } else if currentMB > Self.memoryStabilizationExitMB {
+            #if DEBUG
+            debugPublicMemoryLog(String(format: "[MemoryStabilization] heavy effects remain deferred this visible session memory=%.1fMB", currentMB))
+            #endif
+        }
+    }
+
     // MARK: - Geometry Snapshot
 
     private static var lastGeometrySnapshotSignature: String?
@@ -1768,31 +2652,14 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func checkMemorySafetyNet() {
+        #if DEBUG
+        debugLogMemoryAttribution(event: "checkMemorySafetyNet", phase: "start")
+        #endif
         let currentMB = currentMemoryMB()
-
-        if currentMB > Self.memoryEmergencyExitMB {
-            // ═══ EMERGENCY EXIT ═══
-            // viewDidAppear에서 호출됨 — 키보드가 막 열렸는데 이미 위험 수준.
-            // 이 상태에서는 어떤 cleanup도 효과 없음 (delta=0 확인됨).
-            // 유저 입력은 이미 text field에 commit된 상태이므로 손실 없음.
-            #if DEBUG
-            kbLogger.error("🚨 [SafetyNet] EMERGENCY EXIT — phys_footprint: \(currentMB, format: .fixed(precision: 1)) MB > \(Self.memoryEmergencyExitMB, format: .fixed(precision: 1)) MB, 프로세스 리스타트")
-            #endif
-            exit(0)
-
-        } else if currentMB > Self.memoryWarningThresholdMB {
-            // ═══ WARNING: 소프트 캐시만 정리 ═══
-            // CoreText 글리프 캐시, FontPool, URLCache만 정리.
-            // ⚠️ 애니메이션 캐시(MatrixRain, Stardust), sublayer.contents,
-            //    이모지 뷰 등은 절대 건드리지 않는다.
-            CoreTextCacheManager.shared.clearGlyphCaches()
-            FontPool.clearIfNeeded()
-            URLCache.shared.removeAllCachedResponses()
-
-            #if DEBUG
-            kbLogger.warning("⚠️ [SafetyNet] WARNING — phys_footprint: \(currentMB, format: .fixed(precision: 1)) MB, 소프트 캐시 정리")
-            #endif
-        }
+        transitionMemoryPressureIfNeeded(currentMB: currentMB, source: "safetyNet", allowRecovery: false)
+        #if DEBUG
+        debugLogMemoryAttribution(event: "checkMemorySafetyNet", phase: "end")
+        #endif
     }
 
     // MARK: - Memory Measurement
@@ -1813,11 +2680,15 @@ class KeyboardViewController: UIInputViewController {
         return 0
     }
 
-    /// 메모리 안전망 임계치 (phys_footprint MB 기준)
-    /// Release에서도 SafetyNet이 사용하므로 #if DEBUG 밖에 위치.
-    private static let memoryWarningThresholdMB: Double = 22.0     // WARNING: 소프트 캐시만 정리
-    private static let memoryGracefulExitMB: Double = 40.0         // GRACEFUL: 키보드 닫을 때 exit(0)
-    private static let memoryEmergencyExitMB: Double = 55.0        // EMERGENCY: 즉시 exit(0)
+    /// No-exit memory stabilization thresholds (phys_footprint MB 기준).
+    private static let memorySoftPressureEnterMB: Double = 22.0
+    private static let memoryInvisiblePressureEnterMB: Double = 28.0
+    private static let memoryInvisiblePressureExitMB: Double = 24.0
+    private static let memoryStabilizationEnterMB: Double = 38.0
+    private static let memoryStabilizationExitMB: Double = 28.0
+    private static let memorySurvivalEnterMB: Double = 45.0
+    private static let memorySurvivalExitMB: Double = 35.0
+    private static let memoryStateTransitionCooldown: CFTimeInterval = 1.0
 
     #if DEBUG
     /// resident_size (비교용, 기존 측정값)
@@ -2196,8 +3067,10 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Saved Phrases
 
     private func showSavedPhrases() {
+        prepareForUserRequestedHeavyAllocation(source: "savedPhrases")
         #if DEBUG
         let memBefore = currentMemoryMB()
+        debugLogMemoryAttribution(event: "showSavedPhrases", phase: "start")
         kbLogger.info("🔬 showSavedPhrases START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
         #endif
         if savedPhrasesView == nil {
@@ -2241,6 +3114,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let memAfter = currentMemoryMB()
         kbLogger.info("🔬 showSavedPhrases END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        debugLogMemoryAttribution(event: "showSavedPhrases", phase: "end")
         #endif
     }
 
@@ -2267,8 +3141,10 @@ class KeyboardViewController: UIInputViewController {
             showStatusMessage(L("keyboard.error.full_access"))
             return
         }
+        prepareForUserRequestedHeavyAllocation(source: "clipboard")
         #if DEBUG
         let memBefore = currentMemoryMB()
+        debugLogMemoryAttribution(event: "showClipboard", phase: "start")
         kbLogger.info("🔬 showClipboard START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
         #endif
         if clipboardHistoryView == nil {
@@ -2325,6 +3201,7 @@ class KeyboardViewController: UIInputViewController {
         #if DEBUG
         let memAfter = currentMemoryMB()
         kbLogger.info("🔬 showClipboard END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
+        debugLogMemoryAttribution(event: "showClipboard", phase: "end")
         #endif
     }
 
@@ -2462,6 +3339,7 @@ class KeyboardViewController: UIInputViewController {
             hideLanguagePicker()
             return
         }
+        prepareForUserRequestedHeavyAllocation(source: "correctionLanguagePicker")
         ensureLanguagePickerView()
         isLanguagePickerVisible = true
         languagePickerView?.configureSingleLanguage(code: correctionLanguageCode, title: L("keyboard.correction_language"))
@@ -2479,8 +3357,10 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func showEmojiKeyboard() {
+        prepareForUserRequestedHeavyAllocation(source: "emoji")
         #if DEBUG
         let memBefore = currentMemoryMB()
+        debugLogMemoryAttribution(event: "showEmoji", phase: "start")
         kbLogger.info("🔬 showEmojiKeyboard START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
         #endif
         if emojiKeyboardView == nil {
@@ -2514,6 +3394,7 @@ class KeyboardViewController: UIInputViewController {
         let memAfter = currentMemoryMB()
         kbLogger.info("🔬 showEmojiKeyboard END — Memory: \(memAfter, format: .fixed(precision: 2)) MB (delta: \(memAfter - memBefore, format: .fixed(precision: 2)) MB)")
         kbLogger.info("🔬 CoreText tracked caches: \(CoreTextCacheManager.shared.trackedCacheCount)")
+        debugLogMemoryAttribution(event: "showEmoji", phase: "end")
         #endif
 
         // Phase 6: 이모지 열기 시 메모리 안전망 체크
@@ -2529,6 +3410,7 @@ class KeyboardViewController: UIInputViewController {
         isEmojiMode = false
 
         #if DEBUG
+        debugLogMemoryAttribution(event: "hideEmoji", phase: "start")
         let beforeClear = currentMemoryMB()
         let cacheCountBefore = CoreTextCacheManager.shared.trackedCacheCount
         let cacheObjectsBefore = CoreTextCacheManager.shared.totalCachedObjectCount
@@ -2555,6 +3437,7 @@ class KeyboardViewController: UIInputViewController {
         kbLogger.info("🧹   before: \(beforeClear, format: .fixed(precision: 2)) MB → after: \(afterClear, format: .fixed(precision: 2)) MB (delta: \(afterClear - beforeClear, format: .fixed(precision: 2)) MB)")
         kbLogger.info("🧹   tracked caches: \(cacheCountBefore), cached objects before clear: \(cacheObjectsBefore)")
         Self.logMallocZoneStats()
+        debugLogMemoryAttribution(event: "hideEmoji", phase: "end")
         #endif
     }
 
@@ -2625,6 +3508,7 @@ class KeyboardViewController: UIInputViewController {
             hideLanguagePicker()
             return
         }
+        prepareForUserRequestedHeavyAllocation(source: "languagePicker")
         ensureLanguagePickerView()
         isLanguagePickerVisible = true
         languagePickerView?.configure(
@@ -2725,6 +3609,7 @@ class KeyboardViewController: UIInputViewController {
         case .chatReplyMode:
             handleChatReplyModeKey(key)
         }
+        scheduleIdleMemoryCleanupIfNeeded()
     }
 
     private func handleDefaultModeKey(_ key: String) {
@@ -3343,16 +4228,6 @@ class KeyboardViewController: UIInputViewController {
         clipboardHistoryView?.applyTheme(theme)
         clipboardHistoryView?.updateAppearance(isDark: isDark)
 
-        // settingsLink 아이콘 색상 업데이트
-        if let hc = settingsLinkHostingController {
-            let textColor: UIColor
-            if let theme = theme {
-                textColor = theme.keyTextColor
-            } else {
-                textColor = isDark ? .white : .label
-            }
-            hc.rootView = SettingsLinkView(tintColor: textColor)
-        }
         if isPhraseViewsSetUp {
             phraseInputHeaderView.applyTheme(theme)
             phraseInputHeaderView.updateAppearance(isDark: isDark)
@@ -3756,6 +4631,7 @@ extension KeyboardViewController {
         hideEmojiKeyboard()
         hideClipboardHistory()
         hideSavedPhrases()
+        prepareForUserRequestedHeavyAllocation(source: "chatReply")
 
         isShowingChatReply = true
 
@@ -3951,6 +4827,7 @@ extension KeyboardViewController {
 
     private func showCalculator() {
         guard let inputView = self.inputView else { return }
+        prepareForUserRequestedHeavyAllocation(source: "calculator")
 
         #if DEBUG
         let memBefore = currentMemoryMB()
@@ -3962,7 +4839,7 @@ extension KeyboardViewController {
         calculatorView?.removeFromSuperview()
         calculatorView = nil
 
-        keyboardLayoutView.prepareForDismiss()
+        keyboardLayoutView.performDeepMemoryCleanupForDismiss()
 
         let calc = CalculatorView()
         calc.translatesAutoresizingMaskIntoConstraints = false
@@ -4038,6 +4915,7 @@ extension KeyboardViewController {
 
     private func showQuickNoteList() {
         guard let inputView = self.inputView else { return }
+        prepareForUserRequestedHeavyAllocation(source: "quickNoteList")
         #if DEBUG
         let memBefore = currentMemoryMB()
         kbLogger.info("🔬 showQuickNoteList START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
@@ -4098,6 +4976,7 @@ extension KeyboardViewController {
 
     private func enterQuickNoteRead(note: QuickNote) {
         guard let inputView = self.inputView else { return }
+        prepareForUserRequestedHeavyAllocation(source: "quickNoteRead")
         #if DEBUG
         let memBefore = currentMemoryMB()
         kbLogger.info("🔬 showQuickNoteRead START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
@@ -4165,6 +5044,7 @@ extension KeyboardViewController {
 
     private func enterQuickNoteEdit(note: QuickNote?) {
         guard let inputView = self.inputView else { return }
+        prepareForUserRequestedHeavyAllocation(source: "quickNoteEdit")
         #if DEBUG
         let memBefore = currentMemoryMB()
         kbLogger.info("🔬 showQuickNoteEdit START — Memory: \(memBefore, format: .fixed(precision: 2)) MB")
@@ -4322,25 +5202,6 @@ extension KeyboardViewController {
         }
 
         checkAutoCapitalize()
-    }
-}
-
-// MARK: - SwiftUI Settings Link
-
-struct SettingsLinkView: View {
-    var tintColor: UIColor = .label
-
-    var body: some View {
-        Link(destination: URL(string: "translatorkeyboard://settings")!) {
-            Image("icon_toolbar_settings")
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
-                .foregroundColor(Color(tintColor))
-                .frame(width: 36, height: 34)
-                .contentShape(Rectangle())
-        }
     }
 }
 
@@ -4694,13 +5555,14 @@ extension KeyboardViewController: DictationOverlayViewDelegate {
 
     private func showUnitConverter() {
         guard let inputView = self.inputView else { return }
+        prepareForUserRequestedHeavyAllocation(source: "unitConverter")
 
         modeBeforeUnitConverter = currentMode
 
         unitConverterView?.removeFromSuperview()
         unitConverterView = nil
 
-        keyboardLayoutView.prepareForDismiss()
+        keyboardLayoutView.performDeepMemoryCleanupForDismiss()
 
         let converter = UnitConverterView()
         converter.translatesAutoresizingMaskIntoConstraints = false
