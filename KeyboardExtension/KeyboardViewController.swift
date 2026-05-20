@@ -4177,10 +4177,15 @@ class KeyboardViewController: UIInputViewController {
 
     private func loadTheme() -> KeyboardTheme? {
         guard let theme = KeyboardTheme.currentTheme() else { return nil }
+
         if theme.isPremium && !SubscriptionStatus.shared.isPro {
-            AppGroupManager.shared.set("default", forKey: AppConstants.UserDefaultsKeys.keyboardTheme)
+            #if DEBUG
+            return theme
+            #else
             return nil
+            #endif
         }
+
         return theme
     }
 

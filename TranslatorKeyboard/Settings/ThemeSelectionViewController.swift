@@ -135,6 +135,7 @@ class ThemeSelectionViewController: UIViewController {
         applyFilter()   // 초기 필터 적용 (전체)
 
         NotificationCenter.default.addObserver(self, selector: #selector(handleLanguageChange), name: .languageDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSubscriptionChange), name: .subscriptionStatusDidChange, object: nil)
 
         // ★ v3: 앱 백그라운드/포그라운드 시 애니메이션 관리
         NotificationCenter.default.addObserver(
@@ -161,6 +162,11 @@ class ThemeSelectionViewController: UIViewController {
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         animationPreviewCache.removeAll()
+    }
+
+    @objc private func handleSubscriptionChange() {
+        selectedThemeId = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.keyboardTheme) ?? "default"
+        applyFilter()
     }
 
     @objc private func handleLanguageChange() {
