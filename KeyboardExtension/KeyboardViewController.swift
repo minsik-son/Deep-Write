@@ -189,6 +189,7 @@ class KeyboardViewController: UIInputViewController {
 
     // Status message (floating toast)
     private var statusMessageTimer: DispatchWorkItem?
+    private var toastConstraints: [NSLayoutConstraint] = []
     private lazy var toastLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 13, weight: .medium)
@@ -302,7 +303,7 @@ class KeyboardViewController: UIInputViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         CoreTextCacheManager.activate()  // Phase 4: viewDidLoad보다 이전에 활성화
-        BlackboxAnomalyLogger.shared.record("init(nibName) self=\(Unmanaged.passUnretained(self).toOpaque())")
+        BlackboxAnomalyLogger.shared.record("init(nibName) self=\(Unmanaged.passUnretained(self).toOpaque()) policy=\(Self.startupSurfacePolicyVersion)")
         #if DEBUG
         _ = Self.firstCodeEntryTime // static initializer 강제 트리거
         let delta = (CFAbsoluteTimeGetCurrent() - Self.firstCodeEntryTime) * 1000
@@ -846,13 +847,19 @@ class KeyboardViewController: UIInputViewController {
 
     /// Pending attach가 있고 host width가 준비되면 실제 attach를 실행한다.
     private func attemptAttachSurfaceIfHostReady(reason: String) {
-        guard pendingSurfaceAttach, isInputHostWidthReady, let inputView = self.inputView else { return }
+        guard pendingSurfaceAttach,
+              let inputView = self.inputView,
+              isSurfaceHostReady(inputView) else { return }
         #if DEBUG
         NSLog("[StartupSurface] attachReady reason=%@ hostWidth=%.0f", reason, inputView.bounds.width)
         #endif
         let result = attachKeyboardSurfaceToCurrentInputView(inputView)
         guard result == .attached || result == .alreadyAttached else { return }
         installBaseSurfaceConstraints(on: inputView, horizontalPriority: UILayoutPriority(999))
+        installToastIfNeeded(on: inputView)
+        setupHeightConstraint()
+        updateSurfaceHorizontalConstraintPriorities(reason: reason)
+        runPendingInitialSurfaceConfigurationIfNeeded(reason: reason)
     }
 
     /// Host width가 준비되면 horizontal constraints의 priority를 999로 올린다.
@@ -876,6 +883,10 @@ class KeyboardViewController: UIInputViewController {
               !hasRunInitialSurfaceConfigurationForAttachment,
               isInputHostWidthReady else { return }
         guard let surface = Self.sharedKeyboardSurface, surface.owner === self else { return }
+        guard let inputView = self.inputView,
+              surface.toolbarView.superview === inputView,
+              surface.keyboardLayoutView.superview === inputView,
+              !surface.attachConstraints.isEmpty else { return }
 
         hasRunInitialSurfaceConfigurationForAttachment = true
 
@@ -1443,42 +1454,68 @@ class KeyboardViewController: UIInputViewController {
         inputView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         inputView.clipsToBounds = true
 
-        // v3: attach shared surface (toolbar + KLV). This force-detaches any
-        // stale attachment from a previous controller's inputView, then adds
-        // the shared views as subviews of this controller's inputView. Per-
-        // attachment constraints are activated below and stored on the
-        // surface so detach can deactivate them cleanly.
+        // v3 strict policy: host width < 100이면 surface attach/constraints 전부 defer.
         let attachResult = attachKeyboardSurfaceToCurrentInputView(inputView)
 
-        // attach가 defer되면 surface views가 아직 다른 hierarchy에 있으므로
-        // constraints를 절대 생성하지 않는다 (NSGenericException 방지).
-        if attachResult == .attached || attachResult == .alreadyAttached {
-            let initialHorizontalPriority: UILayoutPriority = isInputHostWidthReady ? UILayoutPriority(999) : UILayoutPriority(250)
-            installBaseSurfaceConstraints(on: inputView, horizontalPriority: initialHorizontalPriority)
-        } else {
+        guard attachResult == .attached || attachResult == .alreadyAttached else {
             #if DEBUG
-            NSLog("[StartupSurface] setupUI.deferSurfaceConstraints result=deferredHostWidthZero hostWidth=%.0f", inputView.bounds.width)
+            NSLog("[StartupSurface] setupUI.deferAllSurfaceWork result=deferredHostNotReady hostWidth=%.0f", inputView.bounds.width)
             #endif
+            return
         }
 
-        // Toast — controller-local view, surface와 무관하므로 항상 설치 가능.
-        inputView.addSubview(toastLabel)
-        let toastCenterX = toastLabel.centerXAnchor.constraint(equalTo: inputView.centerXAnchor)
-        toastCenterX.priority = .defaultHigh
-        let toastLeading = toastLabel.leadingAnchor.constraint(greaterThanOrEqualTo: inputView.leadingAnchor, constant: 24)
-        toastLeading.priority = .defaultHigh
-        let toastTrailing = toastLabel.trailingAnchor.constraint(lessThanOrEqualTo: inputView.trailingAnchor, constant: -24)
-        toastTrailing.priority = .defaultHigh
-        NSLayoutConstraint.activate([
-            toastCenterX,
-            toastLabel.topAnchor.constraint(equalTo: inputView.topAnchor, constant: 6),
-            toastLeading,
-            toastTrailing,
-            toastLabel.heightAnchor.constraint(equalToConstant: 32),
-        ])
-
-        // setupUI 끝에서 host width가 이미 준비되었으면 즉시 priority elevation.
+        // Host width ready — constraints install + toast install 진행.
+        installBaseSurfaceConstraints(on: inputView, horizontalPriority: UILayoutPriority(999))
+        installToastIfNeeded(on: inputView)
         updateSurfaceHorizontalConstraintPriorities(reason: "setupUI")
+    }
+
+    // MARK: - Toast Install Helper
+
+    private func installToastIfNeeded(on inputView: UIView) {
+        if toastLabel.superview !== inputView {
+            NSLayoutConstraint.deactivate(toastConstraints)
+            toastConstraints.removeAll()
+            toastLabel.removeFromSuperview()
+            inputView.addSubview(toastLabel)
+        }
+
+        guard toastConstraints.isEmpty else { return }
+
+        let centerX = toastLabel.centerXAnchor.constraint(equalTo: inputView.centerXAnchor)
+        centerX.priority = .defaultHigh
+        let leading = toastLabel.leadingAnchor.constraint(greaterThanOrEqualTo: inputView.leadingAnchor, constant: 24)
+        leading.priority = .defaultHigh
+        let trailing = toastLabel.trailingAnchor.constraint(lessThanOrEqualTo: inputView.trailingAnchor, constant: -24)
+        trailing.priority = .defaultHigh
+
+        toastConstraints = [
+            centerX,
+            toastLabel.topAnchor.constraint(equalTo: inputView.topAnchor, constant: 6),
+            leading,
+            trailing,
+            toastLabel.heightAnchor.constraint(equalToConstant: 32),
+        ]
+        NSLayoutConstraint.activate(toastConstraints)
+    }
+
+    // MARK: - Common Ancestor Check
+
+    /// Constraint activate 전 두 view가 같은 hierarchy에 있는지 검증.
+    /// Release에서도 실행되어야 한다 (DEBUG 전용이 아님).
+    private func hasCommonAncestor(_ lhs: UIView, _ rhs: UIView) -> Bool {
+        var ancestors = Set<ObjectIdentifier>()
+        var current: UIView? = lhs
+        while let view = current {
+            ancestors.insert(ObjectIdentifier(view))
+            current = view.superview
+        }
+        current = rhs
+        while let view = current {
+            if ancestors.contains(ObjectIdentifier(view)) { return true }
+            current = view.superview
+        }
+        return false
     }
 
     // MARK: - Deferred View Setup
@@ -2041,16 +2078,23 @@ class KeyboardViewController: UIInputViewController {
     private enum SurfaceAttachResult {
         case attached
         case alreadyAttached
-        case deferredHostWidthZero
+        case deferredHostNotReady
     }
 
     // MARK: - Host Width Readiness
 
-    /// iPhone keyboard host의 transient width 0 phase를 구분하기 위한 conservative threshold.
-    private var isInputHostWidthReady: Bool {
-        guard let inputView = self.inputView else { return false }
+    private func isSurfaceHostReady(_ inputView: UIView?) -> Bool {
+        guard let inputView else { return false }
         return inputView.bounds.width >= 100
     }
+
+    private var isInputHostWidthReady: Bool {
+        isSurfaceHostReady(self.inputView)
+    }
+
+    /// Release binary에서 v3 policy가 포함되었는지 `strings` 명령으로 검증 가능한 marker.
+    /// @_used 대신 init에서 참조하여 dead-strip 방지.
+    static let startupSurfacePolicyVersion = "StrictWidthReadySurfaceAttach_v3"
 
     // ════════════════════════════════════════════
     // MARK: - Reusable Keyboard Surface (v3)
@@ -2158,6 +2202,25 @@ class KeyboardViewController: UIInputViewController {
     /// guard from plan §Important Implementation Warning.
     @discardableResult
     private func attachKeyboardSurfaceToCurrentInputView(_ inputView: UIView) -> SurfaceAttachResult {
+        // v3 strict policy: host width가 준비되지 않으면 surface acquire/create 자체를 하지 않는다.
+        guard isSurfaceHostReady(inputView) else {
+            pendingSurfaceAttach = true
+            needsInitialSurfaceConfiguration = true
+            needsSurfaceCallbackInstall = true
+            hasRunInitialSurfaceConfigurationForAttachment = false
+            didAttachSharedSurface = false
+            #if DEBUG
+            debugPublicMemoryLog(String(
+                format: "[StartupSurface] deferHostNotReady %@ hostWidth=%.0f hasSurface=%d policy=%@",
+                debugInstanceIdHex,
+                inputView.bounds.width,
+                Self.sharedKeyboardSurface == nil ? 0 : 1,
+                Self.startupSurfacePolicyVersion
+            ))
+            #endif
+            return .deferredHostNotReady
+        }
+
         let surface = acquireKeyboardSurface()
 
         // Idempotent: already attached to this controller's inputView.
@@ -2174,27 +2237,6 @@ class KeyboardViewController: UIInputViewController {
             #endif
             didAttachSharedSurface = true
             return .alreadyAttached
-        }
-
-        // Policy A: host width 0이고, surface가 다른 owner에게 attached 상태면 force-detach 금지.
-        // Width 0인 shadow controller가 live surface를 훔치지 않도록 한다.
-        if !isInputHostWidthReady,
-           surface.isAttached,
-           surface.owner !== self,
-           surface.owner != nil {
-            pendingSurfaceAttach = true
-            needsInitialSurfaceConfiguration = true
-            needsSurfaceCallbackInstall = true
-            hasRunInitialSurfaceConfigurationForAttachment = false
-            #if DEBUG
-            debugPublicMemoryLog(String(
-                format: "[StartupSurface] deferStealHostWidthZero %@ hostWidth=%.0f oldOwner=%@",
-                debugInstanceIdHex,
-                self.inputView?.bounds.width ?? 0,
-                String(describing: Unmanaged.passUnretained(surface.owner!).toOpaque())
-            ))
-            #endif
-            return .deferredHostWidthZero
         }
 
         // Force-detach from previous attachment if any.
@@ -2271,6 +2313,7 @@ class KeyboardViewController: UIInputViewController {
 
     /// Activate the per-attachment constraints stored on the shared surface.
     /// Defense-in-depth: surface views must be in the same hierarchy as inputView.
+    /// Common ancestor check도 수행하여 NSGenericException을 사전 방지.
     private func activateBaseSurfaceConstraints(
         _ constraints: [NSLayoutConstraint],
         horizontalConstraints: [NSLayoutConstraint] = [],
@@ -2279,12 +2322,39 @@ class KeyboardViewController: UIInputViewController {
         guard let surface = Self.sharedKeyboardSurface,
               surface.owner === self,
               surface.toolbarView.superview === inputView,
-              surface.keyboardLayoutView.superview === inputView else {
+              surface.keyboardLayoutView.superview === inputView,
+              hasCommonAncestor(surface.toolbarView, inputView),
+              hasCommonAncestor(surface.keyboardLayoutView, inputView) else {
+            pendingSurfaceAttach = true
+            needsInitialSurfaceConfiguration = true
+            needsSurfaceCallbackInstall = true
+            hasRunInitialSurfaceConfigurationForAttachment = false
             #if DEBUG
-            NSLog("[StartupSurface] activateBaseSurfaceConstraints.skip reason=notInHierarchy")
+            NSLog("[StartupSurface] activateBaseSurfaceConstraints.skip reason=noCommonAncestor hostWidth=%.0f", inputView.bounds.width)
             #endif
             return
         }
+
+        // Per-constraint sanity: UIView item이 hierarchy에 없으면 skip
+        for constraint in constraints {
+            if let first = constraint.firstItem as? UIView,
+               !hasCommonAncestor(first, inputView) {
+                pendingSurfaceAttach = true
+                #if DEBUG
+                NSLog("[StartupSurface] activateBaseSurfaceConstraints.skip reason=constraintItemNoAncestor")
+                #endif
+                return
+            }
+            if let second = constraint.secondItem as? UIView,
+               !hasCommonAncestor(second, inputView) {
+                pendingSurfaceAttach = true
+                #if DEBUG
+                NSLog("[StartupSurface] activateBaseSurfaceConstraints.skip reason=constraintItemNoAncestor")
+                #endif
+                return
+            }
+        }
+
         surface.attachConstraints = constraints
         surface.horizontalAttachConstraints = horizontalConstraints
         NSLayoutConstraint.activate(constraints)
@@ -2292,16 +2362,27 @@ class KeyboardViewController: UIInputViewController {
 
     /// Surface constraints를 생성하고 활성화하는 통합 helper.
     /// setupUI와 attemptAttachSurfaceIfHostReady 양쪽에서 사용.
+    /// Phase 8: computed property 대신 local surface view 사용.
     private func installBaseSurfaceConstraints(on inputView: UIView, horizontalPriority: UILayoutPriority) {
         guard let surface = Self.sharedKeyboardSurface,
               surface.owner === self,
               surface.toolbarView.superview === inputView,
-              surface.keyboardLayoutView.superview === inputView else {
+              surface.keyboardLayoutView.superview === inputView,
+              hasCommonAncestor(surface.toolbarView, inputView),
+              hasCommonAncestor(surface.keyboardLayoutView, inputView) else {
+            pendingSurfaceAttach = true
+            needsInitialSurfaceConfiguration = true
+            needsSurfaceCallbackInstall = true
+            hasRunInitialSurfaceConfigurationForAttachment = false
             #if DEBUG
-            NSLog("[StartupSurface] installBaseSurfaceConstraints.skip reason=notInHierarchy hostWidth=%.0f", inputView.bounds.width)
+            NSLog("[StartupSurface] installBaseSurfaceConstraints.skip reason=noCommonAncestor hostWidth=%.0f", inputView.bounds.width)
             #endif
             return
         }
+
+        // Local views — computed property 호출을 피해 identity를 고정
+        let toolbar = surface.toolbarView
+        let keyboard = surface.keyboardLayoutView
 
         // 기존 constraints가 있으면 먼저 deactivate
         if !surface.attachConstraints.isEmpty {
@@ -2310,17 +2391,17 @@ class KeyboardViewController: UIInputViewController {
             surface.horizontalAttachConstraints.removeAll()
         }
 
-        let surfaceToolbarTop = toolbarView.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding)
-        let surfaceToolbarLeading = toolbarView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
-        let surfaceToolbarTrailing = toolbarView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
-        let surfaceToolbarHeight = toolbarView.heightAnchor.constraint(equalToConstant: Heights.toolbar)
+        let surfaceToolbarTop = toolbar.topAnchor.constraint(equalTo: inputView.topAnchor, constant: Heights.topPadding)
+        let surfaceToolbarLeading = toolbar.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceToolbarTrailing = toolbar.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceToolbarHeight = toolbar.heightAnchor.constraint(equalToConstant: Heights.toolbar)
 
-        let surfaceKLVLeading = keyboardLayoutView.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
-        let surfaceKLVTrailing = keyboardLayoutView.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
-        let surfaceKLVBottom = keyboardLayoutView.bottomAnchor.constraint(equalTo: inputView.bottomAnchor)
+        let surfaceKLVLeading = keyboard.leadingAnchor.constraint(equalTo: inputView.leadingAnchor)
+        let surfaceKLVTrailing = keyboard.trailingAnchor.constraint(equalTo: inputView.trailingAnchor)
+        let surfaceKLVBottom = keyboard.bottomAnchor.constraint(equalTo: inputView.bottomAnchor)
 
-        keyboardLayoutHeightConstraint = keyboardLayoutView.heightAnchor.constraint(equalToConstant: keyAreaHeight())
-        keyboardTopToToolbarConstraint = keyboardLayoutView.topAnchor.constraint(equalTo: toolbarView.bottomAnchor)
+        keyboardLayoutHeightConstraint = keyboard.heightAnchor.constraint(equalToConstant: keyAreaHeight())
+        keyboardTopToToolbarConstraint = keyboard.topAnchor.constraint(equalTo: toolbar.bottomAnchor)
         keyboardTopToToolbarConstraint?.priority = .defaultHigh
 
         let horizontalConstraints = [surfaceToolbarLeading, surfaceToolbarTrailing, surfaceKLVLeading, surfaceKLVTrailing]
@@ -2382,6 +2463,11 @@ class KeyboardViewController: UIInputViewController {
         surface.isAttached = false
         surface.owner = nil
         didAttachSharedSurface = false
+
+        // Toast constraints 정리
+        NSLayoutConstraint.deactivate(toastConstraints)
+        toastConstraints.removeAll()
+        toastLabel.removeFromSuperview()
 
         #if DEBUG
         debugPublicMemoryLog(String(
