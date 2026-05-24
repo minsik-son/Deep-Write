@@ -38,6 +38,8 @@ enum AppConstants {
         static let toolbarItems = "toolbar_items"
         static let keyboardLayoutVariantsByLanguage = "keyboard_layout_variants_by_language"
         static let additionalKeyboardDefaultsBootstrapped = "additional_keyboard_defaults_bootstrapped"
+        static let correctionLanguageMode = "correction_language_mode"
+        static let correctionLanguage = "correction_language"
     }
 
     enum KeyboardAppearanceMode: String, CaseIterable {

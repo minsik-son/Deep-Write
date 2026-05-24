@@ -522,6 +522,8 @@
 
 // MARK: - Keyboard
 "keyboard.correction_language" = "Correction Language";
+"keyboard.correction_language.auto_current_keyboard" = "Auto (Current Keyboard)";
+"keyboard.correction_language.auto_current_keyboard_compact" = "Auto";
 
 // MARK: - Language
 "language.korean" = "Korean";

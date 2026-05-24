@@ -23,6 +23,8 @@ class LanguagePickerView: UIView {
     private var selectedSourceCode: String = "ko"
     private var selectedTargetCode: String = "en"
     private var isSingleLanguageMode = false
+    private var showAutoRow = false
+    private static let autoSentinel = "__auto_current_keyboard__"
 
     static var supportedLanguages: [LanguageItem] {
         [
@@ -208,8 +210,9 @@ class LanguagePickerView: UIView {
         tableView.reloadData()
     }
 
-    func configureSingleLanguage(code: String, title: String) {
+    func configureSingleLanguage(code: String, title: String, showAutoRow: Bool = false) {
         isSingleLanguageMode = true
+        self.showAutoRow = showAutoRow
         sourceTabButton.isHidden = true
         targetTabButton.isHidden = true
         tabIndicator.isHidden = true
@@ -272,13 +275,31 @@ class LanguagePickerView: UIView {
 
 extension LanguagePickerView: UITableViewDataSource, UITableViewDelegate {
 
+    private var hasAutoRowInCurrentConfig: Bool {
+        showAutoRow && isSingleLanguageMode
+    }
+
+    private func languageForRow(_ row: Int) -> LanguageItem? {
+        if hasAutoRowInCurrentConfig {
+            if row == 0 {
+                return LanguageItem(code: Self.autoSentinel, displayName: L("keyboard.correction_language.auto_current_keyboard"))
+            }
+            let langIndex = row - 1
+            guard langIndex < LanguagePickerView.supportedLanguages.count else { return nil }
+            return LanguagePickerView.supportedLanguages[langIndex]
+        }
+        guard row < LanguagePickerView.supportedLanguages.count else { return nil }
+        return LanguagePickerView.supportedLanguages[row]
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return LanguagePickerView.supportedLanguages.count
+        let base = LanguagePickerView.supportedLanguages.count
+        return hasAutoRowInCurrentConfig ? base + 1 : base
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "LanguageCell", for: indexPath) as! LanguageCell
-        let lang = LanguagePickerView.supportedLanguages[indexPath.row]
+        guard let lang = languageForRow(indexPath.row) else { return cell }
 
         let selectedCode = currentTab == .source ? selectedSourceCode : selectedTargetCode
         let isSelected = lang.code == selectedCode
@@ -289,7 +310,7 @@ extension LanguagePickerView: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let lang = LanguagePickerView.supportedLanguages[indexPath.row]
+        guard let lang = languageForRow(indexPath.row) else { return }
 
         if currentTab == .source {
             selectedSourceCode = lang.code

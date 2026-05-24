@@ -1864,8 +1864,17 @@ class KeyboardViewController: UIInputViewController {
             self.updateHeight(for: self.currentMode, animated: true)
         }
         keyboardLayoutView.onLanguageChanged = { [weak self] lang in
-            self?.commitDefaultComposing()
+            guard let self else { return }
+            self.commitDefaultComposing()
             AppGroupManager.shared.set(lang.rawValue, forKey: AppConstants.UserDefaultsKeys.keyboardLayout)
+            if self.isCorrectionLanguageAuto {
+                self.correctionLanguageCode = lang.rawValue
+                self.correctionManager.setLanguage(lang.rawValue)
+                if self.currentMode == .correctionMode {
+                    let name = self.languageDisplayName(for: lang.rawValue)
+                    self.correctionLanguageBar.updateLanguageName(name)
+                }
+            }
         }
         keyboardLayoutView.onCursorMove = { [weak self] horizontal, vertical in
             self?.handleCursorMove(horizontal: horizontal, vertical: vertical)
@@ -1881,6 +1890,38 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - State Restoration
 
+    // MARK: - Correction Language Auto/Manual
+
+    private static let correctionAutoSentinel = "__auto_current_keyboard__"
+
+    private var isCorrectionLanguageAuto: Bool {
+        let mode = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.correctionLanguageMode) ?? "auto"
+        return mode == "auto"
+    }
+
+    private func activeKeyboardLanguageCodeForCorrection() -> String {
+        return keyboardLayoutView.getCurrentLanguage().rawValue
+    }
+
+    private func resolvedCorrectionLanguageCode() -> String {
+        if isCorrectionLanguageAuto {
+            return activeKeyboardLanguageCodeForCorrection()
+        }
+        return AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.correctionLanguage)
+            ?? activeKeyboardLanguageCodeForCorrection()
+    }
+
+    private func applyCorrectionLanguage(_ code: String, mode: String, persist: Bool) {
+        correctionLanguageCode = code
+        correctionManager.setLanguage(code)
+        if persist {
+            AppGroupManager.shared.set(mode, forKey: AppConstants.UserDefaultsKeys.correctionLanguageMode)
+            if mode == "manual" {
+                AppGroupManager.shared.set(code, forKey: AppConstants.UserDefaultsKeys.correctionLanguage)
+            }
+        }
+    }
+
     private func restoreState() {
         if let sourceLang = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.sourceLanguage) {
             sourceLanguageCode = sourceLang
@@ -1888,7 +1929,8 @@ class KeyboardViewController: UIInputViewController {
         if let targetLang = AppGroupManager.shared.string(forKey: AppConstants.UserDefaultsKeys.targetLanguage) {
             targetLanguageCode = targetLang
         }
-        correctionLanguageCode = sourceLanguageCode
+        correctionLanguageCode = resolvedCorrectionLanguageCode()
+        correctionManager.setLanguage(correctionLanguageCode)
         translationManager.setLanguages(source: sourceLanguageCode, target: targetLanguageCode)
         updateLanguageLabels()
 
@@ -3400,9 +3442,10 @@ class KeyboardViewController: UIInputViewController {
         CompositionSessionManager.shared.startSession(mode: .correct)
         setupCorrectionViewsIfNeeded()
 
+        correctionLanguageCode = resolvedCorrectionLanguageCode()
+        correctionManager.setLanguage(correctionLanguageCode)
         let langName = languageDisplayName(for: correctionLanguageCode)
         correctionLanguageBar.updateLanguageName(langName)
-        correctionManager.setLanguage(correctionLanguageCode)
         switchMode(to: .correctionMode)
         animateBookOpen([correctionLanguageBar, correctionInputView])
     }
@@ -3701,7 +3744,11 @@ class KeyboardViewController: UIInputViewController {
         prepareForUserRequestedHeavyAllocation(source: "correctionLanguagePicker")
         ensureLanguagePickerView()
         isLanguagePickerVisible = true
-        languagePickerView?.configureSingleLanguage(code: correctionLanguageCode, title: L("keyboard.correction_language"))
+        languagePickerView?.configureSingleLanguage(
+            code: isCorrectionLanguageAuto ? Self.correctionAutoSentinel : correctionLanguageCode,
+            title: L("keyboard.correction_language"),
+            showAutoRow: true
+        )
         languagePickerView?.isHidden = false
         languagePickerView?.alpha = 0
         UIView.animate(withDuration: 0.2) {
@@ -3894,9 +3941,21 @@ class KeyboardViewController: UIInputViewController {
 
     private func handleLanguageSelection(tab: LanguagePickerView.Tab, language: LanguageItem) {
         if currentMode == .correctionMode {
-            correctionLanguageCode = language.code
-            correctionLanguageBar.updateLanguageName(language.displayName)
-            correctionManager.setLanguage(language.code)
+            if language.code == Self.correctionAutoSentinel {
+                let resolved = activeKeyboardLanguageCodeForCorrection()
+                applyCorrectionLanguage(resolved, mode: "auto", persist: true)
+                let name = languageDisplayName(for: resolved)
+                correctionLanguageBar.updateLanguageName(name)
+            } else {
+                applyCorrectionLanguage(language.code, mode: "manual", persist: true)
+                correctionLanguageBar.updateLanguageName(language.displayName)
+            }
+            // Re-run correction if text exists
+            let currentText = modeTextInputHandler.fullText
+            if !currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                correctionManager.cancelPending()
+                correctionManager.requestCorrection(text: currentText)
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 self?.hideLanguagePicker()
             }

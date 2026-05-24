@@ -521,6 +521,8 @@
 
 // MARK: - Keyboard
 "keyboard.correction_language" = "校对语言";
+"keyboard.correction_language.auto_current_keyboard" = "自动（当前键盘）";
+"keyboard.correction_language.auto_current_keyboard_compact" = "自动";
 
 // MARK: - Language
 "language.korean" = "韩语";

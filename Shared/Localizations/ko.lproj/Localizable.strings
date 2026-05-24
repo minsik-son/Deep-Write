@@ -522,6 +522,8 @@
 
 // MARK: - Keyboard
 "keyboard.correction_language" = "교정 언어";
+"keyboard.correction_language.auto_current_keyboard" = "자동 (현재 키보드)";
+"keyboard.correction_language.auto_current_keyboard_compact" = "자동";
 
 // MARK: - Language
 "language.korean" = "한국어";
